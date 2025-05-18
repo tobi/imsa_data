@@ -12,7 +12,13 @@ end
 BASE_URL = "https://imsa.results.alkamelcloud.com/Results/"
 DEFAULT_SERIES_PATTERN = "IMSA WeatherTech"
 
+
+$visited ||= Set.new
+
 def fetch_links(url)
+  url = url.gsub(/\?.*$/, '')
+  return [] if $visited.include?(url)
+  $visited.add(url)
   print '.'
   body = URI.open(url, &:read)
   body.scan(/href="([^"]+)"/).reject { _1.first.start_with?("/") }.map(&:first)
@@ -42,18 +48,33 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
     series_folders = fetch_links(event_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
 
     series_folders.each do |series_folder|
-      next unless SERIES_FILTER.match?(CGI.unescape(series_folder))
-
+      unescaped_series_folder = CGI.unescape(series_folder)
+      match = unescaped_series_folder.include?(series_pattern)      
+      next unless match
+   
       series_url = "#{event_url}#{series_folder}"
       race_folders = fetch_links(series_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
 
       race_folders.each do |race_folder|
         race_url = "#{series_url}#{race_folder}"
-        files = fetch_links(race_url).reject { _1.end_with?("/") }
+        files, folders = fetch_links(race_url).partition { not _1.end_with?("/") }
 
+        # get files in subfolders if there are any because for some races there are these Hour01-04 type folders which sometimes hide them
+        #  in that case we take the last
+        folders.each do |folder|
+          folder_url = "#{race_url}#{folder}"
+          additional_files = fetch_links(folder_url).reject { _1.end_with?("/") }
+          additional_files.map! { |f| "#{folder}#{f}" }
+          puts "additional_files: #{additional_files.inspect}"
+          files.concat(additional_files)
+        end
+
+        files.reverse!
+     
         %w[03 23 26].zip(%w[results laps weather]).each do |prefix, label|
           matches = files.grep(/\A#{prefix}_.*\.CSV\z/i)
           next if matches.empty?
+          puts "matches: #{matches.inspect}"
           file_name = best_file(matches)
           target = "#{race_folder.chomp('/')}-#{label}.csv"
 
@@ -79,9 +100,8 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
                   f.write(csv.to_csv)
                 end
               end
-              print "✅"
+              print " ✅"
             end
-            print "\n"
           end
         end
       end
