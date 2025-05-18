@@ -19,7 +19,6 @@ def fetch_links(url)
   url = url.gsub(/\?.*$/, '')
   return [] if $visited.include?(url)
   $visited.add(url)
-  print '.'
   body = URI.open(url, &:read)
   body.scan(/href="([^"]+)"/).reject { _1.first.start_with?("/") }.map(&:first)
 end
@@ -36,6 +35,40 @@ end
 
 
 
+def race_files(race_url)
+  files, folders = fetch_links(race_url).partition { not _1.end_with?("/") }
+
+  # get files in subfolders if there are any because for some races there are these Hour01-04 type folders which sometimes hide them
+  #  in that case we take the last
+  folders.each do |folder|
+    next if folder.include?("?")
+    # next unless folder.end_with?("?")
+    folder_url = "#{race_url}#{folder}"
+    additional_files = fetch_links(folder_url).reject { _1.end_with?("/") }
+    additional_files.map! { |f| "#{folder}#{f}" }
+    files.concat(additional_files)
+  end
+
+  files.reverse!
+
+  csvs = files.grep(/\.CSV$/i)
+
+  result = {
+    laps: csvs.find { |f| f.match(/23_.*\.CSV\z/i) },
+    weather: csvs.find { |f| f.match(/26_.*\.CSV\z/i) },
+    files: csvs
+  }
+  result[:results] = [
+    csvs.find { |f| f.match(/03_.*Official\.CSV\z/i) },
+    csvs.find { |f| f.match(/03_.*Unofficial\.CSV\z/i) },
+    *csvs.grep(/03_.*\.CSV\z/i)
+  ]
+  result[:results] = result[:results].compact.first
+  result[:success] = (result[:results] and result[:laps] and result[:weather])
+  result
+end
+
+
 def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
   year_prefix = "#{year.to_s[-2..] }_#{year}"
 
@@ -49,36 +82,22 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
 
     series_folders.each do |series_folder|
       unescaped_series_folder = CGI.unescape(series_folder)
-      match = unescaped_series_folder.include?(series_pattern)      
+      match = unescaped_series_folder.include?(series_pattern)
       next unless match
-   
+
       series_url = "#{event_url}#{series_folder}"
       race_folders = fetch_links(series_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
 
       race_folders.each do |race_folder|
+        next unless race_folder.match(/\A\d{12}\_/)
+
         race_url = "#{series_url}#{race_folder}"
-        files, folders = fetch_links(race_url).partition { not _1.end_with?("/") }
+        csvs = race_files(race_url)
 
-        # get files in subfolders if there are any because for some races there are these Hour01-04 type folders which sometimes hide them
-        #  in that case we take the last
-        folders.each do |folder|
-          folder_url = "#{race_url}#{folder}"
-          additional_files = fetch_links(folder_url).reject { _1.end_with?("/") }
-          additional_files.map! { |f| "#{folder}#{f}" }
-          puts "additional_files: #{additional_files.inspect}"
-          files.concat(additional_files)
-        end
+        [:results, :laps, :weather].each do |label|
+          file_name = csvs[label]
 
-        files.reverse!
-     
-        %w[03 23 26].zip(%w[results laps weather]).each do |prefix, label|
-          matches = files.grep(/\A#{prefix}_.*\.CSV\z/i)
-          next if matches.empty?
-          puts "matches: #{matches.inspect}"
-          file_name = best_file(matches)
           target = "#{race_folder.chomp('/')}-#{label}.csv"
-
-
           target = File.join(
             outpath,
             "#{year}/",
@@ -91,6 +110,7 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
           target = target.gsub(/[^a-z0-9\.\-\/]+/, '-')
 
           FileUtils.mkdir_p(File.dirname(target))
+
           unless File.exist?(target)
             print "\n[dl] → #{target}"
             URI.open("#{race_url}#{file_name}") do |remote|
@@ -104,9 +124,35 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
             end
           end
         end
+
+        #   target = File.join(
+        #     outpath,
+        #     "#{year}/",
+        #     # "#{series_folder.chomp('/')}/",
+        #     "#{event_folder.chomp('/')}/",
+        #     target,
+        #   )
+        #   target = target.downcase
+        #   target = target.gsub(/%20/, ' ')
+        #   target = target.gsub(/[^a-z0-9\.\-\/]+/, '-')
+
+        #   FileUtils.mkdir_p(File.dirname(target))
+        #   unless File.exist?(target)
+        #     print "\n[dl] → #{target}"
+        #     URI.open("#{race_url}#{file_name}") do |remote|
+        #       content = remote.read
+        #       File.open(target, 'w') do |f|
+        #         FastCSV.raw_parse(content, col_sep: ';', row_sep: "\n") do |csv|
+        #           f.write(csv.to_csv)
+        #         end
+        #       end
+        #       print " ✅"
+        #     end
+        #   end
+        # end
       end
     end
-  end 
+  end
 end
 
 if __FILE__ == $0
@@ -118,14 +164,14 @@ if __FILE__ == $0
     outpath: 'data/',
     series_pattern: DEFAULT_SERIES_PATTERN
   }
-  
+
   OptionParser.new do |opts|
     opts.banner = "Usage: #{$0} [options]"
-  
+
     opts.on("-y", "--year YEAR", Integer, "Year to fetch (default: current year)") do |year|
       options[:year] = year
     end
-  
+
     opts.on("-o", "--outpath PATH", String, "Output directory (default: data/)") do |path|
       options[:outpath] = path
     end
@@ -134,6 +180,6 @@ if __FILE__ == $0
       options[:series_pattern] = pattern
     end
   end.parse!
-  
+
   import_race(options[:year], options[:outpath], options[:series_pattern])
 end
