@@ -124,32 +124,6 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
             end
           end
         end
-
-        #   target = File.join(
-        #     outpath,
-        #     "#{year}/",
-        #     # "#{series_folder.chomp('/')}/",
-        #     "#{event_folder.chomp('/')}/",
-        #     target,
-        #   )
-        #   target = target.downcase
-        #   target = target.gsub(/%20/, ' ')
-        #   target = target.gsub(/[^a-z0-9\.\-\/]+/, '-')
-
-        #   FileUtils.mkdir_p(File.dirname(target))
-        #   unless File.exist?(target)
-        #     print "\n[dl] → #{target}"
-        #     URI.open("#{race_url}#{file_name}") do |remote|
-        #       content = remote.read
-        #       File.open(target, 'w') do |f|
-        #         FastCSV.raw_parse(content, col_sep: ';', row_sep: "\n") do |csv|
-        #           f.write(csv.to_csv)
-        #         end
-        #       end
-        #       print " ✅"
-        #     end
-        #   end
-        # end
       end
     end
   end
