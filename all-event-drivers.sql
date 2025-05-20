@@ -1,25 +1,25 @@
 CREATE OR REPLACE MACRO license_rank(license) AS (
-    CASE 
-        WHEN license = 'Platinum' THEN 5 
+    CASE
+        WHEN license = 'Platinum' THEN 5
         WHEN license = 'Platinium' THEN 5
-        WHEN license = 'Gold' THEN 4 
-        WHEN license = 'Silver' THEN 3 
-        WHEN license = 'Bronze' THEN 2 
+        WHEN license = 'Gold' THEN 4
+        WHEN license = 'Silver' THEN 3
+        WHEN license = 'Bronze' THEN 2
         ELSE 0
     END
 );
 
 
-CREATE TEMP TABLE event_drivers_raw AS 
+CREATE TEMP TABLE event_drivers_raw AS
     SELECT
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as year,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/\d+\-([^/]+)\-results\.csv$', 2) as event,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4) as session,            
+        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as event,
+        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4) as session,
 
         -- Team and class
         TEAM as team,
         _CLASS as class,
-        
+
         -- Date
         strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3), '%Y%m%d%H%M') as date,
 
@@ -81,8 +81,8 @@ CREATE TEMP TABLE event_drivers_raw AS
     );
 
 
-CREATE OR REPLACE TABLE event_drivers AS 
-SELECT 
+CREATE OR REPLACE TABLE event_drivers AS
+SELECT
     year,
     event,
     session,
@@ -103,7 +103,7 @@ UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(licen
 
 
 
-CREATE OR REPLACE VIEW drivers AS 
+CREATE OR REPLACE VIEW drivers AS
 SELECT
     name,
     class,

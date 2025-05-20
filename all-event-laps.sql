@@ -11,8 +11,6 @@ CREATE OR REPLACE MACRO parse_time (t) AS (
             TRY_STRPTIME('00:00:'|| t,  '%-H:%M:%S.%g'),
             TRY_STRPTIME('23:59:59',    '%-H:%M:%S')
         )
-        -- '23:59:59'            -- hard ceiling
-        -- make_time(11, 00, 00)::TIME
     ) as TIME)
 );
 
@@ -21,7 +19,6 @@ CREATE TEMP TABLE event_laps_raw AS
     SELECT
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as year,
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as event,
-        -- regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3) as date,
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4) as session,
 
         number as car,
@@ -36,6 +33,10 @@ CREATE TEMP TABLE event_laps_raw AS
         top_speed::INT as top_speed,
         crossing_finish_line_in_pit,
         flag_at_fl as flags,
+
+        -- Date
+        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3), '%Y%m%d%H%M') as date,
+
         filename
 
     FROM read_csv(
@@ -61,7 +62,7 @@ CREATE TEMP TABLE event_laps_raw AS
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        year, event, session, lap, lap_time, driver_name, car, class, session_time, time, pit_time, top_speed, crossing_finish_line_in_pit, flags,
+        year, event, session, lap, lap_time, driver_name, car, class, session_time, time, pit_time, top_speed, crossing_finish_line_in_pit, flags, date,
         DENSE_RANK() OVER (ORDER BY year, event, session) as session_id,
     FROM event_laps_raw
     ORDER BY session_id, car, lap
