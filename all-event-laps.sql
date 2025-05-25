@@ -80,7 +80,7 @@ stints AS (
         SUM(stint_start) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) AS stint_number
     FROM stint_starts
 )
-SELECT * FROM stint_starts ORDER BY session_id, car, lap;
+SELECT * FROM stints ORDER BY session_id, car, lap;
 
 
 SELECT
