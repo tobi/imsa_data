@@ -113,7 +113,8 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
 
           unless File.exist?(target)
             print "\n[dl] → #{target}"
-            URI.open("#{race_url}#{file_name}") do |remote|
+            url = "#{race_url}#{file_name}"
+            URI.open(url) do |remote|
               content = remote.read
               File.open(target, 'w') do |f|
                 FastCSV.raw_parse(content, col_sep: ';', row_sep: "\n") do |csv|
@@ -121,6 +122,9 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
                 end
               end
               print " ✅"
+            rescue => e
+              print " ❌\n\nURL: #{url}\n\n"
+              print "Error: #{e.message}\n\n"
             end
           end
         end
@@ -128,6 +132,7 @@ def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
     end
   end
 end
+
 
 if __FILE__ == $0
 
@@ -153,7 +158,9 @@ if __FILE__ == $0
     opts.on("-s", "--series-pattern PATTERN", String, "Series pattern (default: #{DEFAULT_SERIES_PATTERN})") do |pattern|
       options[:series_pattern] = pattern
     end
+
   end.parse!
 
   import_race(options[:year], options[:outpath], options[:series_pattern])
+
 end
