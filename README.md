@@ -1,58 +1,125 @@
-# IMSA Data
+# IMSA Data Scraper
 
-This repository collects WeatherTech Championship event data from the IMSA results site and turns it into a DuckDB database.
+A simplified Ruby tool that collects IMSA WeatherTech Championship event data from the official results website and converts it into a DuckDB database for analysis.
 
-## Data layout
+## Features
 
-Downloaded CSV files live in the `data/` directory under their respective year and event folder (for example `data/2024/01-roar-before-the-24/`). Each event folder contains three CSV files per session:
+- **Simple**: No external dependencies - uses only Ruby standard library
+- **Organized**: Clean object-oriented design with proper error handling
+- **Flexible**: Configurable year, output path, and series pattern
+- **Robust**: Handles network errors and missing files gracefully
 
-- `*-results.csv`
-- `*-laps.csv`
-- `*-weather.csv`
+## Data Structure
+
+Downloaded CSV files are organized in the `data/` directory:
+
+```
+data/
+├── 2024/
+│   ├── 01-roar-before-the-24/
+│   │   ├── 202401260800_race-results.csv
+│   │   ├── 202401260800_race-laps.csv
+│   │   └── 202401260800_race-weather.csv
+│   └── 02-twelve-hours-of-sebring/
+│       └── ...
+└── 2023/
+    └── ...
+```
+
+Each event contains three types of CSV files per session:
+- **results**: Race finishing positions and times
+- **laps**: Individual lap times and data
+- **weather**: Weather conditions during the session
 
 ## Setup
 
-You will need Ruby (see `mise.toml` for the version) and the DuckDB CLI. Install the required gem and dependencies:
+You only need Ruby (3.0+) and the DuckDB CLI. No external gems required!
 
 ```bash
-bundle install
+# Install DuckDB (if not already installed)
+# On macOS: brew install duckdb
+# On Ubuntu: apt install duckdb
+
+# Clone and use
+git clone <repository>
+cd imsa-data
 ```
 
-## Importing new data
+## Usage
 
-Use the provided script to fetch event data:
+### Import Data
 
+Import data for the current year:
 ```bash
-ruby import.rb --year 2024
-```
-
-or simply run
-
-```bash
+ruby import.rb
+# or
 rake import
 ```
 
-which downloads data for the current season.
+Import data for a specific year:
+```bash
+ruby import.rb --year 2023
+```
 
-## Building the database
+Import data for multiple recent years:
+```bash
+rake import_recent  # imports last 3 years
+```
 
-After downloading data you can create the DuckDB database and export summary CSV files with:
+### Build Database
 
+After importing data, create the DuckDB database:
 ```bash
 rake db:update
 ```
 
-The resulting database is written to `output/imsa.duckdb` along with `output/drivers.csv` and `output/laps.csv`.
+This creates:
+- `output/imsa.duckdb` - The main database
+- `output/drivers.csv` - Driver summary data
+- `output/laps.csv` - Lap summary data
 
-To open the database in an interactive shell run:
+### Explore Data
 
+Open the database in interactive mode:
 ```bash
 rake db:open
 ```
 
+### Clean Up
+
+Remove generated files:
+```bash
+rake clean
+```
+
+## Command Line Options
+
+The import script supports several options:
+
+```bash
+ruby import.rb [options]
+  -y, --year YEAR              Year to fetch (default: current year)
+  -o, --output-path PATH        Output directory (default: data/)
+  -s, --series-pattern PATTERN  Series pattern (default: IMSA WeatherTech)
+  -h, --help                   Show help message
+```
+
 ## Files
 
-- `import.rb` – downloads IMSA CSV files.
-- `all-event-drivers.sql` and `all-event-laps.sql` – DuckDB scripts used to create the database.
-- `Rakefile` – tasks to regenerate or open the database and to run the importer.
+- **`import.rb`** - Main scraper with clean object-oriented design
+- **`Rakefile`** - Build tasks for database generation and data import
+- **`all-event-drivers.sql`** - DuckDB script for driver data aggregation
+- **`all-event-laps.sql`** - DuckDB script for lap data aggregation
+
+## Architecture
+
+The code is organized into a simple `IMSAImporter` class that:
+
+1. **Discovers events** - Finds all events for a given year
+2. **Filters series** - Looks for IMSA WeatherTech events
+3. **Downloads CSVs** - Gets results, laps, and weather data
+4. **Converts format** - Transforms semicolon-separated to comma-separated CSV
+5. **Organizes files** - Saves in a clean directory structure
+
+The design prioritizes simplicity and maintainability over performance.
 

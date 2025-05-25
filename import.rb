@@ -2,165 +2,189 @@ require 'open-uri'
 require 'fileutils'
 require 'date'
 require 'cgi'
-require 'bundler/inline'
-
-gemfile do
-  source 'https://rubygems.org'
-  gem 'fastcsv'
-end
+require 'csv'
+require 'set'
 
 BASE_URL = "https://imsa.results.alkamelcloud.com/Results/"
 DEFAULT_SERIES_PATTERN = "IMSA WeatherTech"
 
-
-$visited ||= Set.new
-
-def fetch_links(url)
-  url = url.gsub(/\?.*$/, '')
-  return [] if $visited.include?(url)
-  $visited.add(url)
-  body = URI.open(url, &:read)
-  body.scan(/href="([^"]+)"/).reject { _1.first.start_with?("/") }.map(&:first)
-end
-
-def best_file(files)
-  files.sort_by do |f|
-    case f
-    when /Official/i then 0
-    when /Unofficial/i then 1
-    else 2
-    end
-  end.first
-end
-
-
-
-def race_files(race_url)
-  files, folders = fetch_links(race_url).partition { not _1.end_with?("/") }
-
-  # get files in subfolders if there are any because for some races there are these Hour01-04 type folders which sometimes hide them
-  #  in that case we take the last
-  folders.each do |folder|
-    next if folder.include?("?")
-    # next unless folder.end_with?("?")
-    folder_url = "#{race_url}#{folder}"
-    additional_files = fetch_links(folder_url).reject { _1.end_with?("/") }
-    additional_files.map! { |f| "#{folder}#{f}" }
-    files.concat(additional_files)
+class IMSAImporter
+  def initialize
+    @visited = Set.new
   end
 
-  files.reverse!
+  def import_year(year, output_path = 'data/', series_pattern = DEFAULT_SERIES_PATTERN)
+    year_prefix = "#{year.to_s[-2..]}_#{year}"
+    events_url = "#{BASE_URL}#{year_prefix}/"
+    
+    puts "Importing IMSA data for #{year}..."
+    
+    fetch_links(events_url).each do |event_folder|
+      next unless event_folder.end_with?('/') && !event_folder.start_with?('.')
+      
+      import_event(events_url + event_folder, year, output_path, series_pattern)
+    end
+  end
 
-  csvs = files.grep(/\.CSV$/i)
+  private
 
-  result = {
-    laps: csvs.find { |f| f.match(/23_.*\.CSV\z/i) },
-    weather: csvs.find { |f| f.match(/26_.*\.CSV\z/i) },
-    files: csvs
-  }
-  result[:results] = [
-    csvs.find { |f| f.match(/03_.*Official\.CSV\z/i) },
-    csvs.find { |f| f.match(/03_.*Unofficial\.CSV\z/i) },
-    *csvs.grep(/03_.*\.CSV\z/i)
-  ]
-  result[:results] = result[:results].compact.first
-  result[:success] = (result[:results] and result[:laps] and result[:weather])
-  result
-end
+  def fetch_links(url)
+    url = url.gsub(/\?.*$/, '')
+    return [] if @visited.include?(url)
+    
+    @visited.add(url)
+    
+    begin
+      body = URI.open(url, &:read)
+      body.scan(/href="([^"]+)"/)
+          .map(&:first)
+          .reject { |link| link.start_with?('/') }
+    rescue => e
+      puts "Error fetching #{url}: #{e.message}"
+      []
+    end
+  end
 
+  def import_event(event_url, year, output_path, series_pattern)
+    fetch_links(event_url).each do |series_folder|
+      next unless series_folder.end_with?('/') && !series_folder.start_with?('.')
+      next unless CGI.unescape(series_folder).include?(series_pattern)
+      
+      import_series(event_url + series_folder, year, output_path, 
+                   extract_folder_name(event_url), extract_folder_name(series_folder))
+    end
+  end
 
-def import_race(year, outpath, series_pattern = DEFAULT_SERIES_PATTERN)
-  year_prefix = "#{year.to_s[-2..] }_#{year}"
+  def import_series(series_url, year, output_path, event_name, series_name)
+    fetch_links(series_url).each do |race_folder|
+      next unless race_folder.end_with?('/') && race_folder.match(/\A\d{12}_/)
+      
+      import_race(series_url + race_folder, year, output_path, event_name, race_folder)
+    end
+  end
 
-  # Get list of event folders for this year
-  events_url = "#{BASE_URL}#{year_prefix}/"
-  event_folders = fetch_links(events_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
+  def import_race(race_url, year, output_path, event_name, race_folder)
+    csv_files = find_csv_files(race_url)
+    
+    %w[results laps weather].each do |file_type|
+      csv_file = csv_files[file_type.to_sym]
+      next unless csv_file
+      
+      download_and_convert_csv(race_url + csv_file, year, output_path, 
+                              event_name, race_folder, file_type)
+    end
+  end
 
-  event_folders.each do |event_folder|
-    event_url = "#{events_url}#{event_folder}"
-    series_folders = fetch_links(event_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
+  def find_csv_files(race_url)
+    all_files = []
+    
+    # Get files from main folder and subfolders
+    links = fetch_links(race_url)
+    files, folders = links.partition { |link| !link.end_with?('/') }
+    all_files.concat(files)
+    
+    # Check subfolders for additional CSV files
+    folders.each do |folder|
+      next if folder.include?('?')
+      
+      subfolder_files = fetch_links(race_url + folder)
+                       .reject { |f| f.end_with?('/') }
+                       .map { |f| folder + f }
+      all_files.concat(subfolder_files)
+    end
+    
+    csvs = all_files.grep(/\.csv$/i).reverse
+    
+    {
+      results: find_best_file(csvs, /03_.*\.csv$/i),
+      laps: csvs.find { |f| f.match(/23_.*\.csv$/i) },
+      weather: csvs.find { |f| f.match(/26_.*\.csv$/i) }
+    }
+  end
 
-    series_folders.each do |series_folder|
-      unescaped_series_folder = CGI.unescape(series_folder)
-      match = unescaped_series_folder.include?(series_pattern)
-      next unless match
+  def find_best_file(files, pattern)
+    candidates = files.grep(pattern)
+    candidates.find { |f| f.match(/official/i) } ||
+    candidates.find { |f| f.match(/unofficial/i) } ||
+    candidates.first
+  end
 
-      series_url = "#{event_url}#{series_folder}"
-      race_folders = fetch_links(series_url).select { _1.end_with?("/") && _1 !~ /\A\./ }
+  def download_and_convert_csv(url, year, output_path, event_name, race_folder, file_type)
+    target_file = build_target_path(output_path, year, event_name, race_folder, file_type)
+    
+    return if File.exist?(target_file)
+    
+    FileUtils.mkdir_p(File.dirname(target_file))
+    
+    print "\n[downloading] → #{target_file}"
+    
+    begin
+      URI.open(url) do |remote|
+        content = remote.read
+        convert_semicolon_csv(content, target_file)
+      end
+      print " ✅"
+    rescue => e
+      print " ❌"
+      puts "\nError downloading #{url}: #{e.message}"
+    end
+  end
 
-      race_folders.each do |race_folder|
-        next unless race_folder.match(/\A\d{12}\_/)
+  def build_target_path(output_path, year, event_name, race_folder, file_type)
+    filename = "#{race_folder.chomp('/')}-#{file_type}.csv"
+    path = File.join(output_path, year.to_s, event_name, filename)
+    
+    # Clean up the path
+    path.downcase
+        .gsub(/%20/, ' ')
+        .gsub(/[^a-z0-9.\-\/]+/, '-')
+  end
 
-        race_url = "#{series_url}#{race_folder}"
-        csvs = race_files(race_url)
-
-        [:results, :laps, :weather].each do |label|
-          file_name = csvs[label]
-
-          target = "#{race_folder.chomp('/')}-#{label}.csv"
-          target = File.join(
-            outpath,
-            "#{year}/",
-            # "#{series_folder.chomp('/')}/",
-            "#{event_folder.chomp('/')}/",
-            target,
-          )
-          target = target.downcase
-          target = target.gsub(/%20/, ' ')
-          target = target.gsub(/[^a-z0-9\.\-\/]+/, '-')
-
-          FileUtils.mkdir_p(File.dirname(target))
-
-          unless File.exist?(target)
-            print "\n[dl] → #{target}"
-            url = "#{race_url}#{file_name}"
-            URI.open(url) do |remote|
-              content = remote.read
-              File.open(target, 'w') do |f|
-                FastCSV.raw_parse(content, col_sep: ';', row_sep: "\n") do |csv|
-                  f.write(csv.to_csv)
-                end
-              end
-              print " ✅"
-            rescue => e
-              print " ❌\n\nURL: #{url}\n\n"
-              print "Error: #{e.message}\n\n"
-            end
-          end
-        end
+  def convert_semicolon_csv(content, target_file)
+    File.open(target_file, 'w') do |output|
+      CSV.parse(content, col_sep: ';') do |row|
+        output.puts(CSV.generate_line(row))
       end
     end
   end
+
+  def extract_folder_name(url)
+    url.split('/').last.chomp('/')
+  end
 end
 
-
+# Command line interface
 if __FILE__ == $0
-
   require 'optparse'
 
   options = {
     year: Date.today.year,
-    outpath: 'data/',
+    output_path: 'data/',
     series_pattern: DEFAULT_SERIES_PATTERN
   }
 
   OptionParser.new do |opts|
     opts.banner = "Usage: #{$0} [options]"
-
+    
     opts.on("-y", "--year YEAR", Integer, "Year to fetch (default: current year)") do |year|
       options[:year] = year
     end
-
-    opts.on("-o", "--outpath PATH", String, "Output directory (default: data/)") do |path|
-      options[:outpath] = path
+    
+    opts.on("-o", "--output-path PATH", String, "Output directory (default: data/)") do |path|
+      options[:output_path] = path
     end
-
+    
     opts.on("-s", "--series-pattern PATTERN", String, "Series pattern (default: #{DEFAULT_SERIES_PATTERN})") do |pattern|
       options[:series_pattern] = pattern
     end
-
+    
+    opts.on("-h", "--help", "Show this help message") do
+      puts opts
+      exit
+    end
   end.parse!
 
-  import_race(options[:year], options[:outpath], options[:series_pattern])
-
+  importer = IMSAImporter.new
+  importer.import_year(options[:year], options[:output_path], options[:series_pattern])
+  puts "\nImport completed!"
 end
