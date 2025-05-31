@@ -19,7 +19,7 @@ CREATE TEMP TABLE event_drivers_raw AS
         _CLASS as class,
 
         -- Date
-        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3), '%Y%m%d%H%M') as date,
+        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3), '%Y%m%d%H%M') as start_date,
 
         -- Drivers list
         list_value(
@@ -84,7 +84,7 @@ SELECT
     year,
     event,
     session,
-    date,
+    start_date,
     d.driver_id,
     d.name,
     d.license,
@@ -107,7 +107,7 @@ SELECT
     class,
     ANY_VALUE(license) as license,
     MAX(license_rank) as license_rank,
-    MAX(date) as last_seen,
+    MAX(start_date) as last_seen,
     ANY_VALUE(team) as team,
     ANY_VALUE(country) as country,
     ANY_VALUE(year) as year
@@ -115,4 +115,4 @@ FROM event_drivers
 GROUP BY name, class
 ORDER BY license_rank DESC, last_seen DESC;
 
-SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;
+-- SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;
