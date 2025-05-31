@@ -36,6 +36,8 @@ CREATE TEMP TABLE event_laps_raw AS
 
         -- Date
         strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3), '%Y%m%d%H%M') as date,
+        date + time as date_time,
+
 
         filename
 

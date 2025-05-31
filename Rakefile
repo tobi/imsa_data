@@ -16,8 +16,8 @@ namespace :db do
     puts "Exporting CSV files..."
     sh <<~CMD
       echo "
-        COPY event_drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
-        COPY event_laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
+        COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
+        COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
       " | duckdb #{OUTPUT_DIR}/imsa.duckdb
     CMD
     
