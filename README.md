@@ -31,6 +31,85 @@ Each event contains three types of CSV files per session:
 - **laps**: Individual lap times and data
 - **weather**: Weather conditions during the session
 
+### Database Tables
+
+The DuckDB database contains several key tables:
+
+#### `laps` Table (Primary Analysis Table)
+
+The main `laps` table combines lap data with driver information and weather conditions. Each row represents a single lap with the following columns:
+
+**Event & Session Information:**
+- `session_id` - Unique identifier for each session across all years/events
+- `year` - Race year (e.g., 2024)
+- `event` - Event name (e.g., "daytona-international-speedway")
+- `session` - Session type ("race", "qualifying", "practice", etc.)
+- `start_date` - Session start date and time
+
+**Lap Data:**
+- `lap` - Lap number within the session
+- `car` - Car number
+- `lap_time` - Individual lap time (TIME format)
+- `session_time` - Elapsed time from session start (TIME format)
+- `clock_time` - Wall clock time when lap was completed
+- `pit_time` - Time spent in pit (if applicable)
+- `flags` - Flag conditions during the lap
+- `class` - Racing class (GTD, GTP, LMP2, etc.)
+
+**Driver Information:**
+- `driver_name` - Driver name
+- `license` - FIA license level (Platinum, Gold, Silver, Bronze)
+- `license_rank` - Numeric license rank (5=Platinum, 4=Gold, 3=Silver, 2=Bronze)
+- `driver_country` - Driver's country
+- `team_name` - Team name
+- `stint_start` - Boolean indicating if this lap starts a new stint
+- `stint_number` - Sequential stint number for this driver/car combination
+
+**Weather Data (from most recent reading before/at lap time):**
+- `air_temp_f` - Air temperature in Fahrenheit
+- `track_temp_f` - Track surface temperature in Fahrenheit
+- `humidity_percent` - Relative humidity percentage
+- `pressure_inhg` - Atmospheric pressure in inches of mercury
+- `wind_speed_mph` - Wind speed in miles per hour
+- `wind_direction_degrees` - Wind direction in degrees
+- `raining` - Boolean indicating rain conditions
+
+The weather data is intelligently matched to each lap using the most recent weather reading before or at the lap completion time, providing accurate environmental context for performance analysis.
+
+#### Supporting Tables
+
+**`event_laps`** - Raw lap data from CSV files with basic parsing and session identification
+**`event_weather`** - Weather readings with relative time calculations for matching to laps
+**`event_drivers`** - Driver information extracted from race results
+**`drivers`** - Aggregated driver view with latest license and team information
+
+#### Example Queries
+
+```sql
+-- Average lap times by weather conditions
+SELECT 
+    raining,
+    AVG(EXTRACT(EPOCH FROM lap_time)) as avg_lap_seconds,
+    COUNT(*) as laps
+FROM laps 
+WHERE session = 'race' AND lap_time IS NOT NULL
+GROUP BY raining;
+
+-- Driver performance in different temperature ranges
+SELECT 
+    driver_name,
+    CASE 
+        WHEN air_temp_f < 70 THEN 'Cool'
+        WHEN air_temp_f < 85 THEN 'Moderate' 
+        ELSE 'Hot'
+    END as temp_range,
+    AVG(EXTRACT(EPOCH FROM lap_time)) as avg_lap_seconds
+FROM laps 
+WHERE session = 'race' AND air_temp_f IS NOT NULL
+GROUP BY driver_name, temp_range
+ORDER BY driver_name, temp_range;
+```
+
 ## Setup
 
 You only need Ruby (3.0+) and the DuckDB CLI. No external gems required!
@@ -74,9 +153,9 @@ rake db:update
 ```
 
 This creates:
-- `output/imsa.duckdb` - The main database
+- `output/imsa.duckdb` - The main database with all tables
 - `output/drivers.csv` - Driver summary data
-- `output/laps.csv` - Lap summary data
+- `output/laps.csv` - Comprehensive lap data with weather integration
 
 ### Explore Data
 
@@ -108,8 +187,10 @@ ruby import.rb [options]
 
 - **`import.rb`** - Main scraper with clean object-oriented design
 - **`Rakefile`** - Build tasks for database generation and data import
-- **`all-event-drivers.sql`** - DuckDB script for driver data aggregation
-- **`all-event-laps.sql`** - DuckDB script for lap data aggregation
+- **`001-event-drivers.sql`** - Driver data extraction and aggregation
+- **`002-event-laps.sql`** - Lap data parsing with stint analysis
+- **`003-event-weather.sql`** - Weather data processing with relative time calculations
+- **`004-laps.sql`** - Main analysis table combining laps, drivers, and weather
 
 ## Architecture
 

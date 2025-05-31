@@ -9,18 +9,22 @@ namespace :db do
   desc "Regenerate and open the database"
   task :update do
     FileUtils.mkdir_p(OUTPUT_DIR)
+
+    sql_files = Dir["*.sql"].sort.collect { |file| ".read #{file}" }.join("\n")
     
     puts "Creating DuckDB database..."
-    sh "cat *.sql | duckdb #{OUTPUT_DIR}/imsa.duckdb"
-    
-    puts "Exporting CSV files..."
-    sh <<~CMD
-      echo "
-        COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
-        COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
-      " | duckdb #{OUTPUT_DIR}/imsa.duckdb
-    CMD
-    
+    script = <<~SQL
+      #{sql_files}
+
+      COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
+      COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
+    SQL
+
+    IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
+      duckdb.write(script)
+      duckdb.close_write
+    end
+
     puts "Database updated successfully!"
   end
 
