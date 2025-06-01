@@ -1,22 +1,4 @@
 
-CREATE OR REPLACE MACRO parse_time (t) AS (
-    CAST(
-        LEAST(
-        /* try full hh:mm:ss.[frac] first,
-           then mm:ss.[frac],
-           finally ss.[frac]                                   */
-        COALESCE(
-            TRY_STRPTIME(t,             '%-H:%M:%S.%g'),
-            TRY_STRPTIME('00:'  || t,   '%-H:%M:%S.%g'),
-            TRY_STRPTIME('00:00:'|| t,  '%-H:%M:%S.%g'),
-            TRY_STRPTIME('23:59:59',    '%-H:%M:%S')
-        )
-    ) as TIME)
-);
-
-
-
-
 CREATE TEMP TABLE event_laps_raw AS
     SELECT
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as year,
@@ -28,9 +10,12 @@ CREATE TEMP TABLE event_laps_raw AS
         driver_name as driver_name,
         _class as class,
         parse_time(lap_time) as lap_time,
+
         parse_time(elapsed) as session_time,
         parse_time(pit_time) as pit_time,
         parse_time(_hour) as clock_time,
+
+        
         kph::INT as kph,
         top_speed::INT as top_speed,
         crossing_finish_line_in_pit,
@@ -65,7 +50,7 @@ CREATE TEMP TABLE event_laps_raw AS
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        start_date, year, event, session, lap, lap_time, car, class, session_time, clock_time, pit_time, flags, driver_name, 
+        start_date, year, clean_event_name(event) as event, session, lap, lap_time, car, class, session_time, clock_time, pit_time, flags, driver_name, 
         DENSE_RANK() OVER (ORDER BY year, event, session) as session_id,
     FROM event_laps_raw
     ORDER BY session_id, car, lap

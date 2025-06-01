@@ -22,10 +22,12 @@ namespace :db do
 
     IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
       duckdb.write(script)
-      duckdb.close_write
     end
 
     puts "Database updated successfully!"
+    puts "  #{OUTPUT_DIR}/imsa.duckdb"
+    puts "  #{OUTPUT_DIR}/drivers.csv"
+    puts "  #{OUTPUT_DIR}/laps.csv"
   end
 
   desc "Open the database in interactive mode"
@@ -62,4 +64,18 @@ task :clean do
   else
     puts "Output directory doesn't exist, nothing to clean."
   end
+end
+
+
+desc "Publish the database to Hugging Face"
+task :publish do
+  FileUtils.mkdir_p("#{OUTPUT_DIR}/hf")
+  cd "#{OUTPUT_DIR}/hf" do
+    cp "#{OUTPUT_DIR}/drivers.csv", "."
+    cp "#{OUTPUT_DIR}/laps.csv", "."
+    cp "#{OUTPUT_DIR}/imsa.duckdb", "."
+    cp "#{OUTPUT_DIR}/../README.hf.md", "README.md"
+    sh "huggingface-cli upload tobil/imsa . --repo-type dataset . "
+  end
+  
 end

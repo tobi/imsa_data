@@ -1,12 +1,3 @@
-CREATE OR REPLACE MACRO license_rank(license) AS (
-    CASE
-        WHEN UPPER(license[1:1]) = 'P' THEN 5 -- Platinum
-        WHEN UPPER(license[1:1]) = 'G' THEN 4 -- Gold
-        WHEN UPPER(license[1:1]) = 'S' THEN 3 -- Silver
-        WHEN UPPER(license[1:1]) = 'B' THEN 2 -- Bronze
-        ELSE 0
-    END
-);
 
 CREATE TEMP TABLE event_drivers_raw AS
     SELECT
@@ -82,7 +73,7 @@ CREATE TEMP TABLE event_drivers_raw AS
 CREATE OR REPLACE TABLE event_drivers AS
 SELECT
     year,
-    event,
+    clean_event_name(event) as event,
     session,
     start_date,
     d.driver_id,

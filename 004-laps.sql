@@ -18,7 +18,7 @@ LEFT JOIN event_weather ew ON ew.session_id = laps.session_id
         SELECT MAX(ew2.relative_seconds)
         FROM event_weather ew2
         WHERE ew2.session_id = laps.session_id
-          AND ew2.relative_seconds <= EXTRACT(EPOCH FROM laps.session_time)
+          AND ew2.relative_seconds <= laps.session_time
     )
 ORDER BY laps.session_id, laps.car, laps.lap;
 
