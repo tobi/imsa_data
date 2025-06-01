@@ -21,7 +21,7 @@ jobs:
           ruby-version: '3.3' 
 
       - name: Run import task
-        run: bundle exec rake import
+        run: ruby import.rb
 
       - name: Commit and push changes
         run: |
