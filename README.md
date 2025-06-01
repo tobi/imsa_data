@@ -9,6 +9,51 @@ A simplified Ruby tool that collects IMSA WeatherTech Championship event data fr
 - **Flexible**: Configurable year, output path, and series pattern
 - **Robust**: Handles network errors and missing files gracefully
 
+## Using this dataset
+
+Data is published to https://huggingface.co/datasets/tobil/imsa. CSVs are there fore easy use in libraries, but duckdb is also there. An easy way to access it is via duckdb directly supporting huggingface:
+
+```bash
+duckdb "hf://datasets/tobil/imsa/imsa.duckdb"
+DuckDB v1.3.0 (Ossivalis) 71c5c07cdd
+Enter ".help" for usage hints.
+D select year, event, class, MIN(lap_time), min_by(driver_name, lap_time) as best_lap_by,  AVG(lap_time) FROM laps WHERE class='LMP2' AND license = 'Bronze' AND session='race' GROUP BY year, event, class ORDER BY year;
+┌─────────┬───────────────────────────────┬─────────┬───────────────┬─────────────────┬────────────────────┐
+│  year   │             event             │  class  │ min(lap_time) │   best_lap_by   │   avg(lap_time)    │
+│ varchar │            varchar            │ varchar │ decimal(10,3) │     varchar     │       double       │
+├─────────┼───────────────────────────────┼─────────┼───────────────┼─────────────────┼────────────────────┤
+│ 2021    │ Sebring                       │ LMP2    │       109.619 │ Thomas Merrill  │ 130.18216857798166 │
+│ 2021    │ Road America                  │ LMP2    │       118.042 │ Ben Keating     │  141.5948546511628 │
+│ 2021    │ Laguna Seca                   │ LMP2    │        79.459 │ Ben Keating     │  94.20574166666667 │
+│ 2021    │ Road Atlanta                  │ LMP2    │        71.708 │ Thomas Merrill  │  92.71410285220398 │
+│ 2021    │ Watkins Glen                  │ LMP2    │        94.178 │ Thomas Merrill  │ 112.89046144121366 │
+[...]
+```
+
+or ruby like 
+```ruby
+require 'bundler/inline'
+
+gemfile do
+  source 'https://rubygems.org'
+  gem 'duckdb'
+end
+
+require 'duckdb'
+conn = DuckDB::Database.new("hf://datasets/tobil/imsa/imsa.duckdb")
+puts conn.query("SELECT COUNT(*) FROM drivers")
+```
+
+Or use any standard huggingface python libraries 
+
+```python
+from datasets import load_dataset
+
+# Login using e.g. `huggingface-cli login` to access this dataset
+ds_laps = load_dataset("tobil/imsa", "laps")
+ds_driver = load_dataset("tobil/imsa", "drivers")
+```
+
 ## Data Structure
 
 Downloaded CSV files are organized in the `data/` directory:
