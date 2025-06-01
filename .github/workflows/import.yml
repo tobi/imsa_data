@@ -1,0 +1,34 @@
+name: Auto Import IMSA Data
+
+on:
+  schedule:
+    - cron: '0 13 * * 1'   # Every Monday at 8 AM EST (after races)
+  workflow_dispatch:       # allows manual trigger too
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true  # needed for pushing changes
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3' 
+
+      - name: Run import task
+        run: bundle exec rake import
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Automated import: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            git push
+          fi
