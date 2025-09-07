@@ -68,7 +68,7 @@ end
 
 
 desc "Publish the database to Hugging Face"
-task :publish do
+task publish: "db:update" do
   FileUtils.mkdir_p("#{OUTPUT_DIR}/hf")
   cd "#{OUTPUT_DIR}/hf" do
     cp "#{OUTPUT_DIR}/drivers.csv", "."
