@@ -34,7 +34,7 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
-          huggingface-cli login --token $HUGGINGFACE_TOKEN
+          hf auth login --token $HUGGINGFACE_TOKEN
           rake publish
 
       - name: Commit & push if changed
