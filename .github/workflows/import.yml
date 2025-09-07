@@ -11,6 +11,7 @@ permissions:
 jobs:
   import:
     runs-on: ubuntu-latest
+    environment: HF
 
     steps:
       - name: Checkout repo
@@ -25,6 +26,16 @@ jobs:
 
       - name: Run import task
         run: ruby import.rb
+
+      - name: Install Hugging Face CLI
+        run: pip install huggingface_hub[cli]
+
+      - name: Publish to Hugging Face
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+        run: |
+          huggingface-cli login --token $HUGGINGFACE_TOKEN
+          rake publish
 
       - name: Commit & push if changed
         run: |

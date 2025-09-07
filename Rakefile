@@ -75,7 +75,7 @@ task :publish do
     cp "#{OUTPUT_DIR}/laps.csv", "."
     cp "#{OUTPUT_DIR}/imsa.duckdb", "."
     cp "#{OUTPUT_DIR}/../README.hf.md", "README.md"
-    sh "huggingface-cli upload tobil/imsa . --repo-type dataset . "
+    sh "huggingface-cli upload tobil/imsa . --repo-type dataset"
   end
   
 end
