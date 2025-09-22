@@ -5,7 +5,8 @@ CREATE TEMP TABLE event_drivers_raw AS
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as event,
         regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4) as session,
 
-        -- Team and class
+        -- Car, team, and class
+        TRIM(number) as car,
         TEAM as team,
         _CLASS as class,
 
@@ -76,6 +77,7 @@ SELECT
     clean_event_name(event) as event,
     session,
     start_date,
+    car,
     d.driver_id,
     d.name,
     d.license,
@@ -93,17 +95,44 @@ UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(licen
 
 
 CREATE OR REPLACE VIEW drivers AS
+WITH ranked_drivers AS (
+    SELECT
+        name,
+        class,
+        license,
+        license_rank,
+        team,
+        country,
+        year,
+        car,
+        start_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY LOWER(TRIM(name)), class
+            ORDER BY start_date DESC
+        ) AS row_num
+    FROM event_drivers
+), license_backfill AS (
+    SELECT
+        name,
+        class,
+        MAX_BY(license, start_date) FILTER (WHERE license IS NOT NULL) AS fallback_license,
+        MAX_BY(license_rank, start_date) FILTER (WHERE license_rank IS NOT NULL) AS fallback_license_rank
+    FROM event_drivers
+    GROUP BY name, class
+)
 SELECT
-    name,
-    class,
-    ANY_VALUE(license) as license,
-    MAX(license_rank) as license_rank,
-    MAX(start_date) as last_seen,
-    ANY_VALUE(team) as team,
-    ANY_VALUE(country) as country,
-    ANY_VALUE(year) as year
-FROM event_drivers
-GROUP BY name, class
+    r.name,
+    r.class,
+    COALESCE(r.license, lb.fallback_license) AS license,
+    COALESCE(r.license_rank, lb.fallback_license_rank, license_rank(COALESCE(r.license, lb.fallback_license))) AS license_rank,
+    r.start_date AS last_seen,
+    r.team,
+    r.country,
+    r.year,
+    r.car
+FROM ranked_drivers r
+LEFT JOIN license_backfill lb USING (name, class)
+WHERE r.row_num = 1
 ORDER BY license_rank DESC, last_seen DESC;
 
 -- SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;
