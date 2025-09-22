@@ -85,30 +85,37 @@ The DuckDB database contains several key tables:
 The main `laps` table combines lap data with driver information and weather conditions. Each row represents a single lap with the following columns:
 
 **Event & Session Information:**
-- `session_id` - Unique identifier for each session across all years/events
+- `start_date` - Session start date and time
 - `year` - Race year (e.g., 2024)
 - `event` - Event name (e.g., "daytona-international-speedway")
 - `session` - Session type ("race", "qualifying", "practice", etc.)
-- `start_date` - Session start date and time
+- `session_id` - Unique identifier for each session across all years/events
 
-**Lap Data:**
-- `lap` - Lap number within the session
+**Car & Driver:**
 - `car` - Car number
-- `lap_time` - Individual lap time (TIME format)
+- `class` - Racing class (GTD, GTP, LMP2, etc.)
+- `driver_name` - Driver name
+
+**Lap Timing:**
 - `session_time` - Elapsed time from session start (TIME format)
 - `clock_time` - Wall clock time when lap was completed
+- `session_time_lap_number` - Virtual lap counter derived from session timing; aligns every car with the lap the field is on even after long pit repairs
+- `lap` - Lap number within the session
+- `lap_time` - Individual lap time (TIME format)
+- `lap_time_driver_rank` - Per-driver ranking of `lap_time` within the session; 1 is that driver's fastest completed lap (NULL for missing lap times)
 - `pit_time` - Time spent in pit (if applicable)
 - `flags` - Flag conditions during the lap
-- `class` - Racing class (GTD, GTP, LMP2, etc.)
 
-**Driver Information:**
-- `driver_name` - Driver name
+**Stint Tracking:**
+- `stint_start` - Boolean indicating if this lap starts a new stint
+- `stint_number` - Sequential stint number for the car inside the session; increments whenever `stint_start` flips to 1
+- `stint_lap` - Zero-based lap index within the current stint (out laps and first laps are 0)
+
+**Licensing & Team:**
 - `license` - FIA license level (Platinum, Gold, Silver, Bronze)
 - `license_rank` - Numeric license rank (5=Platinum, 4=Gold, 3=Silver, 2=Bronze)
 - `driver_country` - Driver's country
 - `team_name` - Team name
-- `stint_start` - Boolean indicating if this lap starts a new stint
-- `stint_number` - Sequential stint number for this driver/car combination
 
 **Weather Data (from most recent reading before/at lap time):**
 - `air_temp_f` - Air temperature in Fahrenheit
@@ -127,6 +134,18 @@ The weather data is intelligently matched to each lap using the most recent weat
 **`event_weather`** - Weather readings with relative time calculations for matching to laps
 **`event_drivers`** - Driver information extracted from race results
 **`drivers`** - Aggregated driver view with latest license and team information
+
+#### Season Views
+
+For quick access to a single championship year, the build creates the following views:
+
+- `laps_2021`
+- `laps_2022`
+- `laps_2023`
+- `laps_2024`
+- `laps_2025`
+
+Each view is simply `SELECT * FROM laps WHERE year = '<season>'`, so existing queries port over by swapping the table name.
 
 #### Example Queries
 
@@ -248,4 +267,3 @@ The code is organized into a simple `IMSAImporter` class that:
 5. **Organizes files** - Saves in a clean directory structure
 
 The design prioritizes simplicity and maintainability over performance.
-
