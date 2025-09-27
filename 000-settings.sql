@@ -12,7 +12,7 @@
 
 
 CREATE OR REPLACE MACRO clean_event_name(event_name) AS (
-    CASE 
+    CASE
         WHEN event_name ILIKE '%watkins%' OR event_name ILIKE '%wgi%' THEN 'Watkins Glen'
         WHEN event_name ILIKE '%belle-isle%' THEN 'Belle Isle'
         WHEN event_name ILIKE '%canadian-tire%' THEN 'Canadian Tire Motorsport Park'
@@ -52,4 +52,12 @@ CREATE OR REPLACE MACRO parse_time (t) AS (
             TRY_STRPTIME('23:59:59',    '%-H:%M:%S')
         )
     )::TIME)::DECIMAL(10,3)
+);
+
+CREATE OR REPLACE MACRO format_time (t) AS (
+    -- only add hours if greater than 1 hour
+    CASE
+        WHEN t > 3600 THEN LTRIM(STRFTIME('%H:%M:%S.%f', t), '0') -- hours
+        ELSE LTRIM(STRFTIME('%M:%S.%f', t), '0') -- minutes
+    END
 );

@@ -74,3 +74,20 @@ or before the lap's `session_time`.
 - Weather columns are nullable. When IMSA skips a reading for several minutes,
   the latest available record is reused, so sudden jumps are deliberate and
   reflect new data, not misalignment.
+
+
+### Time Formatting
+
+The correct way to format time intervals for humans follows a format of `MM:SS.mmm` for (H)ours, (M)inutes, (S)econds, and (m)icroseconds. If the timespan is greater than 1 hour, then the format is `HH:MM:SS.mmm`.
+
+For reference, the way to format time in duckdb is:
+
+```sql
+CREATE OR REPLACE MACRO format_time (t) AS (
+    -- only add hours if greater than 1 hour
+    CASE
+        WHEN t > 3600 THEN STRFTIME('%H:%M:%S.%f', t) -- hours
+        ELSE STRFTIME('%M:%S.%f', t) -- minutes
+    END
+);
+```
