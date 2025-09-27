@@ -91,6 +91,10 @@ ranked_stints AS (
             PARTITION BY session_id, driver_name
             ORDER BY lap_time NULLS LAST
         ) AS lap_time_driver_rank_raw,
+        NTILE(4) OVER (
+            PARTITION BY session_id, driver_name
+            ORDER BY lap_time NULLS LAST
+        ) AS lap_time_driver_quartile_raw,
         COALESCE(
             (
                 SELECT MAX(ll.lap)
@@ -120,6 +124,10 @@ ranked_stints AS (
             WHEN ranked_stints.lap_time IS NULL THEN NULL
             ELSE ranked_stints.lap_time_driver_rank_raw
         END AS lap_time_driver_rank,
+        CASE
+            WHEN ranked_stints.lap_time IS NULL THEN NULL
+            ELSE ranked_stints.lap_time_driver_quartile_raw
+        END AS lap_time_driver_quartile,
         ranked_stints.pit_time,
         ranked_stints.flags,
         ranked_stints.stint_start,

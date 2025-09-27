@@ -3,3 +3,4 @@ output/*.csv
 output/*.duckdb
 output/*.parquet
 output/hf
+node_modules
