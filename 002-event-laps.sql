@@ -11,12 +11,15 @@ CREATE TEMP TABLE event_laps_raw AS
         _class as class,
         team as team,
         parse_time(lap_time) as lap_time,
+        parse_time(s1) as lap_time_s1,
+        parse_time(s2) as lap_time_s2,
+        parse_time(s3) as lap_time_s3,
 
         parse_time(elapsed) as session_time,
         parse_time(pit_time) as pit_time,
         parse_time(_hour) as clock_time,
 
-        
+
         kph::INT as kph,
         top_speed::INT as top_speed,
         crossing_finish_line_in_pit,
@@ -38,6 +41,9 @@ CREATE TEMP TABLE event_laps_raw AS
             'number': 'VARCHAR',
             'lap_number': 'INT',
             'lap_time': 'STRING',
+            's1': 'STRING',
+            's2': 'STRING',
+            's3': 'STRING',
             'elapsed': 'STRING',
             'pit_time': 'STRING',
             '_hour': 'STRING',
@@ -51,7 +57,7 @@ CREATE TEMP TABLE event_laps_raw AS
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        start_date, year, clean_event_name(event) as event, session, lap, lap_time, car, class, team, session_time, clock_time, pit_time, flags, driver_name, 
+        start_date, year, clean_event_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
         DENSE_RANK() OVER (ORDER BY year, event, session, start_date) as session_id,
     FROM event_laps_raw
     ORDER BY session_id, car, lap
@@ -125,6 +131,9 @@ ranked_stints AS (
         END AS resolved_driver_id,
         ranked_stints.lap,
         ranked_stints.lap_time,
+        ranked_stints.lap_time_s1,
+        ranked_stints.lap_time_s2,
+        ranked_stints.lap_time_s3,
         CASE
             WHEN ranked_stints.lap_time IS NULL THEN NULL
             ELSE ranked_stints.lap_time_driver_rank_raw
@@ -177,10 +186,11 @@ SELECT
     class,
     COALESCE(driver_name_entry, dv_canonical_name, driver_name_raw) AS driver_name,
     resolved_driver_id AS driver_id,
-    driver_name_raw,
-    COALESCE(dv_canonical_name, driver_name_entry, driver_name_raw) AS driver_canonical_name,
     lap,
     lap_time,
+    lap_time_s1,
+    lap_time_s2,
+    lap_time_s3,
     lap_time_driver_rank,
     lap_time_driver_quartile,
     pit_time,
