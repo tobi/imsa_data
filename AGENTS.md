@@ -27,9 +27,13 @@ or before the lap's `session_time`.
 | `session_time_lap_number` | INTEGER | Virtual lap counter based on session timing. It increments whenever any car (usually the leader) completes another lap, so heavily delayed cars line up with the field’s current progress. |
 | `car` | VARCHAR | Car number exactly as reported, including leading zeros (`'01'`, `'007'`). Keeping it textual avoids collisions between `01` and `1`. |
 | `class` | VARCHAR | Competition class (`GTP`, `LMP2`, `GTD`, etc.). Derived from the lap feed. |
-| `driver_name` | VARCHAR | Driver credited with the lap. Sourced from the lap CSV, and normalized (trim/lower) for joins. |
+| `driver_name` | VARCHAR | Driver name for display and filtering. Prefers the entry list canonical name when available, otherwise falls back to the normalized lap CSV value. Use this for most queries. |
+| `driver_id` | VARCHAR | Stable identifier for the driver across all sessions and name variations (e.g., "mathias beche_2025"). Use this for aggregating laps across spelling variants like "Mathias BECHE" vs "Mathias Beche". |
 | `lap` | INTEGER | Lap counter within the session for this car. Pit-out laps count as lap 1 once the timing loop is crossed. |
 | `lap_time` | DECIMAL(10,3) | Lap duration stored as decimal seconds. Render as `MM:SS.mmm` (or longer for multi-minute laps) when presenting to humans. |
+| `lap_time_s1` | DECIMAL(10,3) | Sector 1 time in decimal seconds. Render as `MM:SS.mmm` when presenting to humans. |
+| `lap_time_s2` | DECIMAL(10,3) | Sector 2 time in decimal seconds. Render as `MM:SS.mmm` when presenting to humans. |
+| `lap_time_s3` | DECIMAL(10,3) | Sector 3 time in decimal seconds. Render as `MM:SS.mmm` when presenting to humans. |
 | `lap_time_driver_rank` | BIGINT | Per-driver ranking of `lap_time` values within a session, with 1 representing that driver's fastest completed lap (NULL when the lap time is missing). |
 | `pit_time` | DECIMAL(10,3) | Time stationary in pit lane for laps that include a service, expressed in decimal seconds (NULL when IMSA omits it). When reporting, convert to `MM:SS.mmm`. |
 | `flags` | VARCHAR | Flag state at the finish line (examples: `GF` green flag, `FCY` full-course yellow). |
