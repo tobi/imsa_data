@@ -11,13 +11,14 @@ namespace :db do
     FileUtils.mkdir_p(OUTPUT_DIR)
 
     sql_files = Dir["*.sql"].sort.collect { |file| ".read #{file}" }.join("\n")
-    
+
     puts "Creating DuckDB database..."
     script = <<~SQL
       #{sql_files}
 
       COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
       COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
+      COPY laps TO '#{OUTPUT_DIR}/seasons.csv' (HEADER, DELIMITER ',');
     SQL
 
     IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
@@ -28,6 +29,7 @@ namespace :db do
     puts "  #{OUTPUT_DIR}/imsa.duckdb"
     puts "  #{OUTPUT_DIR}/drivers.csv"
     puts "  #{OUTPUT_DIR}/laps.csv"
+    puts "  #{OUTPUT_DIR}/seasons.csv"
   end
 
   desc "Open the database in interactive mode"
@@ -47,7 +49,7 @@ desc "Import data for the last 3 years"
 task :import_recent do
   current_year = Date.today.year
   years = (current_year - 2)..current_year
-  
+
   puts "Importing data for years: #{years.to_a.join(', ')}"
   years.each do |year|
     puts "\n--- Importing #{year} ---"
@@ -77,5 +79,5 @@ task publish: "db:update" do
     cp "#{OUTPUT_DIR}/../README.hf.md", "README.md"
     sh "huggingface-cli upload tobil/imsa . --repo-type dataset"
   end
-  
+
 end

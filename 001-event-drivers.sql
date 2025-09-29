@@ -72,67 +72,159 @@ CREATE TEMP TABLE event_drivers_raw AS
 
 
 CREATE OR REPLACE TABLE event_drivers AS
+WITH base AS (
+    SELECT
+        year,
+        clean_event_name(event) AS event,
+        session,
+        start_date,
+        car,
+        team,
+        class,
+        d.driver_id::VARCHAR AS raw_driver_id,
+        REGEXP_REPLACE(TRIM(d.name), '\\s+', ' ') AS name_clean,
+        d.name AS name_original,
+        d.license,
+        license_rank(d.license) AS license_rank,
+        d.country
+    FROM event_drivers_raw
+    CROSS JOIN UNNEST(drivers) AS u (d)
+    WHERE d.present
+), normalized AS (
+    SELECT
+        year,
+        event,
+        session,
+        start_date,
+        car,
+        team,
+        class,
+        NULLIF(TRIM(raw_driver_id), '') AS provided_driver_id,
+        name_clean,
+        name_original,
+        name_clean AS canonical_name,
+        LOWER(name_clean) AS name_key,
+        license,
+        license_rank,
+        country
+    FROM base
+), collisions AS (
+    SELECT
+        COALESCE(provided_driver_id, name_key) AS base_driver_id
+    FROM normalized
+    GROUP BY base_driver_id
+    HAVING COUNT(DISTINCT canonical_name) > 1
+), final AS (
+    SELECT
+        year,
+        event,
+        session,
+        start_date,
+        car,
+        team,
+        class,
+        canonical_name,
+        name_original,
+        license,
+        license_rank,
+        country,
+        COALESCE(provided_driver_id, name_key) AS base_driver_id,
+        CASE
+            WHEN COALESCE(provided_driver_id, name_key) IN (SELECT base_driver_id FROM collisions) THEN
+                CASE
+                    WHEN REGEXP_MATCHES(COALESCE(provided_driver_id, name_key), '^[0-9]+$') THEN
+                        (CAST(COALESCE(provided_driver_id, name_key) AS BIGINT) + CAST(year AS BIGINT) * 1000)::VARCHAR
+                    ELSE
+                        COALESCE(provided_driver_id, name_key) || '_' || year
+                END
+            ELSE
+                COALESCE(provided_driver_id, name_key)
+        END AS driver_id
+    FROM normalized
+)
 SELECT
     year,
-    clean_event_name(event) as event,
+    event,
     session,
     start_date,
     car,
-    d.driver_id,
-    d.name,
-    d.license,
-    license_rank(d.license) as license_rank,
+    driver_id,
+    canonical_name,
+    name_original AS name,
+    license,
+    license_rank,
     team,
     class,
-    d.country
-FROM event_drivers_raw
-CROSS JOIN UNNEST(drivers) AS u (d)
-WHERE d.present;
+    country
+FROM final;
 
 -- fix some unfortunate data typos
 UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(license) WHERE license = 'Platinium';
 
 
 
-CREATE OR REPLACE VIEW drivers AS
-WITH ranked_drivers AS (
+CREATE TEMP TABLE drivers_snapshot AS
+WITH ranked AS (
     SELECT
+        driver_id,
+        canonical_name,
         name,
-        class,
         license,
         license_rank,
         team,
         country,
+        class,
         year,
         car,
         start_date,
         ROW_NUMBER() OVER (
-            PARTITION BY LOWER(TRIM(name)), class
+            PARTITION BY driver_id
             ORDER BY start_date DESC
         ) AS row_num
     FROM event_drivers
-), license_backfill AS (
-    SELECT
-        name,
-        class,
-        MAX_BY(license, start_date) FILTER (WHERE license IS NOT NULL) AS fallback_license,
-        MAX_BY(license_rank, start_date) FILTER (WHERE license_rank IS NOT NULL) AS fallback_license_rank
-    FROM event_drivers
-    GROUP BY name, class
 )
 SELECT
-    r.name,
-    r.class,
-    COALESCE(r.license, lb.fallback_license) AS license,
-    COALESCE(r.license_rank, lb.fallback_license_rank, license_rank(COALESCE(r.license, lb.fallback_license))) AS license_rank,
-    r.start_date AS last_seen,
-    r.team,
-    r.country,
-    r.year,
-    r.car
-FROM ranked_drivers r
-LEFT JOIN license_backfill lb USING (name, class)
-WHERE r.row_num = 1
-ORDER BY license_rank DESC, last_seen DESC;
+    driver_id,
+    canonical_name,
+    name AS preferred_name,
+    license,
+    license_rank,
+    country,
+    team,
+    class AS last_class,
+    year AS last_year,
+    car AS last_car,
+    start_date AS last_seen
+FROM ranked
+WHERE row_num = 1;
+
+CREATE TABLE IF NOT EXISTS drivers (
+    driver_id VARCHAR PRIMARY KEY,
+    canonical_name VARCHAR,
+    preferred_name VARCHAR,
+    license VARCHAR,
+    license_rank INTEGER,
+    country VARCHAR,
+    team VARCHAR,
+    last_class VARCHAR,
+    last_year VARCHAR,
+    last_car VARCHAR,
+    last_seen TIMESTAMP
+);
+
+INSERT OR REPLACE INTO drivers
+SELECT
+    driver_id,
+    canonical_name,
+    preferred_name,
+    license,
+    CAST(license_rank AS INTEGER),
+    country,
+    team,
+    last_class,
+    last_year,
+    last_car,
+    last_seen
+FROM drivers_snapshot;
 
 -- SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;
