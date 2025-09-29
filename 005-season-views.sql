@@ -16,7 +16,7 @@ SELECT *
 FROM laps
 WHERE year = '2023' AND session = 'race';
 
-CREATE OR REPLACE VIEW laps_2024 ASå
+CREATE OR REPLACE VIEW laps_2024 AS
 SELECT *
 FROM laps
 WHERE year = '2024' AND session = 'race';
