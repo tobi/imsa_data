@@ -117,7 +117,12 @@ ranked_stints AS (
         ranked_stints.session_time_lap_number,
         ranked_stints.car,
         ranked_stints.class,
-        ranked_stints.driver_name,
+        ranked_stints.driver_name AS driver_name_raw,
+        COALESCE(ed.canonical_name, ranked_stints.driver_name) AS driver_name_entry,
+        CASE
+            WHEN ed.driver_id IS NOT NULL THEN ed.driver_id
+            ELSE LOWER(REGEXP_REPLACE(TRIM(ranked_stints.driver_name), '\\s+', ' '))
+        END AS resolved_driver_id,
         ranked_stints.lap,
         ranked_stints.lap_time,
         CASE
@@ -133,10 +138,11 @@ ranked_stints AS (
         ranked_stints.stint_start,
         ranked_stints.stint_number,
         ranked_stints.stint_lap,
-        COALESCE(ed.license, dv.license) AS license,
-        COALESCE(ed.license_rank, dv.license_rank) AS license_rank,
-        COALESCE(ed.country, dv.country) AS driver_country,
-        COALESCE(ed.team, ranked_stints.team, dv.team) AS team_name
+        ranked_stints.team AS stint_team,
+        ed.license AS ed_license,
+        ed.license_rank AS ed_license_rank,
+        ed.country AS ed_country,
+        ed.team AS ed_team
     FROM ranked_stints
     LEFT JOIN event_drivers ed
         ON ed.year = ranked_stints.year
@@ -145,11 +151,49 @@ ranked_stints AS (
         AND ed.car = ranked_stints.car
         AND ed.start_date = ranked_stints.start_date
         AND LOWER(TRIM(ed.name)) = LOWER(TRIM(ranked_stints.driver_name))
+), laps_enriched AS (
+    SELECT
+        lwd.*,
+        dv.canonical_name AS dv_canonical_name,
+        dv.preferred_name AS dv_preferred_name,
+        dv.license AS dv_license,
+        dv.license_rank AS dv_license_rank,
+        dv.country AS dv_country,
+        dv.team AS dv_team
+    FROM laps_with_driver_data lwd
     LEFT JOIN drivers dv
-        ON LOWER(TRIM(dv.name)) = LOWER(TRIM(ranked_stints.driver_name))
-        AND dv.class = ranked_stints.class
+        ON dv.driver_id = lwd.resolved_driver_id
 )
-SELECT * FROM laps_with_driver_data ORDER BY session_id, car, lap;
+SELECT
+    start_date,
+    year,
+    event,
+    session,
+    session_id,
+    session_time,
+    clock_time,
+    session_time_lap_number,
+    car,
+    class,
+    COALESCE(driver_name_entry, dv_canonical_name, driver_name_raw) AS driver_name,
+    resolved_driver_id AS driver_id,
+    driver_name_raw,
+    COALESCE(dv_canonical_name, driver_name_entry, driver_name_raw) AS driver_canonical_name,
+    lap,
+    lap_time,
+    lap_time_driver_rank,
+    lap_time_driver_quartile,
+    pit_time,
+    flags,
+    stint_start,
+    stint_number,
+    stint_lap,
+    COALESCE(ed_license, dv_license) AS license,
+    COALESCE(ed_license_rank, dv_license_rank) AS license_rank,
+    COALESCE(ed_country, dv_country) AS driver_country,
+    COALESCE(ed_team, stint_team, dv_team) AS team_name
+FROM laps_enriched
+ORDER BY session_id, car, lap;
 
 
 -- SELECT
