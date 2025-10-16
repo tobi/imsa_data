@@ -18,7 +18,7 @@ namespace :db do
 
       COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
       COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
-      COPY laps TO '#{OUTPUT_DIR}/seasons.csv' (HEADER, DELIMITER ',');
+      COPY seasons TO '#{OUTPUT_DIR}/seasons.csv' (HEADER, DELIMITER ',');
     SQL
 
     IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|

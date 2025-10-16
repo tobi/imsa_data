@@ -48,7 +48,7 @@ SELECT
     MIN(l.start_date) AS session_start,
     CASE
         WHEN MAX(l.session_time) IS NULL THEN NULL
-        ELSE MIN(l.start_date) + (MAX(l.session_time) * INTERVAL 1 SECOND)
+        ELSE MIN(l.start_date) + (CAST(MAX(l.session_time) AS BIGINT) * INTERVAL 1 SECOND)
     END AS session_end,
     MAX(l.lap) AS total_laps,
     STRING_AGG(
