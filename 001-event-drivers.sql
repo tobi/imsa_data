@@ -108,39 +108,6 @@ WITH base AS (
         license_rank,
         country
     FROM base
-), collisions AS (
-    SELECT
-        COALESCE(provided_driver_id, name_key) AS base_driver_id
-    FROM normalized
-    GROUP BY base_driver_id
-    HAVING COUNT(DISTINCT canonical_name) > 1
-), final AS (
-    SELECT
-        year,
-        event,
-        session,
-        start_date,
-        car,
-        team,
-        class,
-        canonical_name,
-        name_original,
-        license,
-        license_rank,
-        country,
-        COALESCE(provided_driver_id, name_key) AS base_driver_id,
-        CASE
-            WHEN COALESCE(provided_driver_id, name_key) IN (SELECT base_driver_id FROM collisions) THEN
-                CASE
-                    WHEN REGEXP_MATCHES(COALESCE(provided_driver_id, name_key), '^[0-9]+$') THEN
-                        (CAST(COALESCE(provided_driver_id, name_key) AS BIGINT) + CAST(year AS BIGINT) * 1000)::VARCHAR
-                    ELSE
-                        COALESCE(provided_driver_id, name_key) || '_' || year
-                END
-            ELSE
-                COALESCE(provided_driver_id, name_key)
-        END AS driver_id
-    FROM normalized
 )
 SELECT
     year,
@@ -148,15 +115,16 @@ SELECT
     session,
     start_date,
     car,
-    driver_id,
+    name_key AS driver_id,  -- Use normalized name as unique ID
     canonical_name,
     name_original AS name,
+    provided_driver_id AS imsa_driver_id,  -- Keep IMSA ID as additional metadata
     license,
     license_rank,
     team,
     class,
     country
-FROM final;
+FROM normalized;
 
 -- fix some unfortunate data typos
 UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(license) WHERE license = 'Platinium';
@@ -169,6 +137,7 @@ WITH ranked AS (
         driver_id,
         canonical_name,
         name,
+        imsa_driver_id,
         license,
         license_rank,
         team,
@@ -187,6 +156,7 @@ SELECT
     driver_id,
     canonical_name,
     name AS preferred_name,
+    imsa_driver_id,
     license,
     license_rank,
     country,
@@ -198,10 +168,11 @@ SELECT
 FROM ranked
 WHERE row_num = 1;
 
-CREATE TABLE IF NOT EXISTS drivers (
+CREATE OR REPLACE TABLE drivers (
     driver_id VARCHAR PRIMARY KEY,
     canonical_name VARCHAR,
     preferred_name VARCHAR,
+    imsa_driver_id VARCHAR,
     license VARCHAR,
     license_rank INTEGER,
     country VARCHAR,
@@ -217,6 +188,7 @@ SELECT
     driver_id,
     canonical_name,
     preferred_name,
+    imsa_driver_id,
     license,
     CAST(license_rank AS INTEGER),
     country,

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+duckdb output/imsa.db -table -c "$@" 
