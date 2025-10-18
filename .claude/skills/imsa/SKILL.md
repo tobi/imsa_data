@@ -1,5 +1,5 @@
 ---
-name: IMSA database
+name: IMSA Analyst
 description: use to query historical data on the imsa seasons
 ---
 
@@ -8,7 +8,14 @@ description: use to query historical data on the imsa seasons
 ## Purpose
 Analyze IMSA racing data from the DuckDB database at `output/imsa.duckdb`, providing insights into lap times, driver performance, team comparisons, weather impacts, and race strategies.
 
-Query with included `scripts/query "SELECT 1"`
+
+# Query
+
+Query with the skill included `./query.sh "SELECT 1"`. Schema can be found in ./schema.md
+
+**Output Formats:**
+- Default: Markdown tables (`-markdown` flag)
+- CSV: Use `./query.sh --csv "SELECT ..."` for token-efficient output with large result sets
 
 ## Quick Reference: Standard Analysis Workflow
 
@@ -106,7 +113,7 @@ ORDER BY race_count DESC;
 - **Stint Analysis**: Analyze driver performance across multiple stints
 - **Head-to-Head**: Compare teammate performance or class rivals
 - **License Impact**: Correlate license levels with performance
-- **Driver Identification**: Use numeric `driver_id` for stable identification across name variants
+- **Driver Identification**: Use `driver_id` (VARCHAR) for stable identification across name variants
 
 ### 3. Team & Strategy Analysis
 - **Pit Stop Timing**: Analyze pit stop durations and strategy windows
@@ -149,7 +156,7 @@ ORDER BY start_date;
 
 ### Finding Driver IDs
 ```sql
--- driver_id is numeric - look up by name first
+-- driver_id is a string like 'firstname lastname' - look up by name first
 SELECT DISTINCT driver_id, driver_name
 FROM laps
 WHERE driver_name LIKE '%Beche%'  -- partial match
@@ -248,7 +255,7 @@ ORDER BY temp_bucket;
 ```sql
 -- Track tire degradation for a specific driver in a race
 -- NOTE: Using ALL laps here to see full degradation curve
-SELECT 
+SELECT
     driver_name,
     stint_number,
     stint_lap,
@@ -256,10 +263,10 @@ SELECT
     lap_time_driver_quartile,
     session_time_lap_number
 FROM laps
-WHERE session_id = 12345         -- ← Single race session
-    AND driver_id = 12345        -- ← Use numeric driver_id
+WHERE session_id = 12345              -- ← Single race session
+    AND driver_id = 'tobi lutke'      -- ← Use driver_id string (e.g., 'firstname lastname')
     AND lap_time IS NOT NULL
-    AND flags = 'GF'             -- Green flag only to exclude cautions
+    AND flags = 'GF'                  -- Green flag only to exclude cautions
 ORDER BY stint_number, stint_lap;
 
 -- Alternative: Focus only on clean, representative laps
@@ -326,11 +333,11 @@ ORDER BY average;
 - **🚨 MOST IMPORTANT**: Use session_id for all lap time comparisons - never compare across sessions
 - **🚨 SECOND MOST IMPORTANT**: Almost always use `session = 'race'` unless explicitly asked otherwise
 - **🚨 THIRD MOST IMPORTANT**: Filter to top 50% of laps (`lap_time_driver_quartile IN (1, 2)`) for pace analysis
-- **driver_id is numeric**: Use numeric values like `driver_id = 12345`, not strings
+- **driver_id is VARCHAR**: Use string values like `driver_id = 'tobi lutke'`, not numeric IDs
 - **Car numbers are strings**: `'01'` ≠ `'1'` - use exact matches
 - **stint_lap is 0-indexed**: First lap after driver change is lap 0
 - **session_time_lap_number**: Tracks leader's progress, not individual car laps
-- **Driver IDs vs names**: Use `driver_id` (numeric) for joins/filters, `driver_name` for display
+- **Driver IDs vs names**: Use `driver_id` (VARCHAR) for joins/filters, `driver_name` for display
 - **Practice ≠ Race**: Different fuel loads, tire strategies, and objectives
 - **Slow laps distort analysis**: Traffic, mistakes, and in/out laps shouldn't be included in pace calculations
 
@@ -361,11 +368,11 @@ ORDER BY average;
 5. Review pit strategies and stint lengths (per class)
 
 ### Driver Deep Dive
-1. Find all race sessions for driver: 
+1. Find all race sessions for driver:
    ```sql
    SELECT DISTINCT session_id, event, year, class
-   FROM laps 
-   WHERE driver_id = 12345 AND session = 'race'  -- driver_id is numeric
+   FROM laps
+   WHERE driver_id = 'tobi lutke' AND session = 'race'  -- driver_id is VARCHAR
    ORDER BY year, event;
    ```
 2. For each session_id + class combination:
@@ -452,9 +459,10 @@ ORDER BY average;
 6. **When to use ALL laps**: Stint degradation analysis, race distance simulations, or specific requests
 7. **Flag states are crucial**: `flags = 'GF'` for clean pace comparisons
 8. **Weather is pre-joined**: Already aligned to each lap
-9. **driver_id is numeric**: Use numbers for filtering/joins, `driver_name` for display
+9. **driver_id is VARCHAR**: Use string values like `'tobi lutke'` for filtering/joins, `driver_name` for display
 10. **Format times for humans**: Always use the format_time macro
 11. **Quartile logic**: Q1 = fastest 25%, Q2 = 25-50%, Q3 = 50-75%, Q4 = slowest 25%
+12. **Output formats**: Default markdown tables, use `--csv` flag for token efficiency with large results
 
 ---
 
