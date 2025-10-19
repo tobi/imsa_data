@@ -1,13 +1,12 @@
 ---
 name: IMSA Analyst
-description: use to query historical data on the imsa seasons
+description: use to query historical data on the IMSA Weathertech seasons
 ---
 
 # IMSA Data Analysis Skill
 
 ## Purpose
-Analyze IMSA racing data from the DuckDB database at `output/imsa.duckdb`, providing insights into lap times, driver performance, team comparisons, weather impacts, and race strategies.
-
+Analyze IMSA racing data from the DuckDB database providing insights into lap times, driver performance, team comparisons, weather impacts, and race strategies.
 
 # Query
 
@@ -15,23 +14,33 @@ Query with the skill included `./query.sh "SELECT 1"`. Schema can be found in ./
 
 **Output Formats:**
 - Default: Markdown tables (`-markdown` flag)
-- CSV: Use `./query.sh --csv "SELECT ..."` for token-efficient output with large result sets
+- CSV Use `./query.sh --csv "SELECT ..."` for token-efficient output with large result sets
+
+You may have to use --remote parameter to access the database, and that may require the use of INSTALL httpfs if its not already there. You will figure it out.
 
 ## Quick Reference: Standard Analysis Workflow
 
 1. **Find your session**: `WHERE event = 'X' AND session = 'race'` → get `session_id`
 2. **Pick your class**: GTP, LMP2, or GTD - analyze each separately
 3. **Filter properly**: `WHERE session_id = X AND class = 'Y' AND flags = 'GF' AND lap_time_driver_quartile IN (1, 2)`
-4. **Never compare lap times across different session_ids or classes**
-5. **Always default to `session = 'race'` and top 50% of laps unless asked otherwise**
+4. **Never compare lap times across different tracks (events), and usually you should avoid comparing between different session_ids because the conditions change. 
+5. **Never compare between different classes**
+6. **Always default to `session = 'race'` and top 50% of laps unless asked otherwise**
+7. **Percentages are not often useful**: In racing we want to see the difference in timespans (seconds down to the hundredths). Sometimes percentages are useful, in these cases just include both. 
 
 ## ⚠️ CRITICAL CONSTRAINTS
 
 ### 1. Sessions Are the Unit of Comparison
 **Always compare within a single `session_id`**. A session_id uniquely identifies one specific session (e.g., "2025 Sebring Race"). Laps from different sessions should NOT be compared directly.
 
-✅ **DEFAULT**: Filter by `session_id` (captures year, event, session, start_date)  
+✅ **DEFAULT**: Filter by `session_id` (captures year, event, session, start_date)
 ❌ **AVOID**: Comparing across multiple session_ids without explicit reason
+
+It's a good idea to start with querying the seasons table at the beginning. Example: 
+
+```bash
+./query "SELECT * FROM seasons WHERE session = 'race' AND season in (2024,2025) ORDER BY date"
+```
 
 ### 2. Race Sessions Are What Matter
 **Default to `session = 'race'` unless specifically asked otherwise**. Practice and qualifying have different objectives, tire strategies, and fuel loads.
@@ -52,25 +61,26 @@ When calculating average lap times, **ALWAYS filter to a single session_id AND c
 ```sql
 WHERE session_id = X                     -- Single session
   AND class = 'Y'                        -- Single class
-  AND flags = 'GF'                       -- Green flag laps only
-  AND lap_time IS NOT NULL
-  AND lap_time_driver_quartile IN (1, 2) -- Top 50% of driver's laps only
+  AND bpillar_quartile IN (1, 2)         -- BPillar top 50% (race sessions only)
 ```
 
 ### 5. Focus on Representative Performance
-**For performance analysis, ignore slow laps** - traffic, mistakes, out/in laps distort the picture.
+**For performance analysis, use BPillar filtering** - automatically excludes pit laps, first lap, slow laps, and traffic.
 
-✅ **ALWAYS**: Filter to `lap_time_driver_quartile IN (1, 2)` for pace analysis  
-✅ **EVEN BETTER**: Use `lap_time_driver_quartile = 1` for top 25% only  
+✅ **ALWAYS**: Filter to `bpillar_quartile IN (1, 2)` for pace analysis in races
+✅ **ALTERNATIVE**: Use `lap_time_driver_quartile IN (1, 2)` for non-race sessions
 ❌ **AVOID**: Including quartiles 3 and 4 when analyzing true pace
 
-The `lap_time_driver_quartile` column ranks each driver's laps within a session:
-- **Quartile 1** = Fastest 25% of that driver's laps (BEST)
-- **Quartile 2** = 25-50% percentile (still good)
+The `bpillar_quartile` column (race sessions only) intelligently filters laps:
+- **Automatically excludes**: First lap of race, pit in/out laps
+- **Speed requirements**: Within 110% of class fastest AND 105% of driver's fastest
+- **Quartile 1** = Fastest 25% of qualifying laps (BEST)
+- **Quartile 2** = 25-50% percentile of qualifying laps (still good)
 - **Quartile 3** = 50-75% percentile (slower, ignore for performance)
 - **Quartile 4** = Slowest 25% (ignore for performance)
+- **NULL** = Non-race sessions or laps that don't meet BPillar criteria
 
-By filtering to quartiles 1 and 2, you focus on when the driver and car are performing well, not stuck in traffic or making mistakes.
+By filtering to `bpillar_quartile IN (1, 2)`, you get only clean, representative racing pace.
 
 ### 6. What IS Valid Across Sessions?
 While lap times aren't comparable across sessions, these analyses ARE valid:
@@ -177,7 +187,7 @@ CREATE OR REPLACE MACRO format_time(t) AS (
 ### Fastest Lap in a Session
 ```sql
 -- Get fastest laps per class in a specific race session
-SELECT 
+SELECT
     driver_name,
     team_name,
     car,
@@ -187,9 +197,7 @@ SELECT
 FROM laps
 WHERE session_id = 12345              -- ← Use the session_id from query above
     AND class = 'GTP'                 -- ← Analyze each class separately
-    AND lap_time IS NOT NULL
-    AND flags = 'GF'                  -- Green flag laps only
-    AND lap_time_driver_quartile IN (1, 2)  -- Top 50% of laps only
+    AND bpillar_quartile IN (1, 2)    -- BPillar top 50% (auto-excludes pit/slow laps)
 ORDER BY lap_time ASC
 LIMIT 10;
 ```
@@ -197,7 +205,7 @@ LIMIT 10;
 ### Driver Consistency Analysis
 ```sql
 -- Compare drivers within a single race session using their best laps
-SELECT 
+SELECT
     driver_name,
     COUNT(*) AS total_laps,
     format_time(MIN(lap_time)) AS fastest,
@@ -207,11 +215,9 @@ SELECT
 FROM laps
 WHERE session_id = 12345                    -- ← Single session only
     AND class = 'GTP'                       -- ← Single class only
-    AND lap_time IS NOT NULL
-    AND flags = 'GF'                        -- Green flag laps only
-    AND lap_time_driver_quartile IN (1, 2)  -- Top 50% representative pace
+    AND bpillar_quartile IN (1, 2)          -- BPillar top 50% representative pace
 GROUP BY driver_name
-HAVING COUNT(*) >= 10                       -- Minimum lap sample for top 50%
+HAVING COUNT(*) >= 5                        -- Minimum lap sample for bpillar top 50%
 ORDER BY cv_percent ASC;
 ```
 
@@ -235,7 +241,7 @@ LIMIT 20;
 ### Weather Impact on Pace
 ```sql
 -- Weather effects within a single race session and class
-SELECT 
+SELECT
     CAST(track_temp_f / 10 AS INT) * 10 AS temp_bucket,
     COUNT(*) AS laps,
     format_time(AVG(lap_time)) AS avg_lap_time,
@@ -243,10 +249,8 @@ SELECT
 FROM laps
 WHERE session_id = 12345                    -- ← Single race session
     AND class = 'GTP'                       -- ← Single class
-    AND lap_time IS NOT NULL
-    AND flags = 'GF'
+    AND bpillar_quartile IN (1, 2)          -- BPillar representative performance
     AND track_temp_f IS NOT NULL
-    AND lap_time_driver_quartile IN (1, 2)  -- Representative performance
 GROUP BY temp_bucket
 ORDER BY temp_bucket;
 ```
@@ -277,7 +281,7 @@ ORDER BY stint_number, stint_lap;
 ```sql
 -- Compare teammates in a single race session using representative pace
 WITH teammate_stats AS (
-    SELECT 
+    SELECT
         driver_name,
         team_name,
         COUNT(*) AS laps,
@@ -286,17 +290,16 @@ WITH teammate_stats AS (
     FROM laps
     WHERE session_id = 12345              -- ← Single race session
         AND team_name = 'Porsche Penske Motorsport'
-        AND lap_time IS NOT NULL
-        AND flags = 'GF'
-        AND lap_time_driver_quartile IN (1, 2)  -- Top 50% pace
+        AND bpillar_quartile IN (1, 2)    -- BPillar top 50% pace
     GROUP BY driver_name, team_name
 )
-SELECT 
+SELECT
     driver_name,
     laps,
     format_time(fastest) AS fastest_lap,
     format_time(average) AS avg_lap,
-    ROUND((average - (SELECT MIN(average) FROM teammate_stats)) * 100 / (SELECT MIN(average) FROM teammate_stats), 2) AS pct_off_best
+    format_time(average - (SELECT MIN(average) FROM teammate_stats)) AS gap_to_fastest,
+    ROUND((average - (SELECT MIN(average) FROM teammate_stats)), 3) AS gap_seconds
 FROM teammate_stats
 ORDER BY average;
 ```
@@ -323,33 +326,35 @@ ORDER BY average;
 
 ### 3. Performance Optimization
 - **Use session_id**: Single most efficient filter for partitioning data
+- **Use bpillar_quartile**: Pre-calculated, indexed, and contains all necessary filters
 - **Avoid cross-session queries**: Rarely needed and computationally expensive
 - **Leverage year views**: Use `laps_2025` instead of `WHERE year = '2025'` if available
 - **Sector queries**: S1/S2/S3 times can have NULLs; always check
 - **Weather is pre-joined**: No need for separate lookups
-- **Index-friendly filters**: session_id, then class, then flags
+- **Index-friendly filters**: session_id, then class, then bpillar_quartile
 
 ### 4. Common Gotchas
 - **🚨 MOST IMPORTANT**: Use session_id for all lap time comparisons - never compare across sessions
 - **🚨 SECOND MOST IMPORTANT**: Almost always use `session = 'race'` unless explicitly asked otherwise
-- **🚨 THIRD MOST IMPORTANT**: Filter to top 50% of laps (`lap_time_driver_quartile IN (1, 2)`) for pace analysis
+- **🚨 THIRD MOST IMPORTANT**: Filter to `bpillar_quartile IN (1, 2)` for race pace analysis
 - **driver_id is VARCHAR**: Use string values like `driver_id = 'tobi lutke'`, not numeric IDs
 - **Car numbers are strings**: `'01'` ≠ `'1'` - use exact matches
 - **stint_lap is 0-indexed**: First lap after driver change is lap 0
 - **session_time_lap_number**: Tracks leader's progress, not individual car laps
 - **Driver IDs vs names**: Use `driver_id` (VARCHAR) for joins/filters, `driver_name` for display
 - **Practice ≠ Race**: Different fuel loads, tire strategies, and objectives
-- **Slow laps distort analysis**: Traffic, mistakes, and in/out laps shouldn't be included in pace calculations
+- **bpillar_quartile is NULL for non-race sessions**: Use `lap_time_driver_quartile` for practice/qualifying
+- **BPillar automatically handles filtering**: No need to manually exclude pit laps, first lap, or slow laps
 
 ## Investigation Workflows
 
 ### Before Any Lap Time Analysis - Validation Checklist
-✅ Have I identified the specific session_id?  
-✅ Have I specified a single class?  
-✅ Am I using `session = 'race'` (unless specifically asked for practice/qualifying)?  
-✅ Have I filtered to top 50% of laps (`lap_time_driver_quartile IN (1, 2)`)?  
-✅ Am I only comparing lap times within these boundaries?  
-✅ For averages, am I filtering to one session_id + one class + top laps?
+✅ Have I identified the specific session_id?
+✅ Have I specified a single class?
+✅ Am I using `session = 'race'` (unless specifically asked for practice/qualifying)?
+✅ Have I filtered to `bpillar_quartile IN (1, 2)` for race analysis?
+✅ Am I only comparing lap times within these boundaries?
+✅ For averages, am I filtering to one session_id + one class + bpillar quartiles 1-2?
 
 ### New Event Analysis
 1. Find the race session: 
@@ -426,13 +431,13 @@ ORDER BY average;
 → ❌ INVALID - lap times aren't comparable across different tracks
 
 **"What's [driver]'s average pace?"**
-→ Must specify session_id and class, filter to top 50% of their laps
+→ Must specify session_id and class, filter to `bpillar_quartile IN (1, 2)`
 
 **"How did [driver] do in the race?"**
-→ Get all laps for driver_id at specific session_id, show pace relative to class (compare top laps)
+→ Get all laps for driver_id at specific session_id, show pace relative to class using bpillar quartiles
 
 **"Compare [team A] vs [team B]"**
-→ Only valid within same session_id and same class, use top 50% laps
+→ Only valid within same session_id and same class, filter to `bpillar_quartile IN (1, 2)`
 
 **"What was the pit strategy at Sebring?"**
 → Filter to the Sebring race session_id, show pit_time entries per class
@@ -447,22 +452,23 @@ ORDER BY average;
 → Use ALL laps for specific session_id to see full wear curve (exception to quartile rule)
 
 **"Best lap times for [driver]?"**
-→ Specify session_id + class, show their fastest laps (quartile 1 or 2)
+→ Specify session_id + class, show their fastest laps using `bpillar_quartile IN (1, 2)`
 
 ## Key Reminders
 
 1. **🚨 Use session_id for all lap time comparisons**: Never compare across different sessions
 2. **🚨 Default to race sessions**: `session = 'race'` unless specifically asked for practice/qualifying
-3. **🚨 Filter to representative laps**: Use `lap_time_driver_quartile IN (1, 2)` for pace analysis
+3. **🚨 Filter to BPillar laps**: Use `bpillar_quartile IN (1, 2)` for race pace analysis
 4. **Each class is independent**: Analyze GTP, LMP2, GTD separately within each session
-5. **Averages require single session + single class + top laps**: Otherwise the number is meaningless
+5. **Averages require single session + single class + bpillar filtering**: Otherwise the number is meaningless
 6. **When to use ALL laps**: Stint degradation analysis, race distance simulations, or specific requests
-7. **Flag states are crucial**: `flags = 'GF'` for clean pace comparisons
+7. **BPillar handles most filtering**: No need for manual `flags = 'GF'` or pit lap exclusions
 8. **Weather is pre-joined**: Already aligned to each lap
 9. **driver_id is VARCHAR**: Use string values like `'tobi lutke'` for filtering/joins, `driver_name` for display
 10. **Format times for humans**: Always use the format_time macro
 11. **Quartile logic**: Q1 = fastest 25%, Q2 = 25-50%, Q3 = 50-75%, Q4 = slowest 25%
-12. **Output formats**: Default markdown tables, use `--csv` flag for token efficiency with large results
+12. **BPillar vs lap_time_driver_quartile**: Use bpillar for races (intelligent filtering), lap_time_driver for practice/qualifying
+13. **Output formats**: Default markdown tables, use `--csv` flag for token efficiency with large results
 
 ---
 

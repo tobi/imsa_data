@@ -27,7 +27,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Build path to database relative to script location
-DB_PATH="$SCRIPT_DIR/../../../output/imsa.duckdb"
+DB_PATH="$SCRIPT_DIR/resources/imsa.duckdb"
 
 # Check if database exists
 if [ "$REMOTE" != "--remote" ] && [ ! -f "$DB_PATH" ]; then
