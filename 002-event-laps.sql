@@ -193,6 +193,7 @@ SELECT
     lap_time_s3,
     lap_time_driver_rank,
     lap_time_driver_quartile,
+    NULL::INTEGER AS bpillar_quartile,
     pit_time,
     flags,
     stint_start,

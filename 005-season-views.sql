@@ -51,6 +51,7 @@ SELECT
         ELSE MIN(l.start_date) + (CAST(MAX(l.session_time) AS BIGINT) * INTERVAL 1 SECOND)
     END AS session_end,
     MAX(l.lap) AS total_laps,
+    COUNT(CASE WHEN l.raining THEN 1 END) AS rain_laps,
     STRING_AGG(
         DISTINCT TRIM(l.flags),
         ', '

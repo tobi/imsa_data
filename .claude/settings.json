@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./query.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

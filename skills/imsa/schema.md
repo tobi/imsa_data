@@ -1,9 +1,59 @@
-# IMSA Laps Agent Guide
+# IMSA Data Agent Guide
 
-The `laps` table in `output/imsa.duckdb` is the canonical surface for
-analysis, matching every recorded lap with driver, team, and weather context.
-This guide documents each column so downstream agents (human or automated) can
-reason about the data without reverse-engineering the SQL pipeline.
+The IMSA database (`output/imsa.duckdb`) provides comprehensive racing data from
+2021-2025. This guide documents the schema so downstream agents (human or
+automated) can reason about the data without reverse-engineering the SQL pipeline.
+
+## Quick Start
+
+**Start with the `seasons` table** for a high-level overview of all sessions,
+events, and races. This table provides aggregated statistics that help you
+understand the scope of the data before diving into individual laps.
+
+```sql
+SELECT * FROM seasons WHERE session = 'race' ORDER BY date DESC LIMIT 10;
+```
+
+---
+
+## The `seasons` View
+
+The `seasons` view provides a session-level summary of every practice, qualifying,
+and race session across all years. Use this table to identify which sessions exist,
+when they occurred, and high-level characteristics like total laps and weather
+conditions.
+
+### Columns
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `date` | DATE | Event start date (first session of the event). |
+| `session_id` | BIGINT | Unique identifier for this session. Use as join key with `laps` table. |
+| `season` | VARCHAR | Season year (`2021`–`2025`). |
+| `event` | VARCHAR | Canonical venue name (e.g., `Road America`, `Sebring`). |
+| `session` | VARCHAR | Session type (`race`, `practice-1`, `practice-2`, `qualifying`, etc.). |
+| `cars` | BIGINT | Count of distinct cars that participated in this session. |
+| `drivers` | BIGINT | Count of distinct drivers who competed. |
+| `classes` | VARCHAR | Comma-separated list of classes that participated (e.g., `GTP, LMP2, GTD`). |
+| `session_start` | TIMESTAMP | Actual session start timestamp. |
+| `session_end` | TIMESTAMP | Session end timestamp (computed from max session_time). |
+| `total_laps` | INTEGER | Total number of laps completed across all cars. |
+| `rain_laps` | BIGINT | Count of laps completed during rain conditions. |
+| `flags` | VARCHAR | Distinct flag conditions during the session, excluding green flags (e.g., `FCY, RED`). |
+
+### Usage Tips
+
+- Filter by `session = 'race'` to focus on race sessions only
+- Use `session_id` as a join key when connecting to the `laps` table
+- Check `rain_laps` to quickly identify wet sessions
+- The `flags` column shows non-green flag conditions; NULL means green flags only
+
+---
+
+## The `laps` Table
+
+The `laps` table is the canonical surface for detailed lap-by-lap analysis,
+matching every recorded lap with driver, team, and weather context.
 
 ## Row Semantics
 
@@ -82,16 +132,27 @@ or before the lap's `session_time`.
 
 ### Time Formatting
 
-The correct way to format time intervals for humans follows a format of `MM:SS.mmm` for (H)ours, (M)inutes, (S)econds, and (m)icroseconds. If the timespan is greater than 1 hour, then the format is `HH:MM:SS.mmm`.
+The correct way to format time intervals for humans follows a format of `MM:SS.mmm` for (M)inutes, (S)econds, and (m)illiseconds. If the timespan is greater than 1 hour, then the format is `HH:MM:SS.mmm`.
 
-For reference, the way to format time in duckdb is:
+Use the `format_time(t)` macro to format decimal seconds:
 
-```sql
-CREATE OR REPLACE MACRO format_time (t) AS (
-    -- only add hours if greater than 1 hour
-    CASE
-        WHEN t > 3600 THEN STRFTIME('%H:%M:%S.%f', t) -- hours
-        ELSE STRFTIME('%M:%S.%f', t) -- minutes
-    END
-);
-```
+Examples:
+- `format_time(117.099)` → `01:57.099`
+- `format_time(80.638)` → `01:20.638`
+- `format_time(4.074)` → `00:04.074`
+- `format_time(3661.234)` → `01:01:01.234`
+
+### Gap Formatting
+
+When displaying time gaps (e.g., gap to fastest driver), use the `format_gap(t)` macro which always shows the sign and 3 decimal places:
+
+Examples:
+- `format_gap(4.323)` → `+4.323`
+- `format_gap(-1.3)` → `-1.300`
+- `format_gap(0.001)` → `+0.001`
+- `format_gap(0.0)` → `+0.000`
+
+<!--
+2025-01-18: Updated format_time macro to handle DOUBLE precision values from AVG()
+calculations without overflow. Added format_gap macro for consistent gap display.
+-->

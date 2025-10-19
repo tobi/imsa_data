@@ -55,9 +55,25 @@ CREATE OR REPLACE MACRO parse_time (t) AS (
 );
 
 CREATE OR REPLACE MACRO format_time (t) AS (
-    -- only add hours if greater than 1 hour
+    -- Format decimal seconds as HH:MM:SS.mmm or MM:SS.mmm
+    -- Handles DOUBLE values from AVG() by separating whole and fractional parts
     CASE
-        WHEN t > 3600 THEN LTRIM(STRFTIME('%H:%M:%S.%f', t), '0') -- hours
-        ELSE LTRIM(STRFTIME('%M:%S.%f', t), '0') -- minutes
+        WHEN t IS NULL THEN NULL
+        WHEN t > 3600 THEN
+            STRFTIME('%H:%M:%S', MAKE_TIMESTAMP(CAST(FLOOR(t) * 1000000 AS BIGINT))) ||
+            '.' ||
+            LPAD(CAST(CAST(ROUND((t - FLOOR(t)) * 1000) AS INTEGER) AS VARCHAR), 3, '0')
+        ELSE
+            STRFTIME('%M:%S', MAKE_TIMESTAMP(CAST(FLOOR(t) * 1000000 AS BIGINT))) ||
+            '.' ||
+            LPAD(CAST(CAST(ROUND((t - FLOOR(t)) * 1000) AS INTEGER) AS VARCHAR), 3, '0')
+    END
+);
+
+CREATE OR REPLACE MACRO format_gap (t) AS (
+    -- Format gap in seconds with sign and 3 decimal places (e.g., +4.323, -1.300)
+    CASE
+        WHEN t IS NULL THEN NULL
+        ELSE FORMAT('{:+.3f}', t)
     END
 );
