@@ -23,7 +23,8 @@ SELECT DISTINCT
     year,
     event,
     -- Estimate race duration from max session time (in minutes)
-    CAST(EXTRACT(EPOCH FROM MAX(session_time)) / 60 AS INTEGER) as race_duration_minutes
+    -- session_time is already in seconds as DECIMAL(10,3)
+    CAST(MAX(session_time) / 60 AS INTEGER) as race_duration_minutes
 FROM laps
 WHERE session = 'race' AND session_time IS NOT NULL
 GROUP BY series_code, year, event;
