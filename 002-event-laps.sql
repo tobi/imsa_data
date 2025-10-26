@@ -119,6 +119,8 @@ ranked_stints AS (
     FROM stints
 ), laps_with_driver_data AS (
     SELECT
+        ranked_stints.series_code,
+        ranked_stints.series,
         ranked_stints.start_date,
         ranked_stints.year,
         ranked_stints.event,
