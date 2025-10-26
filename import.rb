@@ -5,24 +5,71 @@ require 'cgi'
 require 'csv'
 require 'set'
 
-BASE_URL = "https://imsa.results.alkamelcloud.com/Results/"
-DEFAULT_SERIES_PATTERN = "IMSA WeatherTech"
+# Series Configuration
+# Defines timing URLs and patterns for each supported racing series
+SERIES_CONFIG = {
+  'imsa' => {
+    name: 'IMSA WeatherTech Championship',
+    base_url: 'https://imsa.results.alkamelcloud.com/Results/',
+    series_pattern: 'IMSA WeatherTech',
+    year_prefix: ->(year) { "#{year.to_s[-2..]}_#{year}" }  # "24_2024"
+  },
+  'wec' => {
+    name: 'FIA World Endurance Championship',
+    base_url: 'http://fiawec.alkamelsystems.com/Results/',
+    series_pattern: 'FIA WEC',
+    year_prefix: ->(year) { "#{(year - 2011)}_#{year}" }  # "13_2024" for 2024 (started 2012)
+  },
+  'elms' => {
+    name: 'European Le Mans Series',
+    base_url: 'https://elms.alkamelsystems.com/Results/',
+    series_pattern: 'European Le Mans Series',
+    year_prefix: ->(year) { "#{(year - 2005)}_#{year}" }  # "19_2024" for 2024 (started 2006)
+  },
+  'alms' => {
+    name: 'Asian Le Mans Series',
+    base_url: 'http://alms.alkamelsystems.com/Results/',
+    series_pattern: 'Asian Le Mans Series',
+    year_prefix: ->(year) { "#{(year - 2020)}_#{year}" }  # Adjust if needed
+  },
+  'lmc' => {
+    name: 'Le Mans Cup',
+    base_url: 'https://lemanscup.alkamelsystems.com/Results/',
+    series_pattern: 'Le Mans Cup',
+    year_prefix: ->(year) { "#{(year - 2015)}_#{year}" }  # Adjust if needed
+  }
+}
 
-class IMSAImporter
-  def initialize
+# Legacy constants for backward compatibility
+BASE_URL = SERIES_CONFIG['imsa'][:base_url]
+DEFAULT_SERIES_PATTERN = SERIES_CONFIG['imsa'][:series_pattern]
+
+class EnduranceSeriesImporter
+  attr_reader :series_code, :series_config
+
+  def initialize(series_code = 'imsa')
+    @series_code = series_code.downcase
+    @series_config = SERIES_CONFIG[@series_code]
+
+    unless @series_config
+      raise ArgumentError, "Unknown series: #{series_code}. Valid options: #{SERIES_CONFIG.keys.join(', ')}"
+    end
+
     @visited = Set.new
+    puts "Initialized #{@series_config[:name]} importer"
   end
 
-  def import_year(year, output_path = 'data/', series_pattern = DEFAULT_SERIES_PATTERN)
-    year_prefix = "#{year.to_s[-2..]}_#{year}"
-    events_url = "#{BASE_URL}#{year_prefix}/"
-    
-    puts "Importing IMSA data for #{year}..."
-    
+  def import_year(year, output_path = 'data/')
+    year_prefix = @series_config[:year_prefix].call(year)
+    events_url = "#{@series_config[:base_url]}#{year_prefix}/"
+
+    puts "Importing #{@series_config[:name]} data for #{year}..."
+    puts "  Source: #{events_url}"
+
     fetch_links(events_url).each do |event_folder|
       next unless event_folder.end_with?('/') && !event_folder.start_with?('.')
-      
-      import_event(events_url + event_folder, year, output_path, series_pattern)
+
+      import_event(events_url + event_folder, year, output_path)
     end
   end
 
@@ -45,12 +92,12 @@ class IMSAImporter
     end
   end
 
-  def import_event(event_url, year, output_path, series_pattern)
+  def import_event(event_url, year, output_path)
     fetch_links(event_url).each do |series_folder|
       next unless series_folder.end_with?('/') && !series_folder.start_with?('.')
-      next unless CGI.unescape(series_folder).include?(series_pattern)
-      
-      import_series(event_url + series_folder, year, output_path, 
+      next unless CGI.unescape(series_folder).include?(@series_config[:series_pattern])
+
+      import_series(event_url + series_folder, year, output_path,
                    extract_folder_name(event_url), extract_folder_name(series_folder))
     end
   end
@@ -132,8 +179,9 @@ class IMSAImporter
 
   def build_target_path(output_path, year, event_name, race_folder, file_type)
     filename = "#{race_folder.chomp('/')}-#{file_type}.csv"
-    path = File.join(output_path, year.to_s, event_name, filename)
-    
+    # New structure: data/{series}/{year}/{event}/{filename}
+    path = File.join(output_path, @series_code, year.to_s, event_name, filename)
+
     # Clean up the path
     path.downcase
         .gsub(/%20/, ' ')
@@ -153,6 +201,9 @@ class IMSAImporter
   end
 end
 
+# Legacy class name for backward compatibility
+IMSAImporter = EnduranceSeriesImporter
+
 # Command line interface
 if __FILE__ == $0
   require 'optparse'
@@ -160,31 +211,55 @@ if __FILE__ == $0
   options = {
     year: Date.today.year,
     output_path: 'data/',
-    series_pattern: DEFAULT_SERIES_PATTERN
+    series: 'imsa'
   }
 
   OptionParser.new do |opts|
     opts.banner = "Usage: #{$0} [options]"
-    
+    opts.separator ""
+    opts.separator "Supported series: #{SERIES_CONFIG.keys.join(', ')}"
+    opts.separator ""
+
     opts.on("-y", "--year YEAR", Integer, "Year to fetch (default: current year)") do |year|
       options[:year] = year
     end
-    
+
     opts.on("-o", "--output-path PATH", String, "Output directory (default: data/)") do |path|
       options[:output_path] = path
     end
-    
-    opts.on("-s", "--series-pattern PATTERN", String, "Series pattern (default: #{DEFAULT_SERIES_PATTERN})") do |pattern|
-      options[:series_pattern] = pattern
+
+    opts.on("-s", "--series SERIES", String,
+            "Series to import (default: imsa)",
+            "  Options: #{SERIES_CONFIG.keys.join(', ')}",
+            "  imsa  = IMSA WeatherTech Championship",
+            "  wec   = FIA World Endurance Championship (includes 24h Le Mans)",
+            "  elms  = European Le Mans Series",
+            "  alms  = Asian Le Mans Series",
+            "  lmc   = Le Mans Cup") do |series|
+      options[:series] = series.downcase
     end
-    
+
     opts.on("-h", "--help", "Show this help message") do
       puts opts
+      puts "\nExamples:"
+      puts "  #{$0} --series imsa --year 2024"
+      puts "  #{$0} --series wec --year 2024"
+      puts "  #{$0} --series elms --year 2023"
       exit
     end
   end.parse!
 
-  importer = IMSAImporter.new
-  importer.import_year(options[:year], options[:output_path], options[:series_pattern])
-  puts "\nImport completed!"
+  begin
+    importer = EnduranceSeriesImporter.new(options[:series])
+    importer.import_year(options[:year], options[:output_path])
+    puts "\n✅ Import completed successfully!"
+    puts "   Data saved to: #{options[:output_path]}#{options[:series]}/#{options[:year]}/"
+  rescue ArgumentError => e
+    puts "❌ Error: #{e.message}"
+    exit 1
+  rescue => e
+    puts "❌ Import failed: #{e.message}"
+    puts e.backtrace.first(5).join("\n")
+    exit 1
+  end
 end
