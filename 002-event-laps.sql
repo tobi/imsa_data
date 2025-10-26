@@ -1,23 +1,11 @@
 
 CREATE TEMP TABLE event_laps_raw AS
     SELECT
-        -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1),
-            'imsa'
-        ) as series_code,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1)
-        ) as year,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2)
-        ) as event,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4)
-        ) as session,
+        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-laps.csv
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as series_code,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as year,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3) as event,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5) as session,
         series_code || '-' || year as series,
 
         TRIM(number) as car,
@@ -42,10 +30,7 @@ CREATE TEMP TABLE event_laps_raw AS
 
         -- Date
         strptime(
-            COALESCE(
-                regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
-                regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3)
-            ),
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
             '%Y%m%d%H%M'
         ) as start_date,
 
@@ -53,7 +38,7 @@ CREATE TEMP TABLE event_laps_raw AS
         filename
 
     FROM read_csv(
-        ["data/*/*/*laps.csv", "data/*/*/*/*laps.csv"],
+        "data/*/*/*/*laps.csv",
         union_by_name=true,
         filename=true,
         null_padding=true,

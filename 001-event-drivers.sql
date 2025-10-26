@@ -2,23 +2,11 @@
 CREATE TEMP TABLE event_drivers_raw AS
 WITH base_csv AS (
     SELECT
-        -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1),
-            'imsa'
-        ) as series_code,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1)
-        ) as year,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2)
-        ) as event,
-        COALESCE(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5),
-            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4)
-        ) as session,
+        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-results.csv
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as series_code,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as year,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3) as event,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5) as session,
         series_code || '-' || year as series,
 
         -- Car, team, and class
@@ -28,10 +16,7 @@ WITH base_csv AS (
 
         -- Date
         strptime(
-            COALESCE(
-                regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4),
-                regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3)
-            ),
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4),
             '%Y%m%d%H%M'
         ) as start_date,
 
@@ -52,7 +37,7 @@ WITH base_csv AS (
         DRIVER6_COUNTRY, DRIVER6_LICENSE
 
     FROM read_csv(
-        ["data/*/*/*results.csv", "data/*/*/*/*results.csv"],
+        "data/*/*/*/*results.csv",
         union_by_name=true,
         filename=true,
         null_padding=true,
