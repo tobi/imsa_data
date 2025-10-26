@@ -1,13 +1,27 @@
-# IMSA Data Scraper
+# Endurance Racing Data Scraper
 
-A simplified Ruby tool that collects IMSA WeatherTech Championship event data from the official results website and converts it into a DuckDB database for analysis.
+A simplified Ruby tool that collects endurance racing event data from official timing websites and converts it into a DuckDB database for analysis. Supports **IMSA WeatherTech**, **WEC** (including 24h Le Mans), **ELMS**, **Asian Le Mans**, and **Le Mans Cup**.
 
 ## Features
 
+- **Multi-Series Support**: Import data from IMSA, WEC, ELMS, Asian Le Mans, and Le Mans Cup
 - **Simple**: No external dependencies - uses only Ruby standard library
 - **Organized**: Clean object-oriented design with proper error handling
-- **Flexible**: Configurable year, output path, and series pattern
+- **Flexible**: Configurable series, year, and output path
+- **Cross-Series Analysis**: Normalized class names and metadata for comparing across series
 - **Robust**: Handles network errors and missing files gracefully
+
+## Supported Series
+
+All series use Al Kamel Systems timing infrastructure:
+
+| Series Code | Full Name | Notable Events |
+|-------------|-----------|----------------|
+| `imsa` | IMSA WeatherTech Championship | 24h Daytona, 12h Sebring, Petit Le Mans |
+| `wec` | FIA World Endurance Championship | **24 Hours of Le Mans**, Spa, Bahrain |
+| `elms` | European Le Mans Series | 4 Hours races across Europe |
+| `alms` | Asian Le Mans Series | 4 Hours races across Asia |
+| `lmc` | Le Mans Cup | LMP3 & GT3 support series |
 
 ## Using this dataset
 
@@ -56,25 +70,41 @@ ds_driver = load_dataset("tobil/imsa", "drivers")
 
 ## Data Structure
 
-Downloaded CSV files are organized in the `data/` directory:
+Downloaded CSV files are organized in the `data/` directory by series and year:
 
 ```
 data/
-├── 2024/
-│   ├── 01-roar-before-the-24/
-│   │   ├── 202401260800_race-results.csv
-│   │   ├── 202401260800_race-laps.csv
-│   │   └── 202401260800_race-weather.csv
-│   └── 02-twelve-hours-of-sebring/
+├── imsa/
+│   ├── 2024/
+│   │   ├── 01-roar-before-the-24/
+│   │   │   ├── 202401260800_race-results.csv
+│   │   │   ├── 202401260800_race-laps.csv
+│   │   │   └── 202401260800_race-weather.csv
+│   │   └── 02-twelve-hours-of-sebring/
+│   │       └── ...
+│   └── 2023/
 │       └── ...
-└── 2023/
-    └── ...
+├── wec/
+│   └── 2024/
+│       ├── 01-qatar/
+│       ├── 02-imola/
+│       ├── 03-spa/
+│       └── 04-le-mans/  ← 24 Hours of Le Mans!
+│           └── ...
+├── elms/
+│   └── 2024/
+│       └── ...
+└── alms/
+    └── 2024/
+        └── ...
 ```
 
 Each event contains three types of CSV files per session:
 - **results**: Race finishing positions and times
 - **laps**: Individual lap times and data
 - **weather**: Weather conditions during the session
+
+**Note:** Legacy data in `data/year/...` format is automatically recognized as IMSA data.
 
 ### Database Tables
 
@@ -84,16 +114,22 @@ The DuckDB database contains several key tables:
 
 The main `laps` table combines lap data with driver information and weather conditions. Each row represents a single lap with the following columns:
 
+**Series Identification (NEW!):**
+- `series_code` - Series identifier ("imsa", "wec", "elms", "alms", "lmc")
+- `series` - Combined series-year ("imsa-2024", "wec-2024", etc.)
+
 **Event & Session Information:**
 - `start_date` - Session start date and time
 - `year` - Race year (e.g., 2024)
-- `event` - Event name (e.g., "daytona-international-speedway")
+- `event` - Event name (e.g., "daytona-international-speedway", "le-mans")
 - `session` - Session type ("race", "qualifying", "practice", etc.)
-- `session_id` - Unique identifier for each session across all years/events
+- `session_id` - Unique identifier for each session across all series/years/events
 
 **Car & Driver:**
 - `car` - Car number
-- `class` - Racing class (GTD, GTP, LMP2, etc.)
+- `class` - Racing class (GTP, Hypercar, LMP2, LMGT3, etc.)
+- `class_normalized` - Normalized class for cross-series comparison (NEW!)
+- `class_category` - High-level category ("Top Prototype", "LMP2", "GT Professional", etc.) (NEW!)
 - `driver_name` - Driver name
 
 **Lap Timing:**
@@ -134,44 +170,93 @@ The weather data is intelligently matched to each lap using the most recent weat
 **`event_weather`** - Weather readings with relative time calculations for matching to laps
 **`event_drivers`** - Driver information extracted from race results
 **`drivers`** - Aggregated driver view with latest license and team information
+**`class_mapping`** - Maps original class names to normalized categories (NEW!)
+**`event_metadata`** - Circuit details, race duration, event types (NEW!)
 
-#### Season Views
+#### Series and Season Views
 
-For quick access to a single championship year, the build creates the following views:
+**Series-specific views (all sessions):**
+- `laps_imsa` - All IMSA data
+- `laps_wec` - All WEC data (including Le Mans!)
+- `laps_elms` - All ELMS data
+- `laps_alms` - All Asian Le Mans data
+- `laps_lmc` - All Le Mans Cup data
 
-- `laps_2021`
-- `laps_2022`
-- `laps_2023`
-- `laps_2024`
-- `laps_2025`
+**Series + Year views (race sessions only):**
+- `laps_imsa_2024`, `laps_imsa_2023`, etc.
+- `laps_wec_2024`, `laps_wec_2025`
+- `laps_elms_2024`, `laps_elms_2025`
+- `laps_alms_2024`, etc.
 
-Each view is simply `SELECT * FROM laps WHERE year = '<season>'`, so existing queries port over by swapping the table name.
+**Legacy year-only views (backward compatible, shows all series):**
+- `laps_2021`, `laps_2022`, `laps_2023`, `laps_2024`, `laps_2025`
+
+**Cross-series analysis views:**
+- `laps_normalized` - Includes `class_std` and `category_std` fields for cross-series comparison
+- `laps_with_metadata` - Joins laps with event metadata (circuit names, duration, etc.)
+- `seasons` - Summary view of all sessions by series/year/event
 
 #### Example Queries
 
+**Single series analysis:**
 ```sql
--- Average lap times by weather conditions
-SELECT 
+-- IMSA 2024 race data
+SELECT * FROM laps_imsa_2024;
+
+-- WEC data including Le Mans
+SELECT * FROM laps WHERE series_code = 'wec' AND event LIKE '%le-mans%';
+```
+
+**Cross-series comparison:**
+```sql
+-- Compare LMP2 performance across all series
+SELECT
+    series,
+    MIN(lap_time) as fastest_lap,
+    AVG(lap_time) as average_lap,
+    COUNT(*) as laps
+FROM laps_normalized
+WHERE class_category = 'LMP2' AND session = 'race'
+GROUP BY series
+ORDER BY fastest_lap;
+
+-- Find drivers competing in multiple series
+SELECT
+    driver_name,
+    COUNT(DISTINCT series_code) as num_series,
+    STRING_AGG(DISTINCT series ORDER BY series) as series_list
+FROM laps
+WHERE year = '2024'
+GROUP BY driver_name
+HAVING COUNT(DISTINCT series_code) > 1
+ORDER BY num_series DESC;
+```
+
+**Weather analysis:**
+```sql
+-- Average lap times by weather conditions across all series
+SELECT
+    series_code,
     raining,
     AVG(EXTRACT(EPOCH FROM lap_time)) as avg_lap_seconds,
     COUNT(*) as laps
-FROM laps 
+FROM laps
 WHERE session = 'race' AND lap_time IS NOT NULL
-GROUP BY raining;
+GROUP BY series_code, raining
+ORDER BY series_code, raining;
+```
 
--- Driver performance in different temperature ranges
-SELECT 
-    driver_name,
-    CASE 
-        WHEN air_temp_f < 70 THEN 'Cool'
-        WHEN air_temp_f < 85 THEN 'Moderate' 
-        ELSE 'Hot'
-    END as temp_range,
+**Event metadata analysis:**
+```sql
+-- Compare performance by race duration
+SELECT
+    event_type,
+    class_category,
     AVG(EXTRACT(EPOCH FROM lap_time)) as avg_lap_seconds
-FROM laps 
-WHERE session = 'race' AND air_temp_f IS NOT NULL
-GROUP BY driver_name, temp_range
-ORDER BY driver_name, temp_range;
+FROM laps_with_metadata
+WHERE session = 'race'
+GROUP BY event_type, class_category
+ORDER BY event_type, class_category;
 ```
 
 ## Setup
@@ -192,21 +277,47 @@ cd imsa-data
 
 ### Import Data
 
-Import data for the current year:
+**Import IMSA (default):**
 ```bash
-ruby import.rb
-# or
+ruby import.rb --series imsa --year 2024
+# or simply
 rake import
 ```
 
-Import data for a specific year:
+**Import WEC (includes 24 Hours of Le Mans!):**
 ```bash
-ruby import.rb --year 2023
+ruby import.rb --series wec --year 2024
+# or
+rake import_wec
 ```
 
-Import data for multiple recent years:
+**Import ELMS:**
 ```bash
-rake import_recent  # imports last 3 years
+ruby import.rb --series elms --year 2024
+# or
+rake import_elms
+```
+
+**Import Asian Le Mans:**
+```bash
+ruby import.rb --series alms --year 2024
+# or
+rake import_alms
+```
+
+**Import all series for a given year:**
+```bash
+rake import_all[2024]
+```
+
+**Import IMSA for multiple recent years:**
+```bash
+rake import_recent  # imports last 3 years of IMSA
+```
+
+**Get help:**
+```bash
+ruby import.rb --help
 ```
 
 ### Build Database
@@ -241,20 +352,37 @@ The import script supports several options:
 
 ```bash
 ruby import.rb [options]
-  -y, --year YEAR              Year to fetch (default: current year)
-  -o, --output-path PATH        Output directory (default: data/)
-  -s, --series-pattern PATTERN  Series pattern (default: IMSA WeatherTech)
-  -h, --help                   Show help message
+  -y, --year YEAR       Year to fetch (default: current year)
+  -o, --output-path PATH Output directory (default: data/)
+  -s, --series SERIES   Series to import (default: imsa)
+                        Options: imsa, wec, elms, alms, lmc
+  -h, --help            Show help message
+
+Examples:
+  ruby import.rb --series wec --year 2024
+  ruby import.rb --series elms --year 2023
 ```
 
 ## Files
 
-- **`import.rb`** - Main scraper with clean object-oriented design
+**Data Import:**
+- **`import.rb`** - Multi-series scraper with support for IMSA, WEC, ELMS, Asian Le Mans, Le Mans Cup
 - **`Rakefile`** - Build tasks for database generation and data import
+
+**Database Schema:**
+- **`000-settings.sql`** - Database configuration and utility functions
 - **`001-event-drivers.sql`** - Driver data extraction and aggregation
 - **`002-event-laps.sql`** - Lap data parsing with stint analysis
 - **`003-event-weather.sql`** - Weather data processing with relative time calculations
 - **`004-laps.sql`** - Main analysis table combining laps, drivers, and weather
+- **`005-season-views.sql`** - Series-specific and season-specific views
+- **`006-bpillar.sql`** - Advanced stint analysis (if present)
+- **`007-class-normalization.sql`** - Cross-series class mapping (NEW!)
+- **`008-event-metadata.sql`** - Circuit details and race format metadata (NEW!)
+
+**Documentation:**
+- **`GENERALIZATION_PROPOSAL.md`** - Full research and design for multi-series support
+- **`IMPLEMENTATION_SUMMARY.md`** - Technical implementation details
 
 ## Architecture
 
