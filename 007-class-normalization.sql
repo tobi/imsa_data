@@ -14,42 +14,42 @@ CREATE OR REPLACE TABLE class_mapping (
 
 -- IMSA WeatherTech Classes
 INSERT INTO class_mapping VALUES
-    ('imsa', 'GTP', 'Prototype', 'Top Prototype', 'Grand Touring Prototype - Top IMSA prototype class'),
+    ('imsa', 'GTP', 'LMP1', 'LMP1', 'Grand Touring Prototype - Top IMSA prototype class (LMDh)'),
     ('imsa', 'LMP2', 'LMP2', 'LMP2', 'Le Mans Prototype 2 - International spec'),
     ('imsa', 'LMP3', 'LMP3', 'LMP3', 'Le Mans Prototype 3 - Entry level prototype'),
-    ('imsa', 'GTD PRO', 'GT3 Pro', 'GT Professional', 'GT Daytona Pro - Professional GT3 cars'),
-    ('imsa', 'GTD', 'GT3 Am', 'GT Amateur', 'GT Daytona - Pro-Am GT3 cars'),
-    ('imsa', 'DPi', 'Prototype', 'Top Prototype', 'Daytona Prototype international (pre-2023)'),
-    ('imsa', 'GTLM', 'GTE', 'GT Professional', 'GT Le Mans (pre-2022)');
+    ('imsa', 'GTD PRO', 'GT3 Pro', 'GT3', 'GT Daytona Pro - Professional GT3 cars'),
+    ('imsa', 'GTD', 'GT3 Am', 'GT3', 'GT Daytona - Pro-Am GT3 cars'),
+    ('imsa', 'DPi', 'LMP1', 'LMP1', 'Daytona Prototype international (pre-2023)'),
+    ('imsa', 'GTLM', 'GTE', 'GTE', 'GT Le Mans (pre-2022)');
 
 -- WEC (World Endurance Championship) Classes
 INSERT INTO class_mapping VALUES
-    ('wec', 'HYPERCAR', 'Prototype', 'Top Prototype', 'LMH/LMDh Hypercar - Top WEC prototype class'),
+    ('wec', 'HYPERCAR', 'LMP1', 'LMP1', 'LMH/LMDh Hypercar - Top WEC prototype class'),
     ('wec', 'LMP2', 'LMP2', 'LMP2', 'Le Mans Prototype 2'),
-    ('wec', 'LMGT3', 'GT3 Pro', 'GT Professional', 'Le Mans GT3'),
-    ('wec', 'GTE PRO', 'GTE', 'GT Professional', 'GTE Professional (pre-2023)'),
-    ('wec', 'GTE AM', 'GTE', 'GT Amateur', 'GTE Amateur (pre-2023)'),
-    ('wec', 'LMP1', 'Prototype', 'Top Prototype', 'Le Mans Prototype 1 (pre-2021)');
+    ('wec', 'LMGT3', 'GT3', 'GT3', 'Le Mans GT3'),
+    ('wec', 'GTE PRO', 'GTE Pro', 'GTE', 'GTE Professional (pre-2023)'),
+    ('wec', 'GTE AM', 'GTE Am', 'GTE', 'GTE Amateur (pre-2023)'),
+    ('wec', 'LMP1', 'LMP1', 'LMP1', 'Le Mans Prototype 1 (pre-2021)');
 
 -- ELMS (European Le Mans Series) Classes
 INSERT INTO class_mapping VALUES
     ('elms', 'LMP2', 'LMP2', 'LMP2', 'Le Mans Prototype 2'),
     ('elms', 'LMP2 PRO/AM', 'LMP2', 'LMP2', 'Le Mans Prototype 2 Pro-Am'),
     ('elms', 'LMP3', 'LMP3', 'LMP3', 'Le Mans Prototype 3'),
-    ('elms', 'LMGT3', 'GT3 Pro', 'GT Professional', 'Le Mans GT3');
+    ('elms', 'LMGT3', 'GT3', 'GT3', 'Le Mans GT3');
 
 -- Asian Le Mans Series Classes
 INSERT INTO class_mapping VALUES
     ('alms', 'LMP2', 'LMP2', 'LMP2', 'Le Mans Prototype 2'),
     ('alms', 'LMP2 AM', 'LMP2', 'LMP2', 'Le Mans Prototype 2 Amateur'),
     ('alms', 'LMP3', 'LMP3', 'LMP3', 'Le Mans Prototype 3'),
-    ('alms', 'GT', 'GT3 Am', 'GT Amateur', 'GT class'),
-    ('alms', 'GT3', 'GT3 Am', 'GT Amateur', 'GT3 class');
+    ('alms', 'GT', 'GT3', 'GT3', 'GT class'),
+    ('alms', 'GT3', 'GT3', 'GT3', 'GT3 class');
 
 -- Le Mans Cup Classes
 INSERT INTO class_mapping VALUES
     ('lmc', 'LMP3', 'LMP3', 'LMP3', 'Le Mans Prototype 3'),
-    ('lmc', 'GT3', 'GT3 Am', 'GT Amateur', 'GT3 class');
+    ('lmc', 'GT3', 'GT3', 'GT3', 'GT3 class');
 
 -- Add normalized class field to laps table
 ALTER TABLE laps ADD COLUMN IF NOT EXISTS class_normalized VARCHAR;
@@ -95,10 +95,10 @@ FROM class_mapping
 GROUP BY series_code, class_category, class_normalized
 ORDER BY series_code,
     CASE class_category
-        WHEN 'Top Prototype' THEN 1
+        WHEN 'LMP1' THEN 1
         WHEN 'LMP2' THEN 2
         WHEN 'LMP3' THEN 3
-        WHEN 'GT Professional' THEN 4
-        WHEN 'GT Amateur' THEN 5
+        WHEN 'GTE' THEN 4
+        WHEN 'GT3' THEN 5
         ELSE 6
     END;
