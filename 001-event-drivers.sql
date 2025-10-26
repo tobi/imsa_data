@@ -1,5 +1,6 @@
 
 CREATE TEMP TABLE event_drivers_raw AS
+WITH base_csv AS (
     SELECT
         -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
         COALESCE(
@@ -34,54 +35,21 @@ CREATE TEMP TABLE event_drivers_raw AS
             '%Y%m%d%H%M'
         ) as start_date,
 
-        -- Drivers list
-        list_value(
-            struct_pack(
-                name :=  CONCAT(DRIVER1_FIRSTNAME, ' ', DRIVER1_SECONDNAME),
-                driver_id := CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER1_COUNTRY,
-                license := DRIVER1_LICENSE,
-                present := DRIVER1_FIRSTNAME IS NOT NULL AND DRIVER1_SECONDNAME IS NOT NULL
-            ),
-            struct_pack(
-                name :=  CONCAT(DRIVER2_FIRSTNAME, ' ', DRIVER2_SECONDNAME),
-                driver_id := CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER2_COUNTRY,
-                license := DRIVER2_LICENSE,
-                present := DRIVER2_FIRSTNAME IS NOT NULL AND DRIVER2_SECONDNAME IS NOT NULL
-            ),
-            struct_pack(
-                name :=  CONCAT(DRIVER3_FIRSTNAME, ' ', DRIVER3_SECONDNAME),
-                driver_id := CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER3_COUNTRY,
-                license := DRIVER3_LICENSE,
-                present := DRIVER3_FIRSTNAME IS NOT NULL AND DRIVER3_SECONDNAME IS NOT NULL
-            ),
-            struct_pack(
-                name :=  CONCAT(DRIVER4_FIRSTNAME, ' ', DRIVER4_SECONDNAME),
-                driver_id := CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER4_COUNTRY,
-                license := DRIVER4_LICENSE,
-                present := DRIVER4_FIRSTNAME IS NOT NULL AND DRIVER4_SECONDNAME IS NOT NULL
-            ),
-            struct_pack(
-                name :=  CONCAT(DRIVER5_FIRSTNAME, ' ', DRIVER5_SECONDNAME),
-                driver_id := CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER5_COUNTRY,
-                license := DRIVER5_LICENSE,
-                present := DRIVER5_FIRSTNAME IS NOT NULL AND DRIVER5_SECONDNAME IS NOT NULL
-            ),
-            struct_pack(
-                name :=  CONCAT(DRIVER6_FIRSTNAME, ' ', DRIVER6_SECONDNAME),
-                driver_id := CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR),
-                country := DRIVER6_COUNTRY,
-                license := DRIVER6_LICENSE,
-                present := DRIVER6_FIRSTNAME IS NOT NULL AND DRIVER6_SECONDNAME IS NOT NULL
-            )
-        ) as drivers,
+        filename,
 
-        -- File name
-        filename
+        -- Driver columns with type casting done once
+        DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR) AS DRIVER1_IMSA_DRIVERID,
+        DRIVER1_COUNTRY, DRIVER1_LICENSE,
+        DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR) AS DRIVER2_IMSA_DRIVERID,
+        DRIVER2_COUNTRY, DRIVER2_LICENSE,
+        DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR) AS DRIVER3_IMSA_DRIVERID,
+        DRIVER3_COUNTRY, DRIVER3_LICENSE,
+        DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR) AS DRIVER4_IMSA_DRIVERID,
+        DRIVER4_COUNTRY, DRIVER4_LICENSE,
+        DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR) AS DRIVER5_IMSA_DRIVERID,
+        DRIVER5_COUNTRY, DRIVER5_LICENSE,
+        DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR) AS DRIVER6_IMSA_DRIVERID,
+        DRIVER6_COUNTRY, DRIVER6_LICENSE
 
     FROM read_csv(
         ["data/*/*/*results.csv", "data/*/*/*/*results.csv"],
@@ -89,7 +57,36 @@ CREATE TEMP TABLE event_drivers_raw AS
         filename=true,
         null_padding=true,
         normalize_names=true
-    );
+    )
+)
+SELECT
+    series_code,
+    series,
+    year,
+    event,
+    session,
+    start_date,
+    car,
+    team,
+    class,
+    filename,
+    CONCAT(firstname, ' ', secondname) AS name,
+    driver_id,
+    country,
+    license
+FROM base_csv
+UNPIVOT (
+    (firstname, secondname, driver_id, country, license)
+    FOR driver_num IN (
+        (DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, DRIVER1_IMSA_DRIVERID, DRIVER1_COUNTRY, DRIVER1_LICENSE) AS 1,
+        (DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, DRIVER2_IMSA_DRIVERID, DRIVER2_COUNTRY, DRIVER2_LICENSE) AS 2,
+        (DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, DRIVER3_IMSA_DRIVERID, DRIVER3_COUNTRY, DRIVER3_LICENSE) AS 3,
+        (DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, DRIVER4_IMSA_DRIVERID, DRIVER4_COUNTRY, DRIVER4_LICENSE) AS 4,
+        (DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, DRIVER5_IMSA_DRIVERID, DRIVER5_COUNTRY, DRIVER5_LICENSE) AS 5,
+        (DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, DRIVER6_IMSA_DRIVERID, DRIVER6_COUNTRY, DRIVER6_LICENSE) AS 6
+    )
+)
+WHERE firstname IS NOT NULL AND secondname IS NOT NULL;
 
 
 CREATE OR REPLACE TABLE event_drivers AS
@@ -104,15 +101,13 @@ WITH base AS (
         car,
         team,
         class,
-        d.driver_id::VARCHAR AS raw_driver_id,
-        REGEXP_REPLACE(TRIM(d.name), '\\s+', ' ') AS name_clean,
-        d.name AS name_original,
-        d.license,
-        license_rank(d.license) AS license_rank,
-        d.country
+        driver_id AS raw_driver_id,
+        REGEXP_REPLACE(TRIM(name), '\\s+', ' ') AS name_clean,
+        name AS name_original,
+        license,
+        license_rank(license) AS license_rank,
+        country
     FROM event_drivers_raw
-    CROSS JOIN UNNEST(drivers) AS u (d)
-    WHERE d.present
 ), normalized AS (
     SELECT
         series_code,
