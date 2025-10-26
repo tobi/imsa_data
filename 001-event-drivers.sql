@@ -38,42 +38,42 @@ CREATE TEMP TABLE event_drivers_raw AS
         list_value(
             struct_pack(
                 name :=  CONCAT(DRIVER1_FIRSTNAME, ' ', DRIVER1_SECONDNAME),
-                driver_id := DRIVER1_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER1_COUNTRY,
                 license := DRIVER1_LICENSE,
                 present := DRIVER1_FIRSTNAME IS NOT NULL AND DRIVER1_SECONDNAME IS NOT NULL
             ),
             struct_pack(
                 name :=  CONCAT(DRIVER2_FIRSTNAME, ' ', DRIVER2_SECONDNAME),
-                driver_id := DRIVER2_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER2_COUNTRY,
                 license := DRIVER2_LICENSE,
                 present := DRIVER2_FIRSTNAME IS NOT NULL AND DRIVER2_SECONDNAME IS NOT NULL
             ),
             struct_pack(
                 name :=  CONCAT(DRIVER3_FIRSTNAME, ' ', DRIVER3_SECONDNAME),
-                driver_id := DRIVER3_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER3_COUNTRY,
                 license := DRIVER3_LICENSE,
                 present := DRIVER3_FIRSTNAME IS NOT NULL AND DRIVER3_SECONDNAME IS NOT NULL
             ),
             struct_pack(
                 name :=  CONCAT(DRIVER4_FIRSTNAME, ' ', DRIVER4_SECONDNAME),
-                driver_id := DRIVER4_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER4_COUNTRY,
                 license := DRIVER4_LICENSE,
                 present := DRIVER4_FIRSTNAME IS NOT NULL AND DRIVER4_SECONDNAME IS NOT NULL
             ),
             struct_pack(
                 name :=  CONCAT(DRIVER5_FIRSTNAME, ' ', DRIVER5_SECONDNAME),
-                driver_id := DRIVER5_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER5_COUNTRY,
                 license := DRIVER5_LICENSE,
                 present := DRIVER5_FIRSTNAME IS NOT NULL AND DRIVER5_SECONDNAME IS NOT NULL
             ),
             struct_pack(
                 name :=  CONCAT(DRIVER6_FIRSTNAME, ' ', DRIVER6_SECONDNAME),
-                driver_id := DRIVER6_IMSA_DRIVERID,
+                driver_id := CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR),
                 country := DRIVER6_COUNTRY,
                 license := DRIVER6_LICENSE,
                 present := DRIVER6_FIRSTNAME IS NOT NULL AND DRIVER6_SECONDNAME IS NOT NULL
