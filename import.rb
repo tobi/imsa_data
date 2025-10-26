@@ -78,11 +78,19 @@ class EnduranceSeriesImporter
   def fetch_links(url)
     url = url.gsub(/\?.*$/, '')
     return [] if @visited.include?(url)
-    
+
     @visited.add(url)
-    
+
     begin
-      body = URI.open(url, &:read)
+      # Add browser-like headers to avoid 403 errors
+      headers = {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language' => 'en-US,en;q=0.9',
+        'Accept-Encoding' => 'gzip, deflate',
+        'Connection' => 'keep-alive'
+      }
+      body = URI.open(url, headers, &:read)
       body.scan(/href="([^"]+)"/)
           .map(&:first)
           .reject { |link| link.start_with?('/') }
@@ -166,7 +174,14 @@ class EnduranceSeriesImporter
     print "\n[downloading] → #{target_file}"
     
     begin
-      URI.open(url) do |remote|
+      # Add browser-like headers to avoid 403 errors
+      headers = {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept' => 'text/csv,text/plain,*/*',
+        'Accept-Language' => 'en-US,en;q=0.9',
+        'Referer' => url.split('/')[0..3].join('/')
+      }
+      URI.open(url, headers) do |remote|
         content = remote.read
         convert_semicolon_csv(content, target_file)
       end
