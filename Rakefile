@@ -38,23 +38,80 @@ namespace :db do
   end
 end
 
-desc "Import data for the current year"
+desc "Import IMSA data for the current year"
 task :import do
   current_year = Date.today.year
-  puts "Importing data for #{current_year}..."
-  sh "ruby import.rb --year #{current_year}"
+  puts "Importing IMSA data for #{current_year}..."
+  sh "ruby import.rb --series imsa --year #{current_year}"
 end
 
-desc "Import data for the last 3 years"
+desc "Import data for a specific series and year"
+task :import_series, [:series, :year] do |t, args|
+  series = args[:series] || 'imsa'
+  year = args[:year] || Date.today.year
+  puts "Importing #{series.upcase} data for #{year}..."
+  sh "ruby import.rb --series #{series} --year #{year}"
+end
+
+desc "Import IMSA data for the last 3 years"
 task :import_recent do
   current_year = Date.today.year
   years = (current_year - 2)..current_year
 
-  puts "Importing data for years: #{years.to_a.join(', ')}"
+  puts "Importing IMSA data for years: #{years.to_a.join(', ')}"
   years.each do |year|
     puts "\n--- Importing #{year} ---"
-    sh "ruby import.rb --year #{year}"
+    sh "ruby import.rb --series imsa --year #{year}"
   end
+end
+
+desc "Import all series for a given year"
+task :import_all, [:year] do |t, args|
+  year = args[:year] || Date.today.year
+  series_list = %w[imsa wec elms alms]
+
+  puts "Importing all series for #{year}..."
+  puts "Series: #{series_list.join(', ')}"
+
+  series_list.each do |series|
+    puts "\n=== Importing #{series.upcase} #{year} ==="
+    begin
+      sh "ruby import.rb --series #{series} --year #{year}"
+    rescue => e
+      puts "⚠️  Warning: Failed to import #{series}: #{e.message}"
+      puts "Continuing with next series..."
+    end
+  end
+
+  puts "\n✅ Multi-series import completed!"
+end
+
+desc "Import WEC data (including 24h Le Mans) for current year"
+task :import_wec do
+  current_year = Date.today.year
+  puts "Importing WEC data (including 24 Hours of Le Mans) for #{current_year}..."
+  sh "ruby import.rb --series wec --year #{current_year}"
+end
+
+desc "Import ELMS data for current year"
+task :import_elms do
+  current_year = Date.today.year
+  puts "Importing European Le Mans Series data for #{current_year}..."
+  sh "ruby import.rb --series elms --year #{current_year}"
+end
+
+desc "Import Asian Le Mans data for current year"
+task :import_alms do
+  current_year = Date.today.year
+  puts "Importing Asian Le Mans Series data for #{current_year}..."
+  sh "ruby import.rb --series alms --year #{current_year}"
+end
+
+desc "Import Le Mans Cup data for current year"
+task :import_lmc do
+  current_year = Date.today.year
+  puts "Importing Le Mans Cup data for #{current_year}..."
+  sh "ruby import.rb --series lmc --year #{current_year}"
 end
 
 desc "Clean output directory"
