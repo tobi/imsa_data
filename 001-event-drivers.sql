@@ -1,9 +1,24 @@
 
 CREATE TEMP TABLE event_drivers_raw AS
     SELECT
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as year,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as event,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4) as session,
+        -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1),
+            'imsa'
+        ) as series_code,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1)
+        ) as year,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2)
+        ) as event,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4)
+        ) as session,
+        series_code || '-' || year as series,
 
         -- Car, team, and class
         TRIM(number) as car,
@@ -11,7 +26,13 @@ CREATE TEMP TABLE event_drivers_raw AS
         _CLASS as class,
 
         -- Date
-        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3), '%Y%m%d%H%M') as start_date,
+        strptime(
+            COALESCE(
+                regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4),
+                regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3)
+            ),
+            '%Y%m%d%H%M'
+        ) as start_date,
 
         -- Drivers list
         list_value(
@@ -63,7 +84,7 @@ CREATE TEMP TABLE event_drivers_raw AS
         filename
 
     FROM read_csv(
-        "data/*/*/*results.csv",
+        ["data/*/*/*results.csv", "data/*/*/*/*results.csv"],
         union_by_name=true,
         filename=true,
         null_padding=true,
@@ -74,6 +95,8 @@ CREATE TEMP TABLE event_drivers_raw AS
 CREATE OR REPLACE TABLE event_drivers AS
 WITH base AS (
     SELECT
+        series_code,
+        series,
         year,
         clean_event_name(event) AS event,
         session,
@@ -92,6 +115,8 @@ WITH base AS (
     WHERE d.present
 ), normalized AS (
     SELECT
+        series_code,
+        series,
         year,
         event,
         session,
@@ -110,6 +135,8 @@ WITH base AS (
     FROM base
 )
 SELECT
+    series_code,
+    series,
     year,
     event,
     session,

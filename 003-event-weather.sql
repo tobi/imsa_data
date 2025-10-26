@@ -1,8 +1,22 @@
 CREATE TEMP TABLE event_weather_raw AS
     SELECT
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 1) as year,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 2) as event,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 4) as session,
+        -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 1),
+            'imsa'
+        ) as series_code,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 2),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 1)
+        ) as year,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 3),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 2)
+        ) as event,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 5),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 4)
+        ) as session,
 
         -- Weather measurements
         time_utc_seconds::BIGINT as time_utc_seconds,
@@ -20,12 +34,18 @@ CREATE TEMP TABLE event_weather_raw AS
         (rain::INT = 0) as raining,
 
         -- Date
-        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 3), '%Y%m%d%H%M') as date,
+        strptime(
+            COALESCE(
+                regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 4),
+                regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 3)
+            ),
+            '%Y%m%d%H%M'
+        ) as date,
 
         filename
 
     FROM read_csv(
-        "data/*/*/*weather.csv",
+        ["data/*/*/*weather.csv", "data/*/*/*/*weather.csv"],
         union_by_name=true,
         filename=true,
         null_padding=true,
@@ -47,11 +67,11 @@ CREATE TEMP TABLE event_weather_raw AS
 CREATE OR REPLACE TABLE event_weather AS WITH
 named_weather AS (
     SELECT
-        year, event, session, date,
+        series_code, year, event, session, date,
         time_utc_seconds, time_utc,
         air_temp_f, track_temp_f, humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
-        DENSE_RANK() OVER (ORDER BY year, event, session) as session_id,
+        DENSE_RANK() OVER (ORDER BY series_code, year, event, session) as session_id,
     FROM event_weather_raw
     ORDER BY session_id, time_utc_seconds
 ),

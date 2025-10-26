@@ -1,9 +1,24 @@
 
 CREATE TEMP TABLE event_laps_raw AS
     SELECT
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as year,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as event,
-        regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4) as session,
+        -- Extract series from path (supports both 'data/series/year/...' and legacy 'data/year/...')
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1),
+            'imsa'
+        ) as series_code,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1)
+        ) as year,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2)
+        ) as event,
+        COALESCE(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5),
+            regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4)
+        ) as session,
+        series_code || '-' || year as series,
 
         TRIM(number) as car,
         lap_number as lap,
@@ -26,13 +41,19 @@ CREATE TEMP TABLE event_laps_raw AS
         flag_at_fl as flags,
 
         -- Date
-        strptime(regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3), '%Y%m%d%H%M') as start_date,
+        strptime(
+            COALESCE(
+                regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
+                regexp_extract(filename, '^data/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3)
+            ),
+            '%Y%m%d%H%M'
+        ) as start_date,
 
 
         filename
 
     FROM read_csv(
-        "data/*/*/*laps.csv",
+        ["data/*/*/*laps.csv", "data/*/*/*/*laps.csv"],
         union_by_name=true,
         filename=true,
         null_padding=true,
@@ -57,8 +78,8 @@ CREATE TEMP TABLE event_laps_raw AS
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        start_date, year, clean_event_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
-        DENSE_RANK() OVER (ORDER BY year, event, session, start_date) as session_id,
+        series_code, series, start_date, year, clean_event_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
+        DENSE_RANK() OVER (ORDER BY series_code, year, event, session, start_date) as session_id,
     FROM event_laps_raw
     ORDER BY session_id, car, lap
 ),
@@ -154,7 +175,8 @@ ranked_stints AS (
         ed.team AS ed_team
     FROM ranked_stints
     LEFT JOIN event_drivers ed
-        ON ed.year = ranked_stints.year
+        ON ed.series_code = ranked_stints.series_code
+        AND ed.year = ranked_stints.year
         AND ed.event = ranked_stints.event
         AND ed.session = ranked_stints.session
         AND ed.car = ranked_stints.car
@@ -174,6 +196,8 @@ ranked_stints AS (
         ON dv.driver_id = lwd.resolved_driver_id
 )
 SELECT
+    series_code,
+    series,
     start_date,
     year,
     event,
