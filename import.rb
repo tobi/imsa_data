@@ -16,27 +16,35 @@ SERIES_CONFIG = {
   },
   'wec' => {
     name: 'FIA World Endurance Championship',
-    base_url: 'http://fiawec.alkamelsystems.com/Results/',
+    base_url: 'https://fiawec.alkamelsystems.com/Results/',
+    season_page: 'https://fiawec.alkamelsystems.com/?season=',
     series_pattern: 'FIA WEC',
-    year_prefix: ->(year) { "#{(year - 2011)}_#{year}" }  # "13_2024" for 2024 (started 2012)
+    year_prefix: ->(year) { "#{(year - 2011)}_#{year}" },  # "13_2024" for 2024 (started 2012)
+    use_html_scraping: true
   },
   'elms' => {
     name: 'European Le Mans Series',
     base_url: 'https://elms.alkamelsystems.com/Results/',
+    season_page: 'https://elms.alkamelsystems.com/?season=',
     series_pattern: 'European Le Mans Series',
-    year_prefix: ->(year) { "#{(year - 2005)}_#{year}" }  # "19_2024" for 2024 (started 2006)
+    year_prefix: ->(year) { "#{(year - 2005)}_#{year}" },  # "19_2024" for 2024 (started 2006)
+    use_html_scraping: true
   },
   'alms' => {
     name: 'Asian Le Mans Series',
-    base_url: 'http://alms.alkamelsystems.com/Results/',
+    base_url: 'https://alms.alkamelsystems.com/Results/',
+    season_page: 'https://alms.alkamelsystems.com/?season=',
     series_pattern: 'Asian Le Mans Series',
-    year_prefix: ->(year) { "#{(year - 2020)}_#{year}" }  # Adjust if needed
+    year_prefix: ->(year) { "#{(year - 2020)}_#{year}" },  # Adjust if needed
+    use_html_scraping: true
   },
   'lmc' => {
     name: 'Le Mans Cup',
     base_url: 'https://lemanscup.alkamelsystems.com/Results/',
+    season_page: 'https://lemanscup.alkamelsystems.com/?season=',
     series_pattern: 'Le Mans Cup',
-    year_prefix: ->(year) { "#{(year - 2015)}_#{year}" }  # Adjust if needed
+    year_prefix: ->(year) { "#{(year - 2015)}_#{year}" },  # Adjust if needed
+    use_html_scraping: true
   }
 }
 
@@ -61,9 +69,43 @@ class EnduranceSeriesImporter
 
   def import_year(year, output_path = 'data/')
     year_prefix = @series_config[:year_prefix].call(year)
-    events_url = "#{@series_config[:base_url]}#{year_prefix}/"
 
     puts "Importing #{@series_config[:name]} data for #{year}..."
+
+    if @series_config[:use_html_scraping]
+      import_year_via_html(year, year_prefix, output_path)
+    else
+      import_year_via_directory_listing(year, year_prefix, output_path)
+    end
+  end
+
+  def import_year_via_html(year, year_prefix, output_path)
+    season_url = "#{@series_config[:season_page]}#{year_prefix}"
+    puts "  Source: #{season_url}"
+
+    # First, get the list of all events from the dropdown
+    events = fetch_events_from_html(season_url)
+    puts "  Found #{events.length} events for #{year}"
+
+    total_csvs = 0
+    events.each do |event_code, event_name|
+      puts "\n  Importing #{event_name}..."
+      event_url = "#{season_url}&evvent=#{CGI.escape(event_code)}"
+
+      csv_files = fetch_csv_files_from_html(event_url)
+      puts "    Found #{csv_files.length} CSV files"
+      total_csvs += csv_files.length
+
+      csv_files.each do |csv_path|
+        download_csv_from_html(csv_path, year, output_path)
+      end
+    end
+
+    puts "\n  Total: #{total_csvs} CSV files across #{events.length} events"
+  end
+
+  def import_year_via_directory_listing(year, year_prefix, output_path)
+    events_url = "#{@series_config[:base_url]}#{year_prefix}/"
     puts "  Source: #{events_url}"
 
     fetch_links(events_url).each do |event_folder|
@@ -74,6 +116,97 @@ class EnduranceSeriesImporter
   end
 
   private
+
+  def fetch_events_from_html(season_url)
+    begin
+      headers = {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+      html = URI.open(season_url, headers, &:read)
+
+      # Extract event options from dropdown
+      # Pattern: <option Value="01_LOSAIL">LOSAIL</option>
+      events = html.scan(/<option Value="(\d+_[^"]+)"[^>]*>([^<]+)<\/option>/)
+
+      # Filter to only numeric event codes (exclude year selections like "14_2025")
+      events.select { |code, name| code.match?(/^\d{2}_[A-Z]/) }
+    rescue => e
+      puts "Error fetching events from #{season_url}: #{e.message}"
+      []
+    end
+  end
+
+  def fetch_csv_files_from_html(season_url)
+    begin
+      headers = {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+      html = URI.open(season_url, headers, &:read)
+
+      # Extract all CSV file paths from href attributes
+      csv_paths = html.scan(/href="(Results\/[^"]*\.CSV)"/).map(&:first)
+
+      # Filter to only results (03_), laps (23_), and weather (26_) files
+      csv_paths.select do |path|
+        path.match?(/\/(03_.*|23_.*|26_.*)\.CSV$/i)
+      end.uniq
+    rescue => e
+      puts "Error fetching season page #{season_url}: #{e.message}"
+      []
+    end
+  end
+
+  def download_csv_from_html(csv_path, year, output_path)
+    # Parse the path to extract components
+    # Example: Results/13_2024/08_BAHRAIN%20INTERNATIONAL%20CIRCUIT/575_FIA%20WEC/202410311215_Free%20Practice%201/23_Analysis_Free%20Practice%201.CSV
+    parts = csv_path.split('/')
+    return unless parts.length >= 6
+
+    event_folder = CGI.unescape(parts[2]).downcase.gsub(/[^a-z0-9]+/, '-')
+    session_folder = parts[4]
+    filename = parts[5]
+
+    # Determine file type from filename
+    file_type = case filename
+                when /^03_/i then 'results'
+                when /^23_/i then 'laps'
+                when /^26_/i then 'weather'
+                else return
+                end
+
+    # Build target path
+    target_file = File.join(
+      output_path,
+      @series_code,
+      year.to_s,
+      event_folder,
+      "#{session_folder.downcase.gsub(/[^a-z0-9]+/, '-')}-#{file_type}.csv"
+    )
+
+    return if File.exist?(target_file)
+
+    FileUtils.mkdir_p(File.dirname(target_file))
+
+    full_url = "#{@series_config[:base_url].gsub(/Results\/$/, '')}#{csv_path}"
+    print "\n[downloading] → #{target_file}"
+
+    begin
+      headers = {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept' => 'text/csv,text/plain,*/*'
+      }
+      URI.open(full_url, headers) do |remote|
+        content = remote.read
+        convert_semicolon_csv(content, target_file)
+      end
+      print " ✅"
+    rescue => e
+      print " ❌"
+      puts "\nError downloading #{full_url}: #{e.message}"
+    end
+  end
 
   def fetch_links(url)
     url = url.gsub(/\?.*$/, '')
@@ -113,43 +246,43 @@ class EnduranceSeriesImporter
   def import_series(series_url, year, output_path, event_name, series_name)
     fetch_links(series_url).each do |race_folder|
       next unless race_folder.end_with?('/') && race_folder.match(/\A\d{12}_/)
-      
+
       import_race(series_url + race_folder, year, output_path, event_name, race_folder)
     end
   end
 
   def import_race(race_url, year, output_path, event_name, race_folder)
     csv_files = find_csv_files(race_url)
-    
+
     %w[results laps weather].each do |file_type|
       csv_file = csv_files[file_type.to_sym]
       next unless csv_file
-      
-      download_and_convert_csv(race_url + csv_file, year, output_path, 
+
+      download_and_convert_csv(race_url + csv_file, year, output_path,
                               event_name, race_folder, file_type)
     end
   end
 
   def find_csv_files(race_url)
     all_files = []
-    
+
     # Get files from main folder and subfolders
     links = fetch_links(race_url)
     files, folders = links.partition { |link| !link.end_with?('/') }
     all_files.concat(files)
-    
+
     # Check subfolders for additional CSV files
     folders.each do |folder|
       next if folder.include?('?')
-      
+
       subfolder_files = fetch_links(race_url + folder)
                        .reject { |f| f.end_with?('/') }
                        .map { |f| folder + f }
       all_files.concat(subfolder_files)
     end
-    
+
     csvs = all_files.grep(/\.csv$/i).reverse
-    
+
     {
       results: find_best_file(csvs, /03_.*\.csv$/i),
       laps: csvs.find { |f| f.match(/23_.*\.csv$/i) },
@@ -166,13 +299,13 @@ class EnduranceSeriesImporter
 
   def download_and_convert_csv(url, year, output_path, event_name, race_folder, file_type)
     target_file = build_target_path(output_path, year, event_name, race_folder, file_type)
-    
+
     return if File.exist?(target_file)
-    
+
     FileUtils.mkdir_p(File.dirname(target_file))
-    
+
     print "\n[downloading] → #{target_file}"
-    
+
     begin
       # Add browser-like headers to avoid 403 errors
       headers = {
