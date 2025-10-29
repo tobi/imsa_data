@@ -3,11 +3,39 @@ require 'fileutils'
 
 OUTPUT_DIR = File.expand_path("output")
 
+def duckdb_available?
+  system("which duckdb > /dev/null 2>&1") || system("command -v duckdb > /dev/null 2>&1")
+end
+
+def print_duckdb_install_instructions
+  puts "\n❌ DuckDB binary not found in PATH"
+  puts "\nInstall DuckDB using one of the following methods:\n"
+  puts "Linux:"
+  puts "  wget https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip"
+  puts "  unzip duckdb_cli-linux-amd64.zip"
+  puts "  sudo mv duckdb /usr/local/bin/"
+  puts "  chmod +x /usr/local/bin/duckdb"
+  puts "\nmacOS (using Homebrew):"
+  puts "  brew install duckdb"
+  puts "\nmacOS (manual):"
+  puts "  wget https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-osx-universal.zip"
+  puts "  unzip duckdb_cli-osx-universal.zip"
+  puts "  sudo mv duckdb /usr/local/bin/"
+  puts "  chmod +x /usr/local/bin/duckdb"
+  puts "\nOr visit: https://duckdb.org/docs/installation/"
+  puts ""
+end
+
 task default: "db:update"
 
 namespace :db do
   desc "Regenerate and open the database"
   task :update do
+    unless duckdb_available?
+      print_duckdb_install_instructions
+      abort("Please install DuckDB and try again.")
+    end
+
     FileUtils.mkdir_p(OUTPUT_DIR)
 
     sql_files = Dir["*.sql"].sort.collect { |file| ".read #{file}" }.join("\n")
@@ -34,6 +62,10 @@ namespace :db do
 
   desc "Open the database in interactive mode"
   task open: :update do
+    unless duckdb_available?
+      print_duckdb_install_instructions
+      abort("Please install DuckDB and try again.")
+    end
     exec "duckdb #{OUTPUT_DIR}/imsa.duckdb"
   end
 end
