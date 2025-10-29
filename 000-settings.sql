@@ -28,6 +28,13 @@ CREATE OR REPLACE MACRO clean_event_name(event_name) AS (
         WHEN event_name ILIKE '%roar%' THEN 'Daytona (Roar Test)'
         WHEN event_name ILIKE '%laguna-seca%' THEN 'Laguna Seca'
         WHEN event_name ILIKE '%virginia%' THEN 'Virginia International Raceway'
+        WHEN event_name ILIKE '%circuit-of-the-americas%' OR event_name ILIKE '%cota%' THEN 'Circuit of the Americas'
+        WHEN event_name ILIKE '%losail%' THEN 'Losail'
+        WHEN event_name ILIKE '%imola%' THEN 'Imola'
+        WHEN event_name ILIKE '%spa-francorchamps%' OR event_name ILIKE '%spa%' THEN 'Spa-Francorchamps'
+        WHEN event_name ILIKE '%le-mans%' THEN 'Le Mans'
+        WHEN event_name ILIKE '%sao-paulo%' THEN 'São Paulo'
+        WHEN event_name ILIKE '%fuji-speedway%' OR event_name ILIKE '%fuji%' THEN 'Fuji Speedway'
         WHEN event_name ILIKE '%february%' AND event_name ILIKE '%test%' THEN 'Sebring (February Test)'
         ELSE ERROR('Unknown track, add to mapping: ' || event_name)
     END
