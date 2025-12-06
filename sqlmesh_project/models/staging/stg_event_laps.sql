@@ -8,12 +8,12 @@ MODEL (
 
 WITH raw_laps AS (
     SELECT
-        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-laps.csv
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as series_code,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as year,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3) as event_raw,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5) as session,
-        series_code || '-' || year as series,
+        -- Extract path components using macros (anchored to file structure, not path prefix)
+        @extract_series(filename) as series_code,
+        @extract_year(filename) as year,
+        @extract_event(filename) as event_raw,
+        @extract_session(filename, 'laps') as session,
+        @extract_series(filename) || '-' || @extract_year(filename) as series,
 
         TRIM(number) as car,
         lap_number as lap,
@@ -33,16 +33,13 @@ WITH raw_laps AS (
         crossing_finish_line_in_pit,
         flag_at_fl as flags,
 
-        -- Date
-        strptime(
-            regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
-            '%Y%m%d%H%M'
-        ) as start_date,
+        -- Date from timestamp in filename
+        strptime(@extract_timestamp(filename), '%Y%m%d%H%M') as start_date,
 
         filename
 
     FROM read_csv(
-        "../data/*/*/*/*laps.csv",
+        @data_path() || '/*/*/*/*laps.csv',
         union_by_name=true,
         filename=true,
         null_padding=true,
@@ -185,7 +182,6 @@ laps_with_driver_data AS (
         ranked_stints.stint_lap,
         ranked_stints.team AS stint_team,
         ed.license AS ed_license,
-        ed.license_rank AS ed_license_rank,
         ed.country AS ed_country,
         ed.team AS ed_team
     FROM ranked_stints
@@ -228,7 +224,6 @@ SELECT
     stint_number,
     stint_lap,
     COALESCE(ed_license, NULL) AS license,
-    COALESCE(ed_license_rank, NULL) AS license_rank,
     COALESCE(ed_country, NULL) AS driver_country,
     COALESCE(ed_team, stint_team, NULL) AS team_name
 FROM laps_with_driver_data

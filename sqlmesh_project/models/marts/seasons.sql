@@ -12,7 +12,7 @@ WITH event_first_sessions AS (
         year,
         event,
         MIN(start_date) AS event_start_date
-    FROM marts.laps_with_bpillar
+    FROM marts.laps
     GROUP BY series_code, year, event
 )
 
@@ -43,7 +43,7 @@ SELECT
           AND TRIM(l.flags) <> ''
           AND UPPER(TRIM(l.flags)) <> 'GF'
     ) AS flags
-FROM marts.laps_with_bpillar l
+FROM marts.laps l
 JOIN event_first_sessions efs
     ON efs.series_code = l.series_code
     AND efs.year = l.year

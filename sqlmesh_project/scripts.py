@@ -52,6 +52,7 @@ def update() -> None:
     print("\nDatabase updated successfully!")
     print(f"  {OUTPUT_DIR}/imsa.duckdb")
     print(f"  {OUTPUT_DIR}/drivers.csv")
+    print(f"  {OUTPUT_DIR}/events.csv")
     print(f"  {OUTPUT_DIR}/laps.csv")
     print(f"  {OUTPUT_DIR}/seasons.csv")
 
@@ -97,7 +98,8 @@ def export_csv() -> None:
 
     exports = [
         ("marts.drivers", "drivers.csv"),
-        ("marts.laps_with_bpillar", "laps.csv"),
+        ("marts.events", "events.csv"),
+        ("marts.laps", "laps.csv"),
         ("marts.seasons", "seasons.csv"),
     ]
 

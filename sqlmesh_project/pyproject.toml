@@ -5,7 +5,7 @@ description = "SQLMesh-based data transformation pipeline for IMSA endurance rac
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "sqlmesh[duckdb]>=0.100.0",
+    "sqlmesh[duckdb,lsp,web]>=0.100.0",
 ]
 
 [tool.uv]

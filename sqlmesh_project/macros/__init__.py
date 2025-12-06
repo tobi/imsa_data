@@ -34,23 +34,6 @@ def clean_event_name(evaluator: MacroEvaluator, event_name: str) -> str:
 
 
 @macro()
-def license_rank(evaluator: MacroEvaluator, license_col: str) -> str:
-    """
-    Convert license letters to numeric ranks.
-    P=5 (Platinum), G=4 (Gold), S=3 (Silver), B=2 (Bronze)
-    """
-    return f"""
-    CASE
-        WHEN UPPER({license_col}[1:1]) = 'P' THEN 5
-        WHEN UPPER({license_col}[1:1]) = 'G' THEN 4
-        WHEN UPPER({license_col}[1:1]) = 'S' THEN 3
-        WHEN UPPER({license_col}[1:1]) = 'B' THEN 2
-        ELSE 0
-    END
-    """
-
-
-@macro()
 def parse_time(evaluator: MacroEvaluator, time_col: str) -> str:
     """
     Parse various time formats into decimal seconds.
@@ -59,10 +42,10 @@ def parse_time(evaluator: MacroEvaluator, time_col: str) -> str:
     return f"""
     EXTRACT(EPOCH FROM(
         COALESCE(
-            TRY_STRPTIME({time_col}, '%%-H:%%M:%%S.%%g'),
-            TRY_STRPTIME('00:' || {time_col}, '%%-H:%%M:%%S.%%g'),
-            TRY_STRPTIME('00:00:' || {time_col}, '%%-H:%%M:%%S.%%g'),
-            TRY_STRPTIME('23:59:59', '%%-H:%%M:%%S')
+            TRY_STRPTIME({time_col}, '%-H:%M:%S.%g'),
+            TRY_STRPTIME('00:' || {time_col}, '%-H:%M:%S.%g'),
+            TRY_STRPTIME('00:00:' || {time_col}, '%-H:%M:%S.%g'),
+            TRY_STRPTIME('23:59:59', '%-H:%M:%S')
         )
     )::TIME)::DECIMAL(10,3)
     """
@@ -77,11 +60,11 @@ def format_time(evaluator: MacroEvaluator, time_col: str) -> str:
     CASE
         WHEN {time_col} IS NULL THEN NULL
         WHEN {time_col} > 3600 THEN
-            STRFTIME('%%H:%%M:%%S', MAKE_TIMESTAMP(CAST(FLOOR({time_col}) * 1000000 AS BIGINT))) ||
+            STRFTIME('%H:%M:%S', MAKE_TIMESTAMP(CAST(FLOOR({time_col}) * 1000000 AS BIGINT))) ||
             '.' ||
             LPAD(CAST(CAST(ROUND(({time_col} - FLOOR({time_col})) * 1000) AS INTEGER) AS VARCHAR), 3, '0')
         ELSE
-            STRFTIME('%%M:%%S', MAKE_TIMESTAMP(CAST(FLOOR({time_col}) * 1000000 AS BIGINT))) ||
+            STRFTIME('%M:%S', MAKE_TIMESTAMP(CAST(FLOOR({time_col}) * 1000000 AS BIGINT))) ||
             '.' ||
             LPAD(CAST(CAST(ROUND(({time_col} - FLOOR({time_col})) * 1000) AS INTEGER) AS VARCHAR), 3, '0')
     END
@@ -104,6 +87,80 @@ def format_gap(evaluator: MacroEvaluator, time_col: str) -> str:
 @macro()
 def data_path(evaluator: MacroEvaluator) -> str:
     """
-    Returns the path to the data directory.
+    Returns the path to the data directory from config variables.
     """
-    return "'../data'"
+    return f"'{evaluator.var('data_path')}'"
+
+
+@macro()
+def extract_series(evaluator: MacroEvaluator, filename_col: str) -> str:
+    """Extract series_code from filename like .../imsa/2022/05-event/..."""
+    return f"regexp_extract({filename_col}, '/([^/]+)/\\d{{4}}/\\d{{2}}-[^/]+/[^/]+-(?:laps|results|weather)\\.csv$', 1)"
+
+
+@macro()
+def extract_year(evaluator: MacroEvaluator, filename_col: str) -> str:
+    """Extract year from filename."""
+    return f"regexp_extract({filename_col}, '/(\\d{{4}})/\\d{{2}}-[^/]+/[^/]+-(?:laps|results|weather)\\.csv$', 1)"
+
+
+@macro()
+def extract_event(evaluator: MacroEvaluator, filename_col: str) -> str:
+    """Extract event name from filename."""
+    return f"regexp_extract({filename_col}, '/\\d{{4}}/\\d{{2}}-([^/]+)/[^/]+-(?:laps|results|weather)\\.csv$', 1)"
+
+
+@macro()
+def extract_timestamp(evaluator: MacroEvaluator, filename_col: str) -> str:
+    """Extract timestamp from filename."""
+    return f"regexp_extract({filename_col}, '/(\\d{{12}})-[^/]+-(?:laps|results|weather)\\.csv$', 1)"
+
+
+@macro()
+def extract_session(evaluator: MacroEvaluator, filename_col: str, file_type: str) -> str:
+    """Extract session name from filename."""
+    return f"regexp_extract({filename_col}, '/\\d{{12}}-([^/]+)-{file_type}\\.csv$', 1)"
+
+
+@macro()
+def normalize_driver_name(evaluator: MacroEvaluator, name_col: str) -> str:
+    """
+    Normalize a driver name for fuzzy matching:
+    - Strip whitespace and normalize spaces
+    - Convert to lowercase
+    - Remove common diacritics (ö->o, é->e, etc.)
+    - Remove suffixes like Jr., III, etc.
+    """
+    return f"""
+    TRIM(
+        REGEXP_REPLACE(
+            REGEXP_REPLACE(
+                LOWER(
+                    TRANSLATE(
+                        {name_col},
+                        'ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿÑñÇç',
+                        'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOOooooooUUUUuuuuYyyNnCc'
+                    )
+                ),
+                '\\s+', ' ', 'g'
+            ),
+            '\\s*(jr\\.?|sr\\.?|iii|ii|iv)$', '', 'gi'
+        )
+    )
+    """
+
+
+@macro()
+def driver_name_key(evaluator: MacroEvaluator, name_col: str) -> str:
+    """
+    Generate a sortable key from a driver name for consistent ordering.
+    Extracts lastname, firstname order for sorting.
+    """
+    return f"""
+    CASE
+        WHEN {name_col} LIKE '% %' THEN
+            SPLIT_PART({name_col}, ' ', -1) || ', ' ||
+            REGEXP_REPLACE({name_col}, '\\s+[^\\s]+$', '')
+        ELSE {name_col}
+    END
+    """

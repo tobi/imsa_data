@@ -1,5 +1,5 @@
 MODEL (
-    name marts.event_metadata,
+    name marts.events,
     kind FULL,
     cron '@daily',
     grain (series_code, year, event),
@@ -13,7 +13,7 @@ WITH base_metadata AS (
         event,
         -- Estimate race duration from max session time (in minutes)
         CAST(MAX(session_time) / 60 AS INTEGER) as race_duration_minutes
-    FROM marts.laps_with_bpillar
+    FROM marts.laps
     WHERE session = 'race' AND session_time IS NOT NULL
     GROUP BY series_code, year, event
 ),

@@ -8,23 +8,20 @@ MODEL (
 
 WITH base_csv AS (
     SELECT
-        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-results.csv
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as series_code,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as year,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3) as event_raw,
-        regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5) as session,
-        series_code || '-' || year as series,
+        -- Extract path components using macros (anchored to file structure, not path prefix)
+        @extract_series(filename) as series_code,
+        @extract_year(filename) as year,
+        @extract_event(filename) as event_raw,
+        @extract_session(filename, 'results') as session,
+        @extract_series(filename) || '-' || @extract_year(filename) as series,
 
         -- Car, team, and class
         TRIM(number) as car,
         TEAM as team,
         _CLASS as class,
 
-        -- Date
-        strptime(
-            regexp_extract(filename, '^[^/]*/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4),
-            '%Y%m%d%H%M'
-        ) as start_date,
+        -- Date from timestamp in filename
+        strptime(@extract_timestamp(filename), '%Y%m%d%H%M') as start_date,
 
         filename,
 
@@ -43,7 +40,7 @@ WITH base_csv AS (
         DRIVER6_COUNTRY, DRIVER6_LICENSE
 
     FROM read_csv(
-        "../data/*/*/*/*results.csv",
+        @data_path() || '/*/*/*/*results.csv',
         union_by_name=true,
         filename=true,
         null_padding=true,
@@ -97,9 +94,8 @@ normalized AS (
         REGEXP_REPLACE(TRIM(name), '\\s+', ' ') AS canonical_name,
         name AS name_original,
         LOWER(REGEXP_REPLACE(TRIM(name), '\\s+', ' ')) AS driver_id,
-        -- Fix common data typos
-        CASE WHEN license = 'Platinium' THEN 'Platinum' ELSE license END AS license,
-        @license_rank(CASE WHEN license = 'Platinium' THEN 'Platinum' ELSE license END) AS license_rank,
+        -- Fix common data typos (Platinium -> Platinum)
+        CASE WHEN license = 'Platinium' THEN 'Platinum' ELSE license END AS license_fixed,
         country
     FROM unpivoted
 )
@@ -116,8 +112,7 @@ SELECT
     canonical_name,
     name_original AS name,
     imsa_driver_id,
-    license,
-    license_rank,
+    license_fixed AS license,
     team,
     class,
     country
