@@ -332,6 +332,32 @@ This creates:
 - `output/drivers.csv` - Driver summary data
 - `output/laps.csv` - Comprehensive lap data with weather integration
 
+### SQLMesh Workflow (Alternative)
+
+For a more modern data transformation workflow with virtual environments, incremental processing, and built-in audits, use the SQLMesh-based pipeline:
+
+```bash
+cd sqlmesh_project
+uv run scripts.py update
+```
+
+SQLMesh provides:
+- **Plan/Apply Workflow**: Preview changes before deploying (like Terraform for data)
+- **Incremental Processing**: Only rebuild what's changed
+- **Column-Level Lineage**: Track data flow through transformations
+- **Built-in Audits**: Data quality checks at every step
+- **Virtual Environments**: Test changes in isolation
+
+Additional commands:
+```bash
+uv run scripts.py plan    # Preview changes without applying
+uv run scripts.py audit   # Run data quality audits
+uv run scripts.py ui      # Launch web-based UI
+uv run scripts.py shell   # Open DuckDB shell
+```
+
+See `sqlmesh_project/README.md` for detailed SQLMesh documentation.
+
 ### Explore Data
 
 Open the database in interactive mode:
@@ -383,6 +409,17 @@ Examples:
 **Documentation:**
 - **`GENERALIZATION_PROPOSAL.md`** - Full research and design for multi-series support
 - **`IMPLEMENTATION_SUMMARY.md`** - Technical implementation details
+
+**SQLMesh Project (Alternative Pipeline):**
+- **`sqlmesh_project/`** - SQLMesh-based data transformation pipeline
+  - `pyproject.toml` - Project config with uv script commands
+  - `scripts.py` - CLI implementations (update, plan, audit, ui, etc.)
+  - `config.yaml` - SQLMesh configuration
+  - `macros/__init__.py` - Python macros (clean_event_name, parse_time, etc.)
+  - `models/staging/` - Staging models (stg_event_drivers, stg_event_laps, stg_event_weather)
+  - `models/marts/` - Mart models (laps, drivers, seasons, event_metadata)
+  - `seeds/class_mapping.csv` - Cross-series class normalization data
+  - `audits/data_quality.sql` - Data quality audit definitions
 
 ## Architecture
 

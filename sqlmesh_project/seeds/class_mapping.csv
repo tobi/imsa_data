@@ -1,0 +1,25 @@
+series_code,class_original,class_normalized,class_category,description
+imsa,GTP,LMP1,LMP1,Grand Touring Prototype - Top IMSA prototype class (LMDh)
+imsa,LMP2,LMP2,LMP2,Le Mans Prototype 2 - International spec
+imsa,LMP3,LMP3,LMP3,Le Mans Prototype 3 - Entry level prototype
+imsa,GTD PRO,GT3 Pro,GT3,GT Daytona Pro - Professional GT3 cars
+imsa,GTD,GT3 Am,GT3,GT Daytona - Pro-Am GT3 cars
+imsa,DPi,LMP1,LMP1,Daytona Prototype international (pre-2023)
+imsa,GTLM,GTE,GTE,GT Le Mans (pre-2022)
+wec,HYPERCAR,LMP1,LMP1,LMH/LMDh Hypercar - Top WEC prototype class
+wec,LMP2,LMP2,LMP2,Le Mans Prototype 2
+wec,LMGT3,GT3,GT3,Le Mans GT3
+wec,GTE PRO,GTE Pro,GTE,GTE Professional (pre-2023)
+wec,GTE AM,GTE Am,GTE,GTE Amateur (pre-2023)
+wec,LMP1,LMP1,LMP1,Le Mans Prototype 1 (pre-2021)
+elms,LMP2,LMP2,LMP2,Le Mans Prototype 2
+elms,LMP2 PRO/AM,LMP2,LMP2,Le Mans Prototype 2 Pro-Am
+elms,LMP3,LMP3,LMP3,Le Mans Prototype 3
+elms,LMGT3,GT3,GT3,Le Mans GT3
+alms,LMP2,LMP2,LMP2,Le Mans Prototype 2
+alms,LMP2 AM,LMP2,LMP2,Le Mans Prototype 2 Amateur
+alms,LMP3,LMP3,LMP3,Le Mans Prototype 3
+alms,GT,GT3,GT3,GT class
+alms,GT3,GT3,GT3,GT3 class
+lmc,LMP3,LMP3,LMP3,Le Mans Prototype 3
+lmc,GT3,GT3,GT3,GT3 class
