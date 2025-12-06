@@ -12,8 +12,9 @@ This directory contains the SQLMesh-based data transformation pipeline for the I
 
 ```
 sqlmesh_project/
+├── pyproject.toml           # Project config and dependencies
+├── scripts.py               # CLI command implementations
 ├── config.yaml              # SQLMesh configuration
-├── Rakefile                 # Build automation tasks
 ├── macros/                  # Reusable SQL macros
 │   └── __init__.py          # Python-defined macros (clean_event_name, parse_time, etc.)
 ├── seeds/                   # Static reference data
@@ -48,29 +49,23 @@ sqlmesh_project/
 
 ## Installation
 
-1. Install SQLMesh with DuckDB support:
-   ```bash
-   pip install 'sqlmesh[duckdb]'
-   ```
-
-2. Install DuckDB CLI (for CSV exports):
-   ```bash
-   # macOS
-   brew install duckdb
-
-   # Linux
-   wget https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip
-   unzip duckdb_cli-linux-amd64.zip
-   sudo mv duckdb /usr/local/bin/
-   ```
+Install [uv](https://docs.astral.sh/uv/) if you haven't already:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 ## Usage
+
+All commands are run from the `sqlmesh_project` directory:
+
+```bash
+cd sqlmesh_project
+```
 
 ### Build the Database
 
 ```bash
-cd sqlmesh_project
-rake db:update
+uv run scripts.py update
 ```
 
 This will:
@@ -81,15 +76,23 @@ This will:
 ### Preview Changes (Plan)
 
 ```bash
-rake db:plan
+uv run scripts.py plan
 ```
 
 Shows what would be built without making changes.
 
+### Apply Changes
+
+```bash
+uv run scripts.py apply
+```
+
+Applies pending changes without interactive prompts.
+
 ### Run Audits
 
 ```bash
-rake db:audit
+uv run scripts.py audit
 ```
 
 Validates data quality across all models.
@@ -97,7 +100,7 @@ Validates data quality across all models.
 ### Launch SQLMesh UI
 
 ```bash
-rake db:ui
+uv run scripts.py ui
 ```
 
 Opens a web-based interface for exploring models, lineage, and diffs.
@@ -105,10 +108,40 @@ Opens a web-based interface for exploring models, lineage, and diffs.
 ### View DAG
 
 ```bash
-rake db:dag
+uv run scripts.py dag
 ```
 
 Shows the model dependency graph.
+
+### Export CSVs
+
+```bash
+uv run scripts.py export
+```
+
+Exports tables to CSV files without rebuilding.
+
+### Open Database Shell
+
+```bash
+uv run scripts.py shell
+```
+
+Opens DuckDB interactive shell with the database.
+
+## All Commands
+
+| Command | Description |
+|---------|-------------|
+| `uv run scripts.py update` | Build database and export CSVs |
+| `uv run scripts.py plan` | Preview changes (interactive) |
+| `uv run scripts.py apply` | Apply changes (non-interactive) |
+| `uv run scripts.py audit` | Run data quality audits |
+| `uv run scripts.py ui` | Launch web UI |
+| `uv run scripts.py dag` | Show model DAG |
+| `uv run scripts.py test` | Run SQLMesh tests |
+| `uv run scripts.py export` | Export tables to CSV |
+| `uv run scripts.py shell` | Open DuckDB shell |
 
 ## Model Hierarchy
 

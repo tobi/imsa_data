@@ -338,8 +338,7 @@ For a more modern data transformation workflow with virtual environments, increm
 
 ```bash
 cd sqlmesh_project
-pip install 'sqlmesh[duckdb]'
-rake db:update
+uv run scripts.py update
 ```
 
 SQLMesh provides:
@@ -349,11 +348,12 @@ SQLMesh provides:
 - **Built-in Audits**: Data quality checks at every step
 - **Virtual Environments**: Test changes in isolation
 
-Additional SQLMesh commands:
+Additional commands:
 ```bash
-rake db:plan   # Preview changes without applying
-rake db:audit  # Run data quality audits
-rake db:ui     # Launch web-based UI
+uv run scripts.py plan    # Preview changes without applying
+uv run scripts.py audit   # Run data quality audits
+uv run scripts.py ui      # Launch web-based UI
+uv run scripts.py shell   # Open DuckDB shell
 ```
 
 See `sqlmesh_project/README.md` for detailed SQLMesh documentation.
@@ -412,6 +412,8 @@ Examples:
 
 **SQLMesh Project (Alternative Pipeline):**
 - **`sqlmesh_project/`** - SQLMesh-based data transformation pipeline
+  - `pyproject.toml` - Project config with uv script commands
+  - `scripts.py` - CLI implementations (update, plan, audit, ui, etc.)
   - `config.yaml` - SQLMesh configuration
   - `macros/__init__.py` - Python macros (clean_event_name, parse_time, etc.)
   - `models/staging/` - Staging models (stg_event_drivers, stg_event_laps, stg_event_weather)
