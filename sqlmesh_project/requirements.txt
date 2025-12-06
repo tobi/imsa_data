@@ -1,0 +1,2 @@
+# SQLMesh with DuckDB support
+sqlmesh[duckdb]>=0.100.0

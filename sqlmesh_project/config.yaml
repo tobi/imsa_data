@@ -1,0 +1,18 @@
+gateways:
+  local:
+    connection:
+      type: duckdb
+      database: ./output/imsa.duckdb
+
+default_gateway: local
+
+model_defaults:
+  dialect: duckdb
+  start: 2021-01-01
+
+# Project info
+project: imsa_data
+
+# Variables that can be referenced in models
+variables:
+  data_path: ../data
