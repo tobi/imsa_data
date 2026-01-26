@@ -35,6 +35,7 @@ CREATE TEMP TABLE event_weather_raw AS
         filename=true,
         null_padding=true,
         normalize_names=true,
+        ignore_errors=true,
         types={
             'TIME_UTC_SECONDS': 'BIGINT',
             'TIME_UTC_STR': 'STRING',

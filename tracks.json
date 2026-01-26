@@ -208,6 +208,15 @@
       "aliases": ["barcelona", "catalunya"]
     },
     {
+      "id": "motorland-aragon",
+      "official_name": "Motorland Aragon",
+      "short_name": "Aragon",
+      "country": "Spain",
+      "latitude": 40.9672,
+      "longitude": -0.4815,
+      "aliases": ["motorland", "aragon"]
+    },
+    {
       "id": "paul-ricard",
       "official_name": "Circuit Paul Ricard",
       "short_name": "Paul Ricard",

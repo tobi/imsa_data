@@ -1,0 +1,32 @@
+[
+  {
+    "event_number": "00",
+    "event_name": "OFFICIAL TEST - BARCELONA-CATALUNYA",
+    "event_folder": "00-official-test-barcelona-catalunya"
+  },
+  {
+    "event_number": "01",
+    "event_name": "BARCELONA-CATALUNYA",
+    "event_folder": "01-barcelona-catalunya"
+  },
+  {
+    "event_number": "02",
+    "event_name": "PAUL RICARD",
+    "event_folder": "02-paul-ricard"
+  },
+  {
+    "event_number": "03",
+    "event_name": "CIRCUITO MOTORLAND ARAGON",
+    "event_folder": "03-circuito-motorland-aragon"
+  },
+  {
+    "event_number": "04",
+    "event_name": "SPA FRANCORCHAMPS",
+    "event_folder": "04-spa-francorchamps"
+  },
+  {
+    "event_number": "05",
+    "event_name": "AUTODROMO DO ALGARVE",
+    "event_folder": "05-autodromo-do-algarve"
+  }
+]

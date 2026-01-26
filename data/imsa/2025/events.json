@@ -1,0 +1,152 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "ROAR Before the 24",
+    "event_folder": "01-roar-before-the-24"
+  },
+  {
+    "event_number": "02",
+    "event_name": "Daytona International Speedway",
+    "event_folder": "02-daytona-international-speedway"
+  },
+  {
+    "event_number": "03",
+    "event_name": "February IMSA Sanctioned Test",
+    "event_folder": "03-february-imsa-sanctioned-test"
+  },
+  {
+    "event_number": "03",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "03-virginia-international-raceway"
+  },
+  {
+    "event_number": "04",
+    "event_name": "St- Petersburg Street Course",
+    "event_folder": "04-st-petersburg-street-course"
+  },
+  {
+    "event_number": "05",
+    "event_name": "Circuit of the Americas (VPRC)",
+    "event_folder": "05-circuit-of-the-americas-vprc-"
+  },
+  {
+    "event_number": "06",
+    "event_name": "Sebring International Raceway",
+    "event_folder": "06-sebring-international-raceway"
+  },
+  {
+    "event_number": "07",
+    "event_name": "Barber Motorsports Park",
+    "event_folder": "07-barber-motorsports-park"
+  },
+  {
+    "event_number": "07",
+    "event_name": "Long Beach Street Circuit",
+    "event_folder": "07-long-beach-street-circuit"
+  },
+  {
+    "event_number": "08",
+    "event_name": "Barber Motorsports Park",
+    "event_folder": "08-barber-motorsports-park"
+  },
+  {
+    "event_number": "09",
+    "event_name": "Miami Grand Prix",
+    "event_folder": "09-miami-grand-prix"
+  },
+  {
+    "event_number": "10",
+    "event_name": "Weathertech Raceway Laguna Seca",
+    "event_folder": "10-weathertech-raceway-laguna-seca"
+  },
+  {
+    "event_number": "11",
+    "event_name": "Detroit Street Course",
+    "event_folder": "11-detroit-street-course"
+  },
+  {
+    "event_number": "12",
+    "event_name": "Mid-Ohio Sports Car Course",
+    "event_folder": "12-mid-ohio-sports-car-course"
+  },
+  {
+    "event_number": "13",
+    "event_name": "Circuit Gilles Villeneuve (PCCNA)",
+    "event_folder": "13-circuit-gilles-villeneuve-pccna-"
+  },
+  {
+    "event_number": "14",
+    "event_name": "Watkins Glen International",
+    "event_folder": "14-watkins-glen-international"
+  },
+  {
+    "event_number": "15",
+    "event_name": "Canadian Tire Motorsport Park",
+    "event_folder": "15-canadian-tire-motorsport-park"
+  },
+  {
+    "event_number": "15",
+    "event_name": "Martinsville Speedway",
+    "event_folder": "15-martinsville-speedway"
+  },
+  {
+    "event_number": "16",
+    "event_name": "Road America",
+    "event_folder": "16-road-america"
+  },
+  {
+    "event_number": "17",
+    "event_name": "Circuit of the Americas",
+    "event_folder": "17-circuit-of-the-americas"
+  },
+  {
+    "event_number": "17",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "17-virginia-international-raceway"
+  },
+  {
+    "event_number": "18",
+    "event_name": "Martinsville Speedway - Test",
+    "event_folder": "18-martinsville-speedway-test"
+  },
+  {
+    "event_number": "19",
+    "event_name": "Circuit of the Americas (MC)",
+    "event_folder": "19-circuit-of-the-americas-mc-"
+  },
+  {
+    "event_number": "20",
+    "event_name": "Indianapolis Motor Speedway RC",
+    "event_folder": "20-indianapolis-motor-speedway-rc"
+  },
+  {
+    "event_number": "21",
+    "event_name": "Charlotte Motor Speedway",
+    "event_folder": "21-charlotte-motor-speedway"
+  },
+  {
+    "event_number": "22",
+    "event_name": "Road Atlanta",
+    "event_folder": "22-road-atlanta"
+  },
+  {
+    "event_number": "23",
+    "event_name": "Circuit of the Americas (PCCNA)",
+    "event_folder": "23-circuit-of-the-americas-pccna-"
+  },
+  {
+    "event_number": "24",
+    "event_name": "Martinsville (MX-5 Cup)",
+    "event_folder": "24-martinsville-mx-5-cup-"
+  },
+  {
+    "event_number": "25",
+    "event_name": "Circuit Florida",
+    "event_folder": "25-circuit-florida"
+  },
+  {
+    "event_number": "26",
+    "event_name": "Misano World Circuit (LST)",
+    "event_folder": "26-misano-world-circuit-lst-"
+  }
+]

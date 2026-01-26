@@ -1,0 +1,42 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "LOSAIL",
+    "event_folder": "01-losail"
+  },
+  {
+    "event_number": "02",
+    "event_name": "IMOLA",
+    "event_folder": "02-imola"
+  },
+  {
+    "event_number": "03",
+    "event_name": "SPA FRANCORCHAMPS",
+    "event_folder": "03-spa-francorchamps"
+  },
+  {
+    "event_number": "04",
+    "event_name": "LE MANS",
+    "event_folder": "04-le-mans"
+  },
+  {
+    "event_number": "05",
+    "event_name": "SAO PAULO",
+    "event_folder": "05-sao-paulo"
+  },
+  {
+    "event_number": "06",
+    "event_name": "CIRCUIT OF THE AMERICAS",
+    "event_folder": "06-circuit-of-the-americas"
+  },
+  {
+    "event_number": "07",
+    "event_name": "FUJI SPEEDWAY",
+    "event_folder": "07-fuji-speedway"
+  },
+  {
+    "event_number": "08",
+    "event_name": "BAHRAIN INTERNATIONAL CIRCUIT",
+    "event_folder": "08-bahrain-international-circuit"
+  }
+]

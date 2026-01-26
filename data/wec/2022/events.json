@@ -1,0 +1,32 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "SEBRING",
+    "event_folder": "01-sebring"
+  },
+  {
+    "event_number": "02",
+    "event_name": "SPA FRANCORCHAMPS",
+    "event_folder": "02-spa-francorchamps"
+  },
+  {
+    "event_number": "03",
+    "event_name": "LE MANS",
+    "event_folder": "03-le-mans"
+  },
+  {
+    "event_number": "04",
+    "event_name": "AUTODROMO NAZIONALE DI MONZA",
+    "event_folder": "04-autodromo-nazionale-di-monza"
+  },
+  {
+    "event_number": "05",
+    "event_name": "FUJI SPEEDWAY",
+    "event_folder": "05-fuji-speedway"
+  },
+  {
+    "event_number": "06",
+    "event_name": "BAHRAIN INTERNATIONAL CIRCUIT",
+    "event_folder": "06-bahrain-international-circuit"
+  }
+]

@@ -1,0 +1,117 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "ROAR Before the 24",
+    "event_folder": "01-roar-before-the-24"
+  },
+  {
+    "event_number": "02",
+    "event_name": "Daytona International Speedway",
+    "event_folder": "02-daytona-international-speedway"
+  },
+  {
+    "event_number": "03",
+    "event_name": "Sebring February Test",
+    "event_folder": "03-sebring-february-test"
+  },
+  {
+    "event_number": "04",
+    "event_name": "St- Petersburg Street Course",
+    "event_folder": "04-st-petersburg-street-course"
+  },
+  {
+    "event_number": "05",
+    "event_name": "PCCNA Sebring Test",
+    "event_folder": "05-pccna-sebring-test"
+  },
+  {
+    "event_number": "06",
+    "event_name": "Sebring Prologue",
+    "event_folder": "06-sebring-prologue"
+  },
+  {
+    "event_number": "07",
+    "event_name": "Sebring International Raceway",
+    "event_folder": "07-sebring-international-raceway"
+  },
+  {
+    "event_number": "08",
+    "event_name": "Long Beach Street Circuit",
+    "event_folder": "08-long-beach-street-circuit"
+  },
+  {
+    "event_number": "09",
+    "event_name": "Miami Grand Prix",
+    "event_folder": "09-miami-grand-prix"
+  },
+  {
+    "event_number": "10",
+    "event_name": "Weathertech Raceway Laguna Seca",
+    "event_folder": "10-weathertech-raceway-laguna-seca"
+  },
+  {
+    "event_number": "11",
+    "event_name": "Detroit Street Course",
+    "event_folder": "11-detroit-street-course"
+  },
+  {
+    "event_number": "12",
+    "event_name": "Watkins Glen International",
+    "event_folder": "12-watkins-glen-international"
+  },
+  {
+    "event_number": "13",
+    "event_name": "Canadian Tire Motorsport Park",
+    "event_folder": "13-canadian-tire-motorsport-park"
+  },
+  {
+    "event_number": "14",
+    "event_name": "Lime Rock Park",
+    "event_folder": "14-lime-rock-park"
+  },
+  {
+    "event_number": "15",
+    "event_name": "PCCNA Road America",
+    "event_folder": "15-pccna-road-america"
+  },
+  {
+    "event_number": "17",
+    "event_name": "Road America",
+    "event_folder": "17-road-america"
+  },
+  {
+    "event_number": "18",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "18-virginia-international-raceway"
+  },
+  {
+    "event_number": "19",
+    "event_name": "Indianapolis Motor Speedway RC",
+    "event_folder": "19-indianapolis-motor-speedway-rc"
+  },
+  {
+    "event_number": "20",
+    "event_name": "Weathertech Raceway Laguna Seca",
+    "event_folder": "20-weathertech-raceway-laguna-seca"
+  },
+  {
+    "event_number": "21",
+    "event_name": "Road Atlanta",
+    "event_folder": "21-road-atlanta"
+  },
+  {
+    "event_number": "22",
+    "event_name": "PCCNA COTA",
+    "event_folder": "22-pccna-cota"
+  },
+  {
+    "event_number": "23",
+    "event_name": "LST Vallelunga",
+    "event_folder": "23-lst-vallelunga"
+  },
+  {
+    "event_number": "24",
+    "event_name": "Carolina Motorsports Park",
+    "event_folder": "24-carolina-motorsports-park"
+  }
+]
