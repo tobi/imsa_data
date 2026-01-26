@@ -11,26 +11,51 @@
 .highlight_colors footer gray
 
 
-CREATE OR REPLACE MACRO clean_event_name(event_name) AS (
-    CASE
-        WHEN event_name ILIKE '%watkins%' OR event_name ILIKE '%wgi%' THEN 'Watkins Glen'
-        WHEN event_name ILIKE '%belle-isle%' THEN 'Belle Isle'
-        WHEN event_name ILIKE '%canadian-tire%' THEN 'Canadian Tire Motorsport Park'
-        WHEN event_name ILIKE '%daytona%' THEN 'Daytona'
-        WHEN event_name ILIKE '%detroit%' THEN 'Detroit'
-        WHEN event_name ILIKE '%sebring%' THEN 'Sebring'
-        WHEN event_name ILIKE '%indianapolis%' OR event_name ILIKE '%battle-on-the-bricks%' THEN 'Indianapolis'
-        WHEN event_name ILIKE '%lime-rock%' THEN 'Lime Rock Park'
-        WHEN event_name ILIKE '%long-beach%' THEN 'Long Beach'
-        WHEN event_name ILIKE '%mid-ohio%' THEN 'Mid-Ohio'
-        WHEN event_name ILIKE '%road-america%' THEN 'Road America'
-        WHEN event_name ILIKE '%road-atlanta%' THEN 'Road Atlanta'
-        WHEN event_name ILIKE '%roar%' THEN 'Daytona (Roar Test)'
-        WHEN event_name ILIKE '%laguna-seca%' THEN 'Laguna Seca'
-        WHEN event_name ILIKE '%virginia%' THEN 'Virginia International Raceway'
-        WHEN event_name ILIKE '%february%' AND event_name ILIKE '%test%' THEN 'Sebring (February Test)'
-        ELSE ERROR('Unknown track, add to mapping: ' || event_name)
-    END
+-- Load tracks reference data from JSON
+CREATE OR REPLACE TABLE tracks AS
+SELECT
+    unnest.id AS track_id,
+    unnest.official_name,
+    unnest.short_name,
+    unnest.country,
+    unnest.latitude,
+    unnest.longitude,
+    unnest.aliases
+FROM read_json_auto('tracks.json') j,
+     UNNEST(j.tracks);
+
+-- Expand aliases into a lookup table for efficient matching
+CREATE OR REPLACE TABLE track_aliases AS
+SELECT
+    t.track_id,
+    t.short_name,
+    UNNEST(t.aliases) AS alias
+FROM tracks t;
+
+-- Function to normalize track names using the tracks lookup
+CREATE OR REPLACE MACRO normalize_track_name(event_name) AS (
+    COALESCE(
+        (SELECT ta.short_name
+         FROM track_aliases ta
+         WHERE event_name ILIKE '%' || ta.alias || '%'
+         LIMIT 1),
+        ERROR('Unknown track, add to mapping in tracks.json: ' || event_name)
+    )
+);
+
+-- Main series classes - loaded from classes.json
+-- Filters out support series (Porsche Cups, Ferrari Challenge, etc.)
+CREATE OR REPLACE TABLE main_classes AS
+SELECT
+    unnest.class,
+    unnest.category,
+    unnest.description,
+    unnest.series AS series_list
+FROM read_json_auto('classes.json') j,
+     UNNEST(j.classes);
+
+CREATE OR REPLACE MACRO is_main_class(c) AS (
+    c IN (SELECT class FROM main_classes)
 );
 
 CREATE OR REPLACE MACRO license_rank(license) AS (

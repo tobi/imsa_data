@@ -9,10 +9,11 @@ WITH base_csv AS (
         regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5) as session,
         series_code || '-' || year as series,
 
-        -- Car, team, and class
+        -- Car, team, class, and chassis
         TRIM(number) as car,
         TEAM as team,
         _CLASS as class,
+        VEHICLE as chassis,
 
         -- Date
         strptime(
@@ -54,6 +55,7 @@ SELECT
     car,
     team,
     class,
+    chassis,
     filename,
     CONCAT(firstname, ' ', secondname) AS name,
     driver_id,
@@ -80,12 +82,13 @@ WITH base AS (
         series_code,
         series,
         year,
-        clean_event_name(event) AS event,
+        normalize_track_name(event) AS event,
         session,
         start_date,
         car,
         team,
         class,
+        chassis,
         driver_id AS raw_driver_id,
         REGEXP_REPLACE(TRIM(name), '\\s+', ' ') AS name_clean,
         name AS name_original,
@@ -104,6 +107,7 @@ WITH base AS (
         car,
         team,
         class,
+        chassis,
         NULLIF(TRIM(raw_driver_id), '') AS provided_driver_id,
         name_clean,
         name_original,
@@ -130,8 +134,10 @@ SELECT
     license_rank,
     team,
     class,
+    chassis,
     country
-FROM normalized;
+FROM normalized
+WHERE is_main_class(class);
 
 -- fix some unfortunate data typos
 UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(license) WHERE license = 'Platinium';

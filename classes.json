@@ -1,0 +1,71 @@
+{
+  "description": "Main series classes to include - filters out support series (Porsche Cups, Ferrari Challenge, etc.)",
+  "classes": [
+    {
+      "class": "GTP",
+      "series": ["imsa"],
+      "category": "prototype",
+      "description": "Grand Touring Prototype - current IMSA top class"
+    },
+    {
+      "class": "DPi",
+      "series": ["imsa"],
+      "category": "prototype",
+      "description": "Daytona Prototype international"
+    },
+    {
+      "class": "HYPERCAR",
+      "series": ["wec"],
+      "category": "prototype",
+      "description": "WEC top class - Le Mans Hypercars and LMDh"
+    },
+    {
+      "class": "LMP2",
+      "series": ["imsa", "wec", "elms", "alms"],
+      "category": "prototype",
+      "description": "Le Mans Prototype 2"
+    },
+    {
+      "class": "LMP2 Pro/Am",
+      "series": ["elms"],
+      "category": "prototype",
+      "description": "ELMS LMP2 Pro/Am subclass"
+    },
+    {
+      "class": "LMP3",
+      "series": ["imsa", "elms", "alms"],
+      "category": "prototype",
+      "description": "Le Mans Prototype 3"
+    },
+    {
+      "class": "GTD",
+      "series": ["imsa"],
+      "category": "gt",
+      "description": "Grand Touring Daytona"
+    },
+    {
+      "class": "GTDPRO",
+      "series": ["imsa"],
+      "category": "gt",
+      "description": "GTD Pro"
+    },
+    {
+      "class": "GTDPro",
+      "series": ["imsa"],
+      "category": "gt",
+      "description": "GTD Pro (alternate capitalization)"
+    },
+    {
+      "class": "GTLM",
+      "series": ["imsa"],
+      "category": "gt",
+      "description": "GT Le Mans (discontinued 2021)"
+    },
+    {
+      "class": "LMGT3",
+      "series": ["wec", "elms", "alms"],
+      "category": "gt",
+      "description": "Le Mans GT3"
+    }
+  ]
+}

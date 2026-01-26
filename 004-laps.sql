@@ -35,6 +35,9 @@ SELECT
     laps.license_rank,
     laps.driver_country,
     laps.team_name,
+    COALESCE(laps.chassis, ERROR('Unknown chassis for car ' || laps.car || ' in ' || laps.series_code || '/' || laps.year || '/' || laps.event || '/' || laps.session)) AS chassis,
+    COALESCE(laps.homologation, ERROR('Unknown homologation for chassis: ' || laps.chassis)) AS homologation,
+    COALESCE(laps.manufacturer, ERROR('Unknown manufacturer for chassis: ' || laps.chassis)) AS manufacturer,
     -- Weather data from the most recent reading before or at the lap time
     ew.air_temp_f,
     ew.track_temp_f,

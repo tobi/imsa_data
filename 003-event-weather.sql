@@ -52,7 +52,7 @@ CREATE TEMP TABLE event_weather_raw AS
 CREATE OR REPLACE TABLE event_weather AS WITH
 named_weather AS (
     SELECT
-        series_code, year, event, session, date,
+        series_code, year, normalize_track_name(event) as event, session, date,
         time_utc_seconds, time_utc,
         air_temp_f, track_temp_f, humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
