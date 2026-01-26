@@ -325,6 +325,7 @@ class EnduranceSeriesImporter
   end
 
   def import_race(race_url, year, output_path, event_name, race_folder)
+    # First, get the main session files
     csv_files = find_csv_files(race_url)
 
     %w[results laps weather].each do |file_type|
@@ -334,19 +335,51 @@ class EnduranceSeriesImporter
       download_and_convert_csv(race_url + csv_file, year, output_path,
                               event_name, race_folder, file_type)
     end
+
+    # Then, check for hourly subfolders (common in endurance races)
+    import_hourly_data(race_url, year, output_path, event_name, race_folder)
+  end
+
+  def import_hourly_data(race_url, year, output_path, event_name, race_folder)
+    links = fetch_links(race_url)
+    # Match hourly folders: "01_Hour 1/", "01_Hour%201/", "24_Hour 24/", etc.
+    hourly_folders = links.select { |f| f.match?(/^\d+_Hour(%20|\s)*\d+\//i) }
+
+    return if hourly_folders.empty?
+
+    # Sort by hour number and process each
+    hourly_folders.sort_by { |f| f.match(/(\d+)_Hour/i)[1].to_i rescue 0 }.each do |hour_folder|
+      # Extract hour number from folder name
+      decoded = CGI.unescape(hour_folder)
+      hour_num = decoded.match(/(\d+)_Hour\s*(\d+)/i)&.[](2) || decoded.match(/^(\d+)_/)[1]
+      hour_url = race_url + hour_folder
+
+      hour_files = find_csv_files(hour_url)
+
+      %w[results laps weather].each do |file_type|
+        csv_file = hour_files[file_type.to_sym]
+        next unless csv_file
+
+        # Add hour suffix to the race folder
+        hourly_race_folder = "#{race_folder.chomp('/')}-hour-#{hour_num}"
+        download_and_convert_csv(hour_url + csv_file, year, output_path,
+                                event_name, hourly_race_folder, file_type)
+      end
+    end
   end
 
   def find_csv_files(race_url)
     all_files = []
 
-    # Get files from main folder and subfolders
+    # Get files from main folder and subfolders (but not Hour folders - those are handled separately)
     links = fetch_links(race_url)
     files, folders = links.partition { |link| !link.end_with?('/') }
     all_files.concat(files)
 
-    # Check subfolders for additional CSV files
+    # Check non-hour subfolders for additional CSV files
     folders.each do |folder|
       next if folder.include?('?')
+      next if folder.match?(/^\d+_Hour(%20|\s)*/i)  # Skip hour folders, handled separately
 
       subfolder_files = fetch_links(race_url + folder)
                        .reject { |f| f.end_with?('/') }
