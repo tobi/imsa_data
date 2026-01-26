@@ -410,14 +410,66 @@ class EnduranceSeriesImporter
   end
 
   def convert_semicolon_csv(content, target_file)
+    rows = CSV.parse(content, col_sep: ';')
+
+    # For weather files, detect and convert temperature units
+    if target_file.end_with?('-weather.csv') && rows.any?
+      rows = normalize_weather_temperatures(rows)
+    end
+
     File.open(target_file, 'w') do |output|
-      CSV.parse(content, col_sep: ';') do |row|
+      rows.each do |row|
         output.puts(CSV.generate_line(row))
       end
     end
 
     # Verify file type matches header and rename if needed
     verify_and_fix_file_type(target_file)
+  end
+
+  def normalize_weather_temperatures(rows)
+    return rows if rows.length < 2
+
+    header = rows.first.map { |h| h&.strip&.upcase }
+    air_idx = header.index('AIR_TEMP')
+    track_idx = header.index('TRACK_TEMP')
+
+    return rows unless air_idx || track_idx
+
+    # Sample temperature values to detect unit
+    temp_samples = []
+    rows[1..20].each do |row|
+      temp_samples << row[air_idx].to_f if air_idx && row[air_idx]
+      temp_samples << row[track_idx].to_f if track_idx && row[track_idx]
+    end
+
+    return rows if temp_samples.empty?
+
+    # Heuristic: if median temp is < 45, it's likely Celsius
+    # (45°C = 113°F, reasonable upper bound for ambient racing temps)
+    # Racing doesn't happen below 0°C typically, so 0-45 range = Celsius
+    median = temp_samples.sort[temp_samples.length / 2]
+    is_celsius = median < 45
+
+    return rows unless is_celsius
+
+    puts " [converting °C→°F]"
+
+    # Convert all temperature values
+    rows.each_with_index.map do |row, idx|
+      next row if idx == 0  # Skip header
+
+      new_row = row.dup
+      if air_idx && row[air_idx]
+        celsius = row[air_idx].to_f
+        new_row[air_idx] = ((celsius * 9.0 / 5.0) + 32).round(2).to_s
+      end
+      if track_idx && row[track_idx]
+        celsius = row[track_idx].to_f
+        new_row[track_idx] = ((celsius * 9.0 / 5.0) + 32).round(2).to_s
+      end
+      new_row
+    end
   end
 
   def verify_and_fix_file_type(file_path)
