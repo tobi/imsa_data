@@ -161,8 +161,13 @@ task :lint_data do
   sh "ruby lint/check_data_quality.rb"
 end
 
-desc "Run all checks (lint + data quality)"
-task check: ["db:update", :lint, :lint_data]
+desc "Run driver data quality checks"
+task :lint_drivers do
+  sh "ruby lint/check_drivers.rb"
+end
+
+desc "Run all checks (lint + data quality + drivers)"
+task check: ["db:update", :lint, :lint_data, :lint_drivers]
 
 desc "Clean output directory"
 task :clean do
