@@ -123,7 +123,7 @@ class EnduranceSeriesImporter
         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
       }
-      html = URI.open(season_url, headers, &:read)
+      html = URI.open(season_url, headers, &:read).force_encoding("UTF-8")
 
       # Extract event options from dropdown
       # Pattern: <option Value="01_LOSAIL">LOSAIL</option>
@@ -143,7 +143,7 @@ class EnduranceSeriesImporter
         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
       }
-      html = URI.open(season_url, headers, &:read)
+      html = URI.open(season_url, headers, &:read).force_encoding("UTF-8")
 
       # Extract all CSV file paths from href attributes
       csv_paths = html.scan(/href="(Results\/[^"]*\.CSV)"/).map(&:first)
@@ -223,7 +223,7 @@ class EnduranceSeriesImporter
         'Accept-Encoding' => 'gzip, deflate',
         'Connection' => 'keep-alive'
       }
-      body = URI.open(url, headers, &:read)
+      body = URI.open(url, headers, &:read).force_encoding("ISO-8859-1").encode("UTF-8")
       body.scan(/href="([^"]+)"/)
           .map(&:first)
           .reject { |link| link.start_with?('/') }
