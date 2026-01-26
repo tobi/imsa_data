@@ -13,8 +13,16 @@ CREATE TEMP TABLE event_weather_raw AS
             TRY_STRPTIME(time_utc_str, '%m/%d/%Y %I:%M:%S %p'),
             TRY_STRPTIME(time_utc_str, '%d-%b-%y %H:%M:%S')
         ) as time_utc,
-        air_temp::DECIMAL(6, 2) as air_temp_f,
-        track_temp::DECIMAL(6, 2) as track_temp_f,
+        -- Convert to Fahrenheit if values look like Celsius (< 50)
+        -- European series (WEC, ELMS) typically report in Celsius
+        CASE
+            WHEN air_temp::DECIMAL(6, 2) < 50 THEN (air_temp::DECIMAL(6, 2) * 9/5) + 32
+            ELSE air_temp::DECIMAL(6, 2)
+        END as air_temp_f,
+        CASE
+            WHEN track_temp::DECIMAL(6, 2) < 50 THEN (track_temp::DECIMAL(6, 2) * 9/5) + 32
+            ELSE track_temp::DECIMAL(6, 2)
+        END as track_temp_f,
         humidity::DECIMAL(6, 2) as humidity_percent,
         pressure::DECIMAL(6, 2) as pressure_inhg,
         wind_speed::DECIMAL(6, 2) as wind_speed_mph,

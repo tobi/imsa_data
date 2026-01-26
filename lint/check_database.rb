@@ -86,6 +86,7 @@ class DatabaseLinter
     check_lap_time_outliers
     check_temperature_outliers
     check_pit_time_outliers
+    check_race_coverage_plausibility
 
     # Driver checks
     check_driver_license_distribution
@@ -351,10 +352,12 @@ class DatabaseLinter
 
   def check_temperature_outliers
     section "Checking for temperature outliers"
+    # Air temps below 32°F (freezing) or above 130°F are suspicious
+    # Track temps can legitimately hit 140°F+ on hot days
     outliers = query(<<~SQL)
       SELECT series_code, year, event, MIN(air_temp_f) as min_temp, MAX(air_temp_f) as max_temp
       FROM event_weather
-      WHERE air_temp_f < 20 OR air_temp_f > 120
+      WHERE air_temp_f < 32 OR air_temp_f > 130
       GROUP BY series_code, year, event
     SQL
 
@@ -362,7 +365,13 @@ class DatabaseLinter
       ok "No temperature outliers"
     else
       outliers.each do |row|
-        warn "Temperature outlier: #{row['series_code']}/#{row['year']}/#{row['event']} (#{row['min_temp']}-#{row['max_temp']}°F) - likely Celsius data"
+        min_t = row['min_temp'].to_f
+        max_t = row['max_temp'].to_f
+        if min_t < 32
+          warn "Temperature outlier: #{row['series_code']}/#{row['year']}/#{row['event']} (#{min_t.round(1)}-#{max_t.round(1)}°F) - sub-freezing temps, likely unconverted Celsius"
+        else
+          warn "Temperature outlier: #{row['series_code']}/#{row['year']}/#{row['event']} (#{min_t.round(1)}-#{max_t.round(1)}°F) - unusually hot"
+        end
       end
     end
   end
@@ -388,6 +397,95 @@ class DatabaseLinter
     else
       outliers.each do |row|
         warn "High pit times: #{row['series_code']}/#{row['year']}/#{row['event']} (avg: #{row['avg_pit'].to_i}s)"
+      end
+    end
+  end
+
+  def check_race_coverage_plausibility
+    section "Checking race session coverage plausibility"
+
+    # For each race session, check if we have reasonable coverage:
+    # - Enough cars reporting laps
+    # - Timestamps spanning a reasonable portion of race duration
+    # Expected race durations (hours): Le Mans = 24, Daytona = 24, Sebring = 12, others = 2-10
+    races = query(<<~SQL)
+      WITH race_stats AS (
+        SELECT
+          series_code,
+          year,
+          event,
+          session,
+          COUNT(*) as total_laps,
+          COUNT(DISTINCT car) as car_count,
+          MIN(session_time) as first_lap_time,
+          MAX(session_time) as last_lap_time,
+          (MAX(session_time) - MIN(session_time)) / 3600.0 as hours_covered
+        FROM laps
+        WHERE session ILIKE '%race%'
+          AND session NOT ILIKE '%practice%'
+          AND session NOT ILIKE '%qualifying%'
+        GROUP BY series_code, year, event, session
+      ),
+      with_expected AS (
+        SELECT
+          *,
+          -- Estimate expected race hours based on event name
+          CASE
+            WHEN event ILIKE '%le mans%' THEN 24.0
+            WHEN event ILIKE '%daytona%' THEN 24.0
+            WHEN event ILIKE '%sebring%' THEN 12.0
+            WHEN event ILIKE '%petit%' THEN 10.0
+            WHEN event ILIKE '%spa%' THEN 6.0
+            WHEN event ILIKE '%fuji%' THEN 6.0
+            WHEN event ILIKE '%bahrain%' THEN 8.0
+            WHEN event ILIKE '%losail%' THEN 10.0
+            ELSE 2.0  -- Sprint races
+          END as expected_hours,
+          -- Expected laps: cars * (race_hours * 60 / avg_lap_minutes)
+          -- Assume ~2 min average lap for prototypes
+          CASE
+            WHEN event ILIKE '%le mans%' THEN car_count * 350
+            WHEN event ILIKE '%daytona%' THEN car_count * 700
+            WHEN event ILIKE '%sebring%' THEN car_count * 350
+            WHEN event ILIKE '%petit%' THEN car_count * 300
+            ELSE car_count * 60
+          END as expected_min_laps
+        FROM race_stats
+      )
+      SELECT
+        series_code, year, event, session,
+        total_laps, car_count,
+        ROUND(hours_covered, 1) as hours_covered,
+        expected_hours,
+        expected_min_laps,
+        ROUND(hours_covered / expected_hours * 100, 0) as coverage_pct,
+        ROUND(total_laps::FLOAT / expected_min_laps * 100, 0) as lap_pct
+      FROM with_expected
+      WHERE hours_covered < expected_hours * 0.5  -- Less than 50% time coverage
+         OR total_laps < expected_min_laps * 0.5  -- Less than 50% expected laps
+      ORDER BY series_code, year, event
+    SQL
+
+    if races.empty?
+      ok "All race sessions have plausible lap coverage"
+    else
+      races.each do |row|
+        coverage = row['coverage_pct'].to_i
+        lap_pct = row['lap_pct'].to_i
+        hours = row['hours_covered'].to_f
+        expected = row['expected_hours'].to_f
+
+        severity = coverage < 30 || lap_pct < 30 ? :error : :warn
+        msg = "Incomplete race data: #{row['series_code']}/#{row['year']}/#{row['event']}/#{row['session']} - " \
+              "#{row['total_laps']} laps (#{lap_pct}% of expected), " \
+              "#{hours}h covered of #{expected}h (#{coverage}%), " \
+              "#{row['car_count']} cars"
+
+        if severity == :error
+          error msg
+        else
+          warn msg
+        end
       end
     end
   end
