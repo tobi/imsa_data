@@ -44,6 +44,8 @@ WITH base_csv AS (
         null_padding=true,
         normalize_names=true
     )
+    -- Filter out files that don't match the expected timestamp pattern
+    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != ''
 )
 SELECT
     series_code,

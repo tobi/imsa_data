@@ -57,7 +57,9 @@ CREATE TEMP TABLE event_laps_raw AS
             'top_speed': 'INT',
             'flag_at_fl': 'STRING',
         }
-    );
+    )
+    -- Filter out files that don't match the expected timestamp pattern
+    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-laps\.csv$', 4) != '';
 
 
 CREATE OR REPLACE TABLE event_laps AS WITH
