@@ -38,94 +38,26 @@ SET event_type = CASE
 END
 WHERE race_duration_minutes IS NOT NULL;
 
--- Update circuit names from event names (best effort)
+-- Update circuit names and countries from tracks table
+-- Since event names are now normalized to short_name, we can join directly
 UPDATE event_metadata
-SET circuit_name = CASE
-    -- IMSA circuits
-    WHEN event LIKE '%daytona%' THEN 'Daytona International Speedway'
-    WHEN event LIKE '%sebring%' THEN 'Sebring International Raceway'
-    WHEN event LIKE '%laguna%seca%' THEN 'WeatherTech Raceway Laguna Seca'
-    WHEN event LIKE '%long%beach%' THEN 'Long Beach Street Circuit'
-    WHEN event LIKE '%detroit%' THEN 'Detroit Street Circuit'
-    WHEN event LIKE '%watkins%glen%' THEN 'Watkins Glen International'
-    WHEN event LIKE '%canadian%tire%' OR event LIKE '%mosport%' THEN 'Canadian Tire Motorsport Park'
-    WHEN event LIKE '%road%america%' THEN 'Road America'
-    WHEN event LIKE '%virginia%' OR event LIKE '%vir%' THEN 'Virginia International Raceway'
-    WHEN event LIKE '%lime%rock%' THEN 'Lime Rock Park'
-    WHEN event LIKE '%road%atlanta%' THEN 'Road Atlanta'
-    WHEN event LIKE '%petit%' THEN 'Road Atlanta (Petit Le Mans)'
-    WHEN event LIKE '%mid%ohio%' THEN 'Mid-Ohio Sports Car Course'
-    WHEN event LIKE '%indianapolis%' THEN 'Indianapolis Motor Speedway'
-    WHEN event LIKE '%cota%' OR event LIKE '%circuit%americas%' THEN 'Circuit of the Americas'
-
-    -- WEC circuits
-    WHEN event LIKE '%le%mans%' THEN 'Circuit de la Sarthe'
-    WHEN event LIKE '%spa%' THEN 'Circuit de Spa-Francorchamps'
-    WHEN event LIKE '%monza%' THEN 'Autodromo Nazionale di Monza'
-    WHEN event LIKE '%imola%' THEN 'Autodromo Enzo e Dino Ferrari'
-    WHEN event LIKE '%silverstone%' THEN 'Silverstone Circuit'
-    WHEN event LIKE '%fuji%' THEN 'Fuji Speedway'
-    WHEN event LIKE '%bahrain%' THEN 'Bahrain International Circuit'
-    WHEN event LIKE '%qatar%' THEN 'Lusail International Circuit'
-    WHEN event LIKE '%portimao%' THEN 'Autódromo Internacional do Algarve'
-    WHEN event LIKE '%interlagos%' THEN 'Autódromo José Carlos Pace'
-    WHEN event LIKE '%austin%' THEN 'Circuit of the Americas'
-
-    -- ELMS circuits
-    WHEN event LIKE '%barcelona%' THEN 'Circuit de Barcelona-Catalunya'
-    WHEN event LIKE '%paul%ricard%' THEN 'Circuit Paul Ricard'
-    WHEN event LIKE '%red%bull%ring%' THEN 'Red Bull Ring'
-    WHEN event LIKE '%hungaroring%' THEN 'Hungaroring'
-    WHEN event LIKE '%monza%' THEN 'Autodromo Nazionale di Monza'
-
-    -- Asian Le Mans circuits
-    WHEN event LIKE '%sepang%' THEN 'Sepang International Circuit'
-    WHEN event LIKE '%dubai%' THEN 'Dubai Autodrome'
-    WHEN event LIKE '%yas%' OR event LIKE '%abu%dhabi%' THEN 'Yas Marina Circuit'
-    WHEN event LIKE '%buriram%' THEN 'Chang International Circuit'
-
-    ELSE circuit_name
-END;
-
--- Update countries
-UPDATE event_metadata
-SET circuit_country = CASE
-    WHEN circuit_name LIKE '%Daytona%' OR circuit_name LIKE '%Sebring%'
-         OR circuit_name LIKE '%Laguna Seca%' OR circuit_name LIKE '%Road America%'
-         OR circuit_name LIKE '%Road Atlanta%' OR circuit_name LIKE '%Watkins Glen%'
-         OR circuit_name LIKE '%Mid-Ohio%' OR circuit_name LIKE '%Virginia%'
-         OR circuit_name LIKE '%Indianapolis%' OR circuit_name LIKE '%Austin%' THEN 'USA'
-    WHEN circuit_name LIKE '%Long Beach%' THEN 'USA'
-    WHEN circuit_name LIKE '%Detroit%' THEN 'USA'
-    WHEN circuit_name LIKE '%Canadian Tire%' OR circuit_name LIKE '%Mosport%' THEN 'Canada'
-    WHEN circuit_name LIKE '%Le Mans%' OR circuit_name LIKE '%Paul Ricard%' THEN 'France'
-    WHEN circuit_name LIKE '%Spa%' THEN 'Belgium'
-    WHEN circuit_name LIKE '%Monza%' OR circuit_name LIKE '%Imola%' THEN 'Italy'
-    WHEN circuit_name LIKE '%Silverstone%' THEN 'United Kingdom'
-    WHEN circuit_name LIKE '%Fuji%' THEN 'Japan'
-    WHEN circuit_name LIKE '%Bahrain%' THEN 'Bahrain'
-    WHEN circuit_name LIKE '%Qatar%' OR circuit_name LIKE '%Lusail%' THEN 'Qatar'
-    WHEN circuit_name LIKE '%Portimao%' OR circuit_name LIKE '%Algarve%' THEN 'Portugal'
-    WHEN circuit_name LIKE '%Interlagos%' THEN 'Brazil'
-    WHEN circuit_name LIKE '%Barcelona%' THEN 'Spain'
-    WHEN circuit_name LIKE '%Red Bull Ring%' THEN 'Austria'
-    WHEN circuit_name LIKE '%Hungaroring%' THEN 'Hungary'
-    WHEN circuit_name LIKE '%Sepang%' THEN 'Malaysia'
-    WHEN circuit_name LIKE '%Dubai%' THEN 'UAE'
-    WHEN circuit_name LIKE '%Yas Marina%' OR circuit_name LIKE '%Abu Dhabi%' THEN 'UAE'
-    WHEN circuit_name LIKE '%Buriram%' OR circuit_name LIKE '%Chang%' THEN 'Thailand'
-    ELSE circuit_country
-END;
+SET
+    circuit_name = t.official_name,
+    circuit_country = t.country
+FROM tracks t
+WHERE event_metadata.event = t.short_name;
 
 -- Add special notes for notable races
 UPDATE event_metadata
 SET notes = CASE
-    WHEN event LIKE '%24%' AND event LIKE '%daytona%' THEN '24 Hours of Daytona'
-    WHEN event LIKE '%12%' AND event LIKE '%sebring%' THEN '12 Hours of Sebring'
-    WHEN event LIKE '%petit%' THEN 'Petit Le Mans (10 hours)'
-    WHEN event LIKE '%le%mans%' AND series_code = 'wec' THEN '24 Hours of Le Mans'
-    WHEN event LIKE '%6%' AND (event LIKE '%spa%' OR event LIKE '%silverstone%') THEN '6 Hours'
-    WHEN event LIKE '%8%' AND event LIKE '%bahrain%' THEN '8 Hours of Bahrain'
+    WHEN race_duration_minutes >= 1400 AND event = 'Daytona' THEN '24 Hours of Daytona'
+    WHEN race_duration_minutes >= 700 AND event = 'Sebring' THEN '12 Hours of Sebring'
+    WHEN race_duration_minutes >= 550 AND event = 'Road Atlanta' THEN 'Petit Le Mans (10 hours)'
+    WHEN race_duration_minutes >= 1400 AND event = 'Le Mans' THEN '24 Hours of Le Mans'
+    WHEN race_duration_minutes BETWEEN 350 AND 400 AND event IN ('Spa', 'Silverstone', 'COTA', 'Fuji') THEN '6 Hours'
+    WHEN race_duration_minutes >= 450 AND event = 'Bahrain' THEN '8 Hours of Bahrain'
+    WHEN race_duration_minutes >= 350 AND event = 'Watkins Glen' THEN '6 Hours of the Glen'
+    WHEN race_duration_minutes >= 350 AND event = 'Indianapolis' THEN 'Battle on the Bricks'
     ELSE notes
 END;
 

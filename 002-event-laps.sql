@@ -63,9 +63,10 @@ CREATE TEMP TABLE event_laps_raw AS
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        series_code, series, start_date, year, clean_event_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
+        series_code, series, start_date, year, normalize_track_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
         DENSE_RANK() OVER (ORDER BY series_code, year, event, session, start_date) as session_id,
     FROM event_laps_raw
+    WHERE is_main_class(class)  -- Filter out support series
     ORDER BY session_id, car, lap
 ),
 stint_starts AS (
@@ -159,7 +160,8 @@ ranked_stints AS (
         ed.license AS ed_license,
         ed.license_rank AS ed_license_rank,
         ed.country AS ed_country,
-        ed.team AS ed_team
+        ed.team AS ed_team,
+        ed.chassis AS ed_chassis
     FROM ranked_stints
     LEFT JOIN event_drivers ed
         ON ed.series_code = ranked_stints.series_code
@@ -171,7 +173,42 @@ ranked_stints AS (
         AND LOWER(TRIM(ed.name)) = LOWER(TRIM(ranked_stints.driver_name))
 ), laps_enriched AS (
     SELECT
-        lwd.*,
+        lwd.series_code,
+        lwd.series,
+        lwd.start_date,
+        lwd.year,
+        lwd.event,
+        lwd.session,
+        lwd.session_id,
+        lwd.session_time,
+        lwd.clock_time,
+        lwd.session_time_lap_number,
+        lwd.car,
+        lwd.class,
+        lwd.driver_name_raw,
+        lwd.driver_name_entry,
+        lwd.resolved_driver_id,
+        lwd.lap,
+        lwd.lap_time,
+        lwd.lap_time_s1,
+        lwd.lap_time_s2,
+        lwd.lap_time_s3,
+        lwd.lap_time_driver_rank,
+        lwd.lap_time_driver_quartile,
+        lwd.pit_time,
+        lwd.flags,
+        lwd.stint_start,
+        lwd.stint_number,
+        lwd.stint_lap,
+        lwd.stint_team,
+        lwd.ed_license,
+        lwd.ed_license_rank,
+        lwd.ed_country,
+        lwd.ed_team,
+        lwd.ed_chassis,
+        cl.chassis AS cl_chassis,
+        cl.homologation AS cl_homologation,
+        cl.manufacturer AS cl_manufacturer,
         dv.canonical_name AS dv_canonical_name,
         dv.preferred_name AS dv_preferred_name,
         dv.license AS dv_license,
@@ -181,6 +218,17 @@ ranked_stints AS (
     FROM laps_with_driver_data lwd
     LEFT JOIN drivers dv
         ON dv.driver_id = lwd.resolved_driver_id
+    LEFT JOIN (
+        -- Get most recent chassis for each car in each event (handles session mismatches)
+        SELECT DISTINCT ON (series_code, year, event, car)
+            series_code, year, event, car, chassis, homologation, manufacturer
+        FROM chassis_lookup
+        ORDER BY series_code, year, event, car, start_date DESC
+    ) cl
+        ON cl.series_code = lwd.series_code
+        AND cl.year = lwd.year
+        AND cl.event = lwd.event
+        AND cl.car = lwd.car
 )
 SELECT
     series_code,
@@ -213,7 +261,10 @@ SELECT
     COALESCE(ed_license, dv_license) AS license,
     COALESCE(ed_license_rank, dv_license_rank) AS license_rank,
     COALESCE(ed_country, dv_country) AS driver_country,
-    COALESCE(ed_team, stint_team, dv_team) AS team_name
+    COALESCE(ed_team, stint_team, dv_team) AS team_name,
+    COALESCE(cl_chassis, ed_chassis) AS chassis,
+    cl_homologation AS homologation,
+    cl_manufacturer AS manufacturer
 FROM laps_enriched
 ORDER BY session_id, car, lap;
 

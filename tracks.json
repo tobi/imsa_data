@@ -1,0 +1,400 @@
+{
+  "tracks": [
+    {
+      "id": "watkins-glen",
+      "official_name": "Watkins Glen International",
+      "short_name": "Watkins Glen",
+      "country": "United States",
+      "latitude": 42.3369,
+      "longitude": -76.9272,
+      "aliases": ["watkins", "wgi", "the-glen"]
+    },
+    {
+      "id": "belle-isle",
+      "official_name": "Detroit Belle Isle Grand Prix",
+      "short_name": "Belle Isle",
+      "country": "United States",
+      "latitude": 42.3378,
+      "longitude": -83.0008,
+      "aliases": ["belle-isle"]
+    },
+    {
+      "id": "mosport",
+      "official_name": "Canadian Tire Motorsport Park",
+      "short_name": "Mosport",
+      "country": "Canada",
+      "latitude": 44.0481,
+      "longitude": -78.6756,
+      "aliases": ["canadian-tire", "mosport", "ctmp"]
+    },
+    {
+      "id": "daytona",
+      "official_name": "Daytona International Speedway",
+      "short_name": "Daytona",
+      "country": "United States",
+      "latitude": 29.1851,
+      "longitude": -81.0707,
+      "aliases": ["daytona", "roar"]
+    },
+    {
+      "id": "detroit",
+      "official_name": "Chevrolet Detroit Grand Prix",
+      "short_name": "Detroit",
+      "country": "United States",
+      "latitude": 42.3296,
+      "longitude": -83.0401,
+      "aliases": ["detroit"]
+    },
+    {
+      "id": "sebring",
+      "official_name": "Sebring International Raceway",
+      "short_name": "Sebring",
+      "country": "United States",
+      "latitude": 27.4547,
+      "longitude": -81.3483,
+      "aliases": ["sebring", "february"]
+    },
+    {
+      "id": "indianapolis",
+      "official_name": "Indianapolis Motor Speedway",
+      "short_name": "Indianapolis",
+      "country": "United States",
+      "latitude": 39.7950,
+      "longitude": -86.2346,
+      "aliases": ["indianapolis", "indy", "battle-on-the-bricks"]
+    },
+    {
+      "id": "lime-rock",
+      "official_name": "Lime Rock Park",
+      "short_name": "Lime Rock",
+      "country": "United States",
+      "latitude": 41.9277,
+      "longitude": -73.3836,
+      "aliases": ["lime-rock"]
+    },
+    {
+      "id": "long-beach",
+      "official_name": "Acura Grand Prix of Long Beach",
+      "short_name": "Long Beach",
+      "country": "United States",
+      "latitude": 33.7598,
+      "longitude": -118.1890,
+      "aliases": ["long-beach"]
+    },
+    {
+      "id": "mid-ohio",
+      "official_name": "Mid-Ohio Sports Car Course",
+      "short_name": "Mid-Ohio",
+      "country": "United States",
+      "latitude": 40.6869,
+      "longitude": -82.6352,
+      "aliases": ["mid-ohio"]
+    },
+    {
+      "id": "road-america",
+      "official_name": "Road America",
+      "short_name": "Road America",
+      "country": "United States",
+      "latitude": 43.7918,
+      "longitude": -87.9897,
+      "aliases": ["road-america", "elkhart-lake"]
+    },
+    {
+      "id": "road-atlanta",
+      "official_name": "Michelin Raceway Road Atlanta",
+      "short_name": "Road Atlanta",
+      "country": "United States",
+      "latitude": 34.1413,
+      "longitude": -83.8173,
+      "aliases": ["road-atlanta"]
+    },
+    {
+      "id": "laguna-seca",
+      "official_name": "WeatherTech Raceway Laguna Seca",
+      "short_name": "Laguna Seca",
+      "country": "United States",
+      "latitude": 36.5842,
+      "longitude": -121.7517,
+      "aliases": ["laguna-seca", "monterey"]
+    },
+    {
+      "id": "virginia-international-raceway",
+      "official_name": "Virginia International Raceway",
+      "short_name": "VIR",
+      "country": "United States",
+      "latitude": 36.5618,
+      "longitude": -79.2046,
+      "aliases": ["virginia", "vir"]
+    },
+    {
+      "id": "le-mans",
+      "official_name": "Circuit de la Sarthe",
+      "short_name": "Le Mans",
+      "country": "France",
+      "latitude": 47.9359,
+      "longitude": 0.2220,
+      "aliases": ["le-mans", "lemans", "sarthe"]
+    },
+    {
+      "id": "spa-francorchamps",
+      "official_name": "Circuit de Spa-Francorchamps",
+      "short_name": "Spa",
+      "country": "Belgium",
+      "latitude": 50.4357,
+      "longitude": 5.9695,
+      "aliases": ["spa"]
+    },
+    {
+      "id": "imola",
+      "official_name": "Autodromo Enzo e Dino Ferrari",
+      "short_name": "Imola",
+      "country": "Italy",
+      "latitude": 44.3380,
+      "longitude": 11.7080,
+      "aliases": ["imola"]
+    },
+    {
+      "id": "fuji",
+      "official_name": "Fuji International Speedway",
+      "short_name": "Fuji",
+      "country": "Japan",
+      "latitude": 35.3697,
+      "longitude": 138.9227,
+      "aliases": ["fuji"]
+    },
+    {
+      "id": "bahrain",
+      "official_name": "Bahrain International Circuit",
+      "short_name": "Bahrain",
+      "country": "Bahrain",
+      "latitude": 26.0326,
+      "longitude": 50.5106,
+      "aliases": ["bahrain", "sakhir"]
+    },
+    {
+      "id": "losail",
+      "official_name": "Losail International Circuit",
+      "short_name": "Losail",
+      "country": "Qatar",
+      "latitude": 25.4873,
+      "longitude": 51.4525,
+      "aliases": ["losail", "lusail", "qatar"]
+    },
+    {
+      "id": "sao-paulo",
+      "official_name": "Autodromo Jose Carlos Pace",
+      "short_name": "Interlagos",
+      "country": "Brazil",
+      "latitude": -23.7022,
+      "longitude": -46.6932,
+      "aliases": ["sao-paulo", "interlagos", "brazil"]
+    },
+    {
+      "id": "circuit-of-the-americas",
+      "official_name": "Circuit of the Americas",
+      "short_name": "COTA",
+      "country": "United States",
+      "latitude": 30.1366,
+      "longitude": -97.6307,
+      "aliases": ["circuit-of-the-americas", "cota", "austin"]
+    },
+    {
+      "id": "barcelona-catalunya",
+      "official_name": "Circuit de Barcelona-Catalunya",
+      "short_name": "Barcelona",
+      "country": "Spain",
+      "latitude": 41.5687,
+      "longitude": 2.2567,
+      "aliases": ["barcelona", "catalunya"]
+    },
+    {
+      "id": "paul-ricard",
+      "official_name": "Circuit Paul Ricard",
+      "short_name": "Paul Ricard",
+      "country": "France",
+      "latitude": 43.2503,
+      "longitude": 5.7883,
+      "aliases": ["paul-ricard", "castellet", "le-castellet"]
+    },
+    {
+      "id": "silverstone",
+      "official_name": "Silverstone Circuit",
+      "short_name": "Silverstone",
+      "country": "United Kingdom",
+      "latitude": 52.0738,
+      "longitude": -1.0168,
+      "aliases": ["silverstone"]
+    },
+    {
+      "id": "portimao",
+      "official_name": "Autodromo Internacional do Algarve",
+      "short_name": "Portimao",
+      "country": "Portugal",
+      "latitude": 37.2304,
+      "longitude": -8.6279,
+      "aliases": ["portimao", "algarve", "autodromo-do-algarve"]
+    },
+    {
+      "id": "monza",
+      "official_name": "Autodromo Nazionale Monza",
+      "short_name": "Monza",
+      "country": "Italy",
+      "latitude": 45.6190,
+      "longitude": 9.2870,
+      "aliases": ["monza"]
+    },
+    {
+      "id": "red-bull-ring",
+      "official_name": "Red Bull Ring",
+      "short_name": "Spielberg",
+      "country": "Austria",
+      "latitude": 47.2185,
+      "longitude": 14.7588,
+      "aliases": ["red-bull-ring", "spielberg", "a1-ring"]
+    },
+    {
+      "id": "nurburgring",
+      "official_name": "Nurburgring",
+      "short_name": "Nurburgring",
+      "country": "Germany",
+      "latitude": 50.3347,
+      "longitude": 6.9418,
+      "aliases": ["nurburgring", "nuerburgring"]
+    },
+    {
+      "id": "mugello",
+      "official_name": "Autodromo Internazionale del Mugello",
+      "short_name": "Mugello",
+      "country": "Italy",
+      "latitude": 43.9918,
+      "longitude": 11.3698,
+      "aliases": ["mugello"]
+    },
+    {
+      "id": "st-petersburg",
+      "official_name": "Streets of St. Petersburg",
+      "short_name": "St. Petersburg",
+      "country": "United States",
+      "latitude": 27.770,
+      "longitude": -82.636,
+      "aliases": ["st-petersburg", "st-pete"]
+    },
+    {
+      "id": "barber",
+      "official_name": "Barber Motorsports Park",
+      "short_name": "Barber",
+      "country": "United States",
+      "latitude": 33.5327,
+      "longitude": -86.6195,
+      "aliases": ["barber"]
+    },
+    {
+      "id": "miami",
+      "official_name": "Miami International Autodrome",
+      "short_name": "Miami",
+      "country": "United States",
+      "latitude": 25.958,
+      "longitude": -80.2389,
+      "aliases": ["miami-grand-prix", "homestead-miami", "homestead"]
+    },
+    {
+      "id": "nola",
+      "official_name": "NOLA Motorsports Park",
+      "short_name": "NOLA",
+      "country": "United States",
+      "latitude": 29.8876,
+      "longitude": -90.1908,
+      "aliases": ["nola"]
+    },
+    {
+      "id": "montreal",
+      "official_name": "Circuit Gilles Villeneuve",
+      "short_name": "Montreal",
+      "country": "Canada",
+      "latitude": 45.5035,
+      "longitude": -73.5227,
+      "aliases": ["montreal", "gilles-villeneuve"]
+    },
+    {
+      "id": "toronto",
+      "official_name": "Exhibition Place Street Circuit",
+      "short_name": "Toronto",
+      "country": "Canada",
+      "latitude": 43.6350,
+      "longitude": -79.4125,
+      "aliases": ["toronto"]
+    },
+    {
+      "id": "martinsville",
+      "official_name": "Martinsville Speedway",
+      "short_name": "Martinsville",
+      "country": "United States",
+      "latitude": 36.6340,
+      "longitude": -79.8511,
+      "aliases": ["martinsville"]
+    },
+    {
+      "id": "charlotte",
+      "official_name": "Charlotte Motor Speedway",
+      "short_name": "Charlotte",
+      "country": "United States",
+      "latitude": 35.3515,
+      "longitude": -80.6834,
+      "aliases": ["charlotte"]
+    },
+    {
+      "id": "misano",
+      "official_name": "Misano World Circuit Marco Simoncelli",
+      "short_name": "Misano",
+      "country": "Italy",
+      "latitude": 43.9568,
+      "longitude": 12.6833,
+      "aliases": ["misano"]
+    },
+    {
+      "id": "jerez",
+      "official_name": "Circuito de Jerez - Angel Nieto",
+      "short_name": "Jerez",
+      "country": "Spain",
+      "latitude": 36.7050,
+      "longitude": -6.0338,
+      "aliases": ["jerez"]
+    },
+    {
+      "id": "vallelunga",
+      "official_name": "Autodromo Vallelunga Piero Taruffi",
+      "short_name": "Vallelunga",
+      "country": "Italy",
+      "latitude": 42.1565,
+      "longitude": 12.3682,
+      "aliases": ["vallelunga"]
+    },
+    {
+      "id": "carolina-motorsports-park",
+      "official_name": "Carolina Motorsports Park",
+      "short_name": "CMP",
+      "country": "United States",
+      "latitude": 34.4884,
+      "longitude": -80.5941,
+      "aliases": ["carolina-motorsports-park", "cmp"]
+    },
+    {
+      "id": "the-firm",
+      "official_name": "Florida International Rally & Motorsport Park",
+      "short_name": "The FIRM",
+      "country": "United States",
+      "latitude": 29.8324,
+      "longitude": -82.0531,
+      "aliases": ["circuit-florida", "florida"]
+    },
+    {
+      "id": "mx5-shootout",
+      "official_name": "Mazda MX-5 Cup Shootout",
+      "short_name": "MX-5 Shootout",
+      "country": "United States",
+      "latitude": 34.1413,
+      "longitude": -83.8173,
+      "aliases": ["mx-5-cup-shootout", "mazda-mx-5-cup-shootout"]
+    }
+  ]
+}

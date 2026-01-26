@@ -146,6 +146,24 @@ task :import_lmc do
   sh "ruby import.rb --series lmc --year #{current_year}"
 end
 
+desc "Run all tests"
+task :test do
+  sh "ruby test_database.rb"
+end
+
+desc "Run database linting checks"
+task :lint do
+  sh "ruby lint/check_database.rb"
+end
+
+desc "Run data quality checks on all race sessions"
+task :lint_data do
+  sh "ruby lint/check_data_quality.rb"
+end
+
+desc "Run all checks (lint + data quality)"
+task check: ["db:update", :lint, :lint_data]
+
 desc "Clean output directory"
 task :clean do
   if Dir.exist?(OUTPUT_DIR)

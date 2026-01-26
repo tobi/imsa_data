@@ -4,6 +4,7 @@ require 'date'
 require 'cgi'
 require 'csv'
 require 'set'
+require 'json'
 
 # Series Configuration
 # Defines timing URLs and patterns for each supported racing series
@@ -88,6 +89,8 @@ class EnduranceSeriesImporter
     puts "  Found #{events.length} events for #{year}"
 
     total_csvs = 0
+    events_manifest = []
+
     events.each do |event_code, event_name|
       puts "\n  Importing #{event_name}..."
       event_url = "#{season_url}&evvent=#{CGI.escape(event_code)}"
@@ -96,10 +99,24 @@ class EnduranceSeriesImporter
       puts "    Found #{csv_files.length} CSV files"
       total_csvs += csv_files.length
 
+      # Extract event number from code (e.g., "01_LOSAIL" -> "01")
+      event_number = event_code.split('_').first
+      event_folder = "#{event_number}-#{event_name.downcase.gsub(/[^a-z0-9]+/, '-')}"
+
+      # Track event info for manifest
+      events_manifest << {
+        event_number: event_number,
+        event_name: event_name,
+        event_folder: event_folder
+      }
+
       csv_files.each do |csv_path|
-        download_csv_from_html(csv_path, year, output_path)
+        download_csv_from_html(csv_path, year, output_path, event_number, event_name)
       end
     end
+
+    # Save events manifest
+    save_events_manifest(output_path, year, events_manifest)
 
     puts "\n  Total: #{total_csvs} CSV files across #{events.length} events"
   end
@@ -108,14 +125,50 @@ class EnduranceSeriesImporter
     events_url = "#{@series_config[:base_url]}#{year_prefix}/"
     puts "  Source: #{events_url}"
 
+    events_manifest = []
+
     fetch_links(events_url).each do |event_folder|
       next unless event_folder.end_with?('/') && !event_folder.start_with?('.')
 
+      # Extract event name from folder (e.g., "02_Daytona International Speedway/" -> "Daytona International Speedway")
+      decoded_folder = CGI.unescape(event_folder.chomp('/'))
+      if decoded_folder =~ /^(\d+)_(.+)$/
+        event_number = $1
+        event_name = $2
+        event_folder_clean = "#{event_number}-#{event_name.downcase.gsub(/[^a-z0-9]+/, '-')}"
+
+        events_manifest << {
+          event_number: event_number,
+          event_name: event_name,
+          event_folder: event_folder_clean
+        }
+      end
+
       import_event(events_url + event_folder, year, output_path)
     end
+
+    # Save events manifest
+    save_events_manifest(output_path, year, events_manifest)
   end
 
   private
+
+  def save_events_manifest(output_path, year, events)
+    manifest_path = File.join(output_path, @series_code, year.to_s, 'events.json')
+    FileUtils.mkdir_p(File.dirname(manifest_path))
+
+    # Merge with existing manifest if present (don't overwrite)
+    existing = []
+    if File.exist?(manifest_path)
+      existing = JSON.parse(File.read(manifest_path))
+    end
+
+    # Merge by event_folder, preferring new data
+    merged = (existing + events).uniq { |e| e['event_folder'] || e[:event_folder] }
+
+    File.write(manifest_path, JSON.pretty_generate(merged))
+    puts "\n  Saved events manifest: #{manifest_path}"
+  end
 
   def fetch_events_from_html(season_url)
     begin
@@ -158,13 +211,18 @@ class EnduranceSeriesImporter
     end
   end
 
-  def download_csv_from_html(csv_path, year, output_path)
+  def download_csv_from_html(csv_path, year, output_path, event_number = nil, event_name = nil)
     # Parse the path to extract components
     # Example: Results/13_2024/08_BAHRAIN%20INTERNATIONAL%20CIRCUIT/575_FIA%20WEC/202410311215_Free%20Practice%201/23_Analysis_Free%20Practice%201.CSV
     parts = csv_path.split('/')
     return unless parts.length >= 6
 
-    event_folder = CGI.unescape(parts[2]).downcase.gsub(/[^a-z0-9]+/, '-')
+    # Use provided event_name if available, otherwise extract from path
+    if event_number && event_name
+      event_folder = "#{event_number}-#{event_name.downcase.gsub(/[^a-z0-9]+/, '-')}"
+    else
+      event_folder = CGI.unescape(parts[2]).downcase.gsub(/[^a-z0-9]+/, '-')
+    end
     session_folder = parts[4]
     filename = parts[5]
 
@@ -211,7 +269,6 @@ class EnduranceSeriesImporter
   def fetch_links(url)
     url = url.gsub(/\?.*$/, '')
     return [] if @visited.include?(url)
-
     @visited.add(url)
 
     begin
@@ -220,7 +277,6 @@ class EnduranceSeriesImporter
         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language' => 'en-US,en;q=0.9',
-        'Accept-Encoding' => 'gzip, deflate',
         'Connection' => 'keep-alive'
       }
       body = URI.open(url, headers, &:read).force_encoding("ISO-8859-1").encode("UTF-8")
@@ -229,6 +285,7 @@ class EnduranceSeriesImporter
           .reject { |link| link.start_with?('/') }
     rescue => e
       puts "Error fetching #{url}: #{e.message}"
+      puts e.backtrace.first(3).join("\n")
       []
     end
   end
