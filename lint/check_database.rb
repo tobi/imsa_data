@@ -66,6 +66,9 @@ class DatabaseLinter
     check_required_tables
     check_required_columns
 
+    # CSV file checks
+    check_csv_headers
+
     # Track & location checks
     check_unknown_tracks
     check_duplicate_aliases
@@ -126,6 +129,69 @@ class DatabaseLinter
       ok "All required columns exist in laps"
     else
       missing.each { |c| error "Missing column in laps: #{c}" }
+    end
+  end
+
+  def check_csv_headers
+    section "Checking CSV file headers match expected patterns"
+
+    # Expected headers for each file type
+    expected_headers = {
+      'laps' => ['NUMBER', 'DRIVER_NUMBER', 'LAP_NUMBER', 'LAP_TIME'],
+      'results' => ['POSITION', 'NUMBER', 'TEAM'],
+      'weather' => ['TIME_UTC', 'AIR_TEMP', 'TRACK_TEMP']
+    }
+
+    mismatched = []
+
+    Dir.glob("data/*/*/*/*.csv").each do |file|
+      # Determine expected type from filename
+      type = case File.basename(file)
+             when /-laps\.csv$/i then 'laps'
+             when /-results\.csv$/i then 'results'
+             when /-weather\.csv$/i then 'weather'
+             else next
+             end
+
+      begin
+        # Read first line (header)
+        header = File.open(file, &:readline).strip.upcase
+
+        expected = expected_headers[type]
+        has_expected = expected.all? { |col| header.include?(col) }
+
+        unless has_expected
+          # Check if it's a different type misnamed
+          actual_type = expected_headers.find { |t, cols| cols.all? { |c| header.include?(c) } }&.first
+
+          if actual_type && actual_type != type
+            mismatched << {
+              file: file.sub('data/', ''),
+              named_as: type,
+              actually: actual_type,
+              header_sample: header[0..80]
+            }
+          elsif header.include?('POSITION') && header.include?('TEAM') && type == 'laps'
+            # Common case: results file named as laps
+            mismatched << {
+              file: file.sub('data/', ''),
+              named_as: type,
+              actually: 'results',
+              header_sample: header[0..80]
+            }
+          end
+        end
+      rescue => e
+        warn "Could not read #{file}: #{e.message}"
+      end
+    end
+
+    if mismatched.empty?
+      ok "All CSV files have headers matching their file type"
+    else
+      mismatched.each do |m|
+        error "File type mismatch: #{m[:file]} named as '#{m[:named_as]}' but has '#{m[:actually]}' headers"
+      end
     end
   end
 

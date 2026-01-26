@@ -199,11 +199,13 @@ class EnduranceSeriesImporter
       html = URI.open(season_url, headers, &:read).force_encoding("UTF-8")
 
       # Extract all CSV file paths from href attributes
+      # Includes files in subfolders (e.g., Le Mans hourly race data)
       csv_paths = html.scan(/href="(Results\/[^"]*\.CSV)"/).map(&:first)
 
-      # Filter to only results (03_), laps (23_), and weather (26_) files
+      # Filter to results (03_), laps (23_), and weather (26_) files
+      # Allow files in subfolders (e.g., Race/01_Hour 1/23_Analysis.CSV)
       csv_paths.select do |path|
-        path.match?(/\/(03_.*|23_.*|26_.*)\.CSV$/i)
+        path.match?(/\/(03_[^\/]*|23_[^\/]*|26_[^\/]*)\.CSV$/i)
       end.uniq
     rescue => e
       puts "Error fetching season page #{season_url}: #{e.message}"
@@ -214,6 +216,7 @@ class EnduranceSeriesImporter
   def download_csv_from_html(csv_path, year, output_path, event_number = nil, event_name = nil)
     # Parse the path to extract components
     # Example: Results/13_2024/08_BAHRAIN%20INTERNATIONAL%20CIRCUIT/575_FIA%20WEC/202410311215_Free%20Practice%201/23_Analysis_Free%20Practice%201.CSV
+    # Or with subfolders: Results/13_2024/04_LE%20MANS/541_FIA%20WEC/202406151600_Race/24_Hour%2024/23_Analysis_Race_Hour%2024.CSV
     parts = csv_path.split('/')
     return unless parts.length >= 6
 
@@ -223,8 +226,21 @@ class EnduranceSeriesImporter
     else
       event_folder = CGI.unescape(parts[2]).downcase.gsub(/[^a-z0-9]+/, '-')
     end
+
+    # Session folder is at index 4, but there may be subfolders for hourly data
     session_folder = parts[4]
-    filename = parts[5]
+
+    # Get filename (last part) to determine file type
+    filename = parts.last
+
+    # For hourly race data, include hour in the session name
+    # e.g., 202406151600_Race/24_Hour 24/23_Analysis... -> 202406151600_Race-hour-24
+    if parts.length > 6
+      subfolder = CGI.unescape(parts[5]).downcase.gsub(/[^a-z0-9]+/, '-')
+      if subfolder =~ /hour-?(\d+)/
+        session_folder = "#{session_folder}-hour-#{$1}"
+      end
+    end
 
     # Determine file type from filename
     file_type = case filename
@@ -398,6 +414,53 @@ class EnduranceSeriesImporter
       CSV.parse(content, col_sep: ';') do |row|
         output.puts(CSV.generate_line(row))
       end
+    end
+
+    # Verify file type matches header and rename if needed
+    verify_and_fix_file_type(target_file)
+  end
+
+  def verify_and_fix_file_type(file_path)
+    return unless File.exist?(file_path)
+
+    begin
+      header = File.open(file_path, &:readline).strip.upcase
+
+      # Determine actual type from headers
+      actual_type = if header.include?('LAP_NUMBER') && header.include?('LAP_TIME')
+                      'laps'
+                    elsif header.include?('POSITION') && header.include?('TEAM')
+                      'results'
+                    elsif header.include?('AIR_TEMP') || header.include?('TRACK_TEMP')
+                      'weather'
+                    else
+                      nil
+                    end
+
+      return unless actual_type
+
+      # Check if filename matches actual type
+      named_type = case File.basename(file_path)
+                   when /-laps\.csv$/i then 'laps'
+                   when /-results\.csv$/i then 'results'
+                   when /-weather\.csv$/i then 'weather'
+                   else return
+                   end
+
+      if actual_type != named_type
+        # Rename file to correct type
+        new_path = file_path.sub(/-#{named_type}\.csv$/i, "-#{actual_type}.csv")
+        unless File.exist?(new_path)
+          FileUtils.mv(file_path, new_path)
+          puts " [renamed: #{named_type}→#{actual_type}]"
+        else
+          # Both files exist, delete the misnamed one
+          FileUtils.rm(file_path)
+          puts " [removed duplicate, kept correct #{actual_type}]"
+        end
+      end
+    rescue => e
+      # Ignore read errors
     end
   end
 
