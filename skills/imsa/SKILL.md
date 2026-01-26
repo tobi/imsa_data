@@ -6,7 +6,18 @@ description: use to query historical data on the IMSA Weathertech seasons
 # IMSA Data Analysis Skill
 
 ## Purpose
-Analyze IMSA racing data from the DuckDB database providing insights into lap times, driver performance, team comparisons, weather impacts, and race strategies.
+Analyze racing data from the DuckDB database covering IMSA WeatherTech (2021-2026), WEC (2025), and ELMS (2025). Provides insights into lap times, driver performance, team comparisons, weather impacts, chassis performance, and race strategies.
+
+## Series and Classes
+- **IMSA**: GTP (LMDh), LMP2, LMP3, GTD, GTDPRO, GTLM (discontinued), DPi (discontinued)
+- **WEC**: HYPERCAR (LMH + LMDh), LMP2, LMGT3
+- **ELMS**: LMP2, LMP3, LMGT3
+
+## Chassis Data
+Every lap includes `chassis`, `homologation`, and `manufacturer` columns:
+- **homologation**: `LMDh`, `LMH`, `DPi`, `LMP2`, `LMP3`, `GTE`, `GT3`
+- Use homologation to compare like-for-like cars across series (e.g., all LMDh cars)
+- Use manufacturer for brand-level analysis (Porsche, Ferrari, BMW, etc.)
 
 # Query
 

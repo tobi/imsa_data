@@ -37,6 +37,26 @@
       "manufacturer": "Alpine"
     },
     {
+      "pattern": "Alpine A480",
+      "homologation": "LMH",
+      "manufacturer": "Alpine"
+    },
+    {
+      "pattern": "Glickenhaus 007",
+      "homologation": "LMH",
+      "manufacturer": "Glickenhaus"
+    },
+    {
+      "pattern": "Vanwall Vandervell",
+      "homologation": "LMH",
+      "manufacturer": "Vanwall"
+    },
+    {
+      "pattern": "Isotta Fraschini",
+      "homologation": "LMH",
+      "manufacturer": "Isotta Fraschini"
+    },
+    {
       "pattern": "Toyota GR010",
       "homologation": "LMH",
       "manufacturer": "Toyota"
@@ -97,9 +117,24 @@
       "manufacturer": "Ligier"
     },
     {
+      "pattern": "Ligier JSP217",
+      "homologation": "LMP2",
+      "manufacturer": "Ligier"
+    },
+    {
       "pattern": "Ligier LMP2",
       "homologation": "LMP2",
       "manufacturer": "Ligier"
+    },
+    {
+      "pattern": "Ligier  LMP2",
+      "homologation": "LMP2",
+      "manufacturer": "Ligier"
+    },
+    {
+      "pattern": "Aurus 01",
+      "homologation": "LMP2",
+      "manufacturer": "Aurus"
     },
     {
       "pattern": "Ligier JS P320",
@@ -177,6 +212,11 @@
       "manufacturer": "Porsche"
     },
     {
+      "pattern": "Porsche 911 GT3R",
+      "homologation": "GT3",
+      "manufacturer": "Porsche"
+    },
+    {
       "pattern": "BMW M4 GT3",
       "homologation": "GT3",
       "manufacturer": "BMW"
@@ -207,12 +247,22 @@
       "manufacturer": "Mercedes-AMG"
     },
     {
+      "pattern": "Mercedes-AMG LMGT3",
+      "homologation": "GT3",
+      "manufacturer": "Mercedes-AMG"
+    },
+    {
       "pattern": "Audi R8 LMS GT3",
       "homologation": "GT3",
       "manufacturer": "Audi"
     },
     {
       "pattern": "Lamborghini Huracan GT3",
+      "homologation": "GT3",
+      "manufacturer": "Lamborghini"
+    },
+    {
+      "pattern": "Lamborghini Huracan LMGT3",
       "homologation": "GT3",
       "manufacturer": "Lamborghini"
     },

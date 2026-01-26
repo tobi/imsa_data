@@ -1,8 +1,9 @@
 # IMSA Data Agent Guide
 
 The IMSA database (`output/imsa.duckdb`) provides comprehensive racing data from
-2021-2025. This guide documents the schema so downstream agents (human or
-automated) can reason about the data without reverse-engineering the SQL pipeline.
+IMSA WeatherTech (2021-2026), WEC (2025), and ELMS (2025). This guide documents
+the schema so downstream agents (human or automated) can reason about the data
+without reverse-engineering the SQL pipeline.
 
 ## Quick Start
 
@@ -94,6 +95,9 @@ or before the lap's `session_time`.
 | `license_rank` | INTEGER | Numeric rank derived from `license` (5 = Platinum … 2 = Bronze, 0 = unknown). Handy for numeric comparisons or filters. |
 | `driver_country` | VARCHAR | Country code for the driver, sourced from the entry list. |
 | `team_name` | VARCHAR | Final team attribution. Prefers the entry list team, falls back to the lap CSV label, ensuring that driver swaps never drag the car into a different team. |
+| `chassis` | VARCHAR | Full chassis name (e.g., `Porsche 963`, `Ferrari 296 GT3`, `Oreca 07 - Gibson`). |
+| `homologation` | VARCHAR | Regulatory category: `LMDh`, `LMH`, `DPi`, `LMP2`, `LMP3`, `GTE`, `GT3`. Use this to compare like-for-like cars across series. |
+| `manufacturer` | VARCHAR | Car manufacturer (e.g., `Porsche`, `Ferrari`, `Cadillac`, `BMW`). |
 | `air_temp_f` | DECIMAL(6,2) | Air temperature (°F) at lap completion, sourced from the most recent weather reading at or before `session_time`. |
 | `track_temp_f` | DECIMAL(6,2) | Track surface temperature (°F) from the same aligned weather snapshot. |
 | `humidity_percent` | DECIMAL(6,2) | Relative humidity percentage associated with the lap. |
@@ -120,8 +124,9 @@ or before the lap's `session_time`.
 - `session_time_lap_number` tracks the race leader’s progress; use it when you
   need to view laps in the order they happened on track rather than per-car
   counts (helpful for DNFs or long repairs).
-- Season-specific views (`laps_2021` … `laps_2025`) are created automatically if
+- Season-specific views (`laps_2021` … `laps_2026`) are created automatically if
   you prefer querying a fixed year without adding your own `WHERE year =` filters.
+- The `series_code` column distinguishes between series: `imsa`, `wec`, `elms`.
 - All timing metrics are stored as decimal seconds for math; when generating
   human-facing text or charts, reformat them to `MM:SS.mmm` (or
   `HH:MM:SS.mmm` for long clocks) to match standard racing notation.

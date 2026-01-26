@@ -1,0 +1,102 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "ROAR Before the 24",
+    "event_folder": "01-roar-before-the-24"
+  },
+  {
+    "event_number": "02",
+    "event_name": "Daytona International Speedway",
+    "event_folder": "02-daytona-international-speedway"
+  },
+  {
+    "event_number": "03",
+    "event_name": "St- Petersburg Street Course",
+    "event_folder": "03-st-petersburg-street-course"
+  },
+  {
+    "event_number": "04",
+    "event_name": "PCCNA Sebring Test",
+    "event_folder": "04-pccna-sebring-test"
+  },
+  {
+    "event_number": "05",
+    "event_name": "Sebring International Raceway",
+    "event_folder": "05-sebring-international-raceway"
+  },
+  {
+    "event_number": "06",
+    "event_name": "Long Beach Street Circuit",
+    "event_folder": "06-long-beach-street-circuit"
+  },
+  {
+    "event_number": "07",
+    "event_name": "Weathertech Raceway Laguna Seca",
+    "event_folder": "07-weathertech-raceway-laguna-seca"
+  },
+  {
+    "event_number": "08",
+    "event_name": "Mid-Ohio Sports Car Course",
+    "event_folder": "08-mid-ohio-sports-car-course"
+  },
+  {
+    "event_number": "09",
+    "event_name": "NOLA Motorsports Park",
+    "event_folder": "09-nola-motorsports-park"
+  },
+  {
+    "event_number": "10",
+    "event_name": "Belle Isle Street Course",
+    "event_folder": "10-belle-isle-street-course"
+  },
+  {
+    "event_number": "11",
+    "event_name": "Watkins Glen International",
+    "event_folder": "11-watkins-glen-international"
+  },
+  {
+    "event_number": "12",
+    "event_name": "MX-5 Cup Road America",
+    "event_folder": "12-mx-5-cup-road-america"
+  },
+  {
+    "event_number": "13",
+    "event_name": "Canadian Tire Motorsport Park",
+    "event_folder": "13-canadian-tire-motorsport-park"
+  },
+  {
+    "event_number": "14",
+    "event_name": "PCCNA - Toronto Street Course",
+    "event_folder": "14-pccna-toronto-street-course"
+  },
+  {
+    "event_number": "15",
+    "event_name": "Lime Rock Park",
+    "event_folder": "15-lime-rock-park"
+  },
+  {
+    "event_number": "16",
+    "event_name": "Road America",
+    "event_folder": "16-road-america"
+  },
+  {
+    "event_number": "17",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "17-virginia-international-raceway"
+  },
+  {
+    "event_number": "18",
+    "event_name": "Indianapolis Motor Speedway RC",
+    "event_folder": "18-indianapolis-motor-speedway-rc"
+  },
+  {
+    "event_number": "19",
+    "event_name": "Road Atlanta",
+    "event_folder": "19-road-atlanta"
+  },
+  {
+    "event_number": "20",
+    "event_name": "LST Portimao",
+    "event_folder": "20-lst-portimao"
+  }
+]
