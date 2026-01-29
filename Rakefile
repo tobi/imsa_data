@@ -191,5 +191,16 @@ task publish: "db:update" do
     cp "#{OUTPUT_DIR}/../README.hf.md", "README.md"
     sh "huggingface-cli upload tobil/imsa . --repo-type dataset"
   end
+end
 
+namespace :dashboard do
+  desc "Build the Observable Framework dashboard"
+  task :build => "db:update" do
+    Dir.chdir("pages") { sh "npm run build" }
+  end
+
+  desc "Start the Observable Framework dev server"
+  task :dev do
+    Dir.chdir("pages") { exec "npm run dev" }
+  end
 end

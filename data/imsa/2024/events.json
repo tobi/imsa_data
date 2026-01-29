@@ -10,11 +10,6 @@
     "event_folder": "02-daytona-international-speedway"
   },
   {
-    "event_number": "03",
-    "event_name": "PCCNA Sebring Test",
-    "event_folder": "03-pccna-sebring-test"
-  },
-  {
     "event_number": "04",
     "event_name": "St- Petersburg Street Course",
     "event_folder": "04-st-petersburg-street-course"
@@ -103,11 +98,6 @@
     "event_number": "19",
     "event_name": "Road Atlanta",
     "event_folder": "19-road-atlanta"
-  },
-  {
-    "event_number": "20",
-    "event_name": "Circuit of the Americas (PCCNA)",
-    "event_folder": "20-circuit-of-the-americas-pccna-"
   },
   {
     "event_number": "21",

@@ -97,9 +97,24 @@
       "manufacturer": "Mazda"
     },
     {
+      "pattern": "Nissan DPi",
+      "homologation": "DPi",
+      "manufacturer": "Nissan"
+    },
+    {
       "pattern": "ORECA LMP2",
       "homologation": "LMP2",
       "manufacturer": "ORECA"
+    },
+    {
+      "pattern": "ORECA  LMP2",
+      "homologation": "LMP2",
+      "manufacturer": "ORECA"
+    },
+    {
+      "pattern": "Multimatic/Riley LMP2",
+      "homologation": "LMP2",
+      "manufacturer": "Multimatic"
     },
     {
       "pattern": "Oreca 07",
@@ -187,6 +202,21 @@
       "manufacturer": "BMW"
     },
     {
+      "pattern": "BMW M8 GTLM",
+      "homologation": "GTE",
+      "manufacturer": "BMW"
+    },
+    {
+      "pattern": "Chevrolet Corvette C7.R",
+      "homologation": "GTE",
+      "manufacturer": "Chevrolet"
+    },
+    {
+      "pattern": "Ford GT",
+      "homologation": "GTE",
+      "manufacturer": "Ford"
+    },
+    {
       "pattern": "Aston Martin Vantage AMR",
       "homologation": "GTE",
       "manufacturer": "Aston Martin"
@@ -248,6 +278,11 @@
     },
     {
       "pattern": "Mercedes-AMG LMGT3",
+      "homologation": "GT3",
+      "manufacturer": "Mercedes-AMG"
+    },
+    {
+      "pattern": "Mercedes-AMG",
       "homologation": "GT3",
       "manufacturer": "Mercedes-AMG"
     },

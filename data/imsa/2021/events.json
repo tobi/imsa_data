@@ -10,11 +10,6 @@
     "event_folder": "02-daytona-international-speedway"
   },
   {
-    "event_number": "03",
-    "event_name": "PCCNA Sebring Test",
-    "event_folder": "03-pccna-sebring-test"
-  },
-  {
     "event_number": "04",
     "event_name": "Sebring Sportscar Week",
     "event_folder": "04-sebring-sportscar-week"
@@ -28,11 +23,6 @@
     "event_number": "06",
     "event_name": "St- Petersburg Street Course",
     "event_folder": "06-st-petersburg-street-course"
-  },
-  {
-    "event_number": "07",
-    "event_name": "PCCNA - Circuit of the Americas",
-    "event_folder": "07-pccna-circuit-of-the-americas"
   },
   {
     "event_number": "08",
@@ -93,16 +83,6 @@
     "event_number": "19",
     "event_name": "VIRginia International Raceway",
     "event_folder": "19-virginia-international-raceway"
-  },
-  {
-    "event_number": "20",
-    "event_name": "Mazda MX-5 Cup Shootout",
-    "event_folder": "20-mazda-mx-5-cup-shootout"
-  },
-  {
-    "event_number": "21",
-    "event_name": "LST World Finals at Misano",
-    "event_folder": "21-lst-world-finals-at-misano"
   },
   {
     "event_number": "22",

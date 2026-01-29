@@ -7,7 +7,11 @@
       "country": "United States",
       "latitude": 42.3369,
       "longitude": -76.9272,
-      "aliases": ["watkins", "wgi", "the-glen"]
+      "aliases": ["watkins", "wgi", "the-glen"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/watkins-glen.html",
+      "length_km": 5.435,
+      "turns": null,
+      "image_file": "watkins-glen.png"
     },
     {
       "id": "belle-isle",
@@ -16,7 +20,11 @@
       "country": "United States",
       "latitude": 42.3378,
       "longitude": -83.0008,
-      "aliases": ["belle-isle"]
+      "aliases": ["belle-isle"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/detroit-belle-isle.html",
+      "length_km": 3.798,
+      "turns": null,
+      "image_file": "belle-isle.png"
     },
     {
       "id": "mosport",
@@ -25,7 +33,11 @@
       "country": "Canada",
       "latitude": 44.0481,
       "longitude": -78.6756,
-      "aliases": ["canadian-tire", "mosport", "ctmp"]
+      "aliases": ["canadian-tire", "mosport", "ctmp"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/canada/mosport-park.html",
+      "length_km": 4.102,
+      "turns": null,
+      "image_file": "mosport.png"
     },
     {
       "id": "daytona",
@@ -34,7 +46,11 @@
       "country": "United States",
       "latitude": 29.1851,
       "longitude": -81.0707,
-      "aliases": ["daytona", "roar"]
+      "aliases": ["daytona", "roar"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/daytona.html",
+      "length_km": 5.729,
+      "turns": null,
+      "image_file": "daytona.png"
     },
     {
       "id": "detroit",
@@ -43,7 +59,11 @@
       "country": "United States",
       "latitude": 42.3296,
       "longitude": -83.0401,
-      "aliases": ["detroit"]
+      "aliases": ["detroit"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/detroit.html",
+      "length_km": 2.736,
+      "turns": 9,
+      "image_file": "detroit.png"
     },
     {
       "id": "sebring",
@@ -52,7 +72,11 @@
       "country": "United States",
       "latitude": 27.4547,
       "longitude": -81.3483,
-      "aliases": ["sebring", "february"]
+      "aliases": ["sebring", "february"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/sebring.html",
+      "length_km": 5.954,
+      "turns": null,
+      "image_file": "sebring.png"
     },
     {
       "id": "indianapolis",
@@ -61,7 +85,11 @@
       "country": "United States",
       "latitude": 39.7950,
       "longitude": -86.2346,
-      "aliases": ["indianapolis", "indy", "battle-on-the-bricks"]
+      "aliases": ["indianapolis", "indy", "battle-on-the-bricks"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/indianapolis-motor-speedway.html",
+      "length_km": 3.925,
+      "turns": null,
+      "image_file": "indianapolis.png"
     },
     {
       "id": "lime-rock",
@@ -70,7 +98,11 @@
       "country": "United States",
       "latitude": 41.9277,
       "longitude": -73.3836,
-      "aliases": ["lime-rock"]
+      "aliases": ["lime-rock"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/lime-rock-park.html",
+      "length_km": 2.462,
+      "turns": null,
+      "image_file": "lime-rock.png"
     },
     {
       "id": "long-beach",
@@ -79,7 +111,11 @@
       "country": "United States",
       "latitude": 33.7598,
       "longitude": -118.1890,
-      "aliases": ["long-beach"]
+      "aliases": ["long-beach"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/long-beach.html",
+      "length_km": 3.167,
+      "turns": null,
+      "image_file": "long-beach.png"
     },
     {
       "id": "mid-ohio",
@@ -88,7 +124,11 @@
       "country": "United States",
       "latitude": 40.6869,
       "longitude": -82.6352,
-      "aliases": ["mid-ohio"]
+      "aliases": ["mid-ohio"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/mid-ohio.html",
+      "length_km": 3.621,
+      "turns": null,
+      "image_file": "mid-ohio.png"
     },
     {
       "id": "road-america",
@@ -97,7 +137,11 @@
       "country": "United States",
       "latitude": 43.7918,
       "longitude": -87.9897,
-      "aliases": ["road-america", "elkhart-lake"]
+      "aliases": ["road-america", "elkhart-lake"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/road-america.html",
+      "length_km": 6.514,
+      "turns": null,
+      "image_file": "road-america.png"
     },
     {
       "id": "road-atlanta",
@@ -106,7 +150,11 @@
       "country": "United States",
       "latitude": 34.1413,
       "longitude": -83.8173,
-      "aliases": ["road-atlanta"]
+      "aliases": ["road-atlanta"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/road-atlanta.html",
+      "length_km": 4.088,
+      "turns": 12,
+      "image_file": "road-atlanta.png"
     },
     {
       "id": "laguna-seca",
@@ -115,7 +163,11 @@
       "country": "United States",
       "latitude": 36.5842,
       "longitude": -121.7517,
-      "aliases": ["laguna-seca", "monterey"]
+      "aliases": ["laguna-seca", "monterey"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/laguna-seca.html",
+      "length_km": 3.602,
+      "turns": null,
+      "image_file": "laguna-seca.png"
     },
     {
       "id": "virginia-international-raceway",
@@ -124,7 +176,11 @@
       "country": "United States",
       "latitude": 36.5618,
       "longitude": -79.2046,
-      "aliases": ["virginia", "vir"]
+      "aliases": ["virginia", "vir"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/virginia-international-raceway.html",
+      "length_km": 5.262,
+      "turns": null,
+      "image_file": "virginia-international-raceway.png"
     },
     {
       "id": "le-mans",
@@ -133,7 +189,11 @@
       "country": "France",
       "latitude": 47.9359,
       "longitude": 0.2220,
-      "aliases": ["le-mans", "lemans", "sarthe"]
+      "aliases": ["le-mans", "lemans", "sarthe"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/france/le-mans.html",
+      "length_km": 13.629,
+      "turns": null,
+      "image_file": "le-mans.png"
     },
     {
       "id": "spa-francorchamps",
@@ -142,7 +202,11 @@
       "country": "Belgium",
       "latitude": 50.4357,
       "longitude": 5.9695,
-      "aliases": ["spa"]
+      "aliases": ["spa"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/belgium/spa-francorchamps.html",
+      "length_km": 7.004,
+      "turns": null,
+      "image_file": "spa-francorchamps.png"
     },
     {
       "id": "imola",
@@ -151,7 +215,11 @@
       "country": "Italy",
       "latitude": 44.3380,
       "longitude": 11.7080,
-      "aliases": ["imola"]
+      "aliases": ["imola"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/italy/imola.html",
+      "length_km": 4.909,
+      "turns": null,
+      "image_file": "imola.png"
     },
     {
       "id": "fuji",
@@ -160,7 +228,11 @@
       "country": "Japan",
       "latitude": 35.3697,
       "longitude": 138.9227,
-      "aliases": ["fuji"]
+      "aliases": ["fuji"],
+      "racingcircuits_url": "https://www.racingcircuits.info/asia/japan/fuji-speedway.html",
+      "length_km": 4.549,
+      "turns": null,
+      "image_file": "fuji.png"
     },
     {
       "id": "bahrain",
@@ -169,7 +241,11 @@
       "country": "Bahrain",
       "latitude": 26.0326,
       "longitude": 50.5106,
-      "aliases": ["bahrain", "sakhir"]
+      "aliases": ["bahrain", "sakhir"],
+      "racingcircuits_url": "https://www.racingcircuits.info/middle-east/bahrain/bahrain-international-circuit.html",
+      "length_km": 5.412,
+      "turns": null,
+      "image_file": "bahrain.png"
     },
     {
       "id": "losail",
@@ -178,7 +254,11 @@
       "country": "Qatar",
       "latitude": 25.4873,
       "longitude": 51.4525,
-      "aliases": ["losail", "lusail", "qatar"]
+      "aliases": ["losail", "lusail", "qatar"],
+      "racingcircuits_url": "https://www.racingcircuits.info/middle-east/qatar/losail-international-circuit.html",
+      "length_km": 5.400,
+      "turns": null,
+      "image_file": "losail.png"
     },
     {
       "id": "sao-paulo",
@@ -187,7 +267,11 @@
       "country": "Brazil",
       "latitude": -23.7022,
       "longitude": -46.6932,
-      "aliases": ["sao-paulo", "interlagos", "brazil"]
+      "aliases": ["sao-paulo", "interlagos", "brazil"],
+      "racingcircuits_url": "https://www.racingcircuits.info/south-america/brazil/interlagos.html",
+      "length_km": 4.309,
+      "turns": null,
+      "image_file": "sao-paulo.png"
     },
     {
       "id": "circuit-of-the-americas",
@@ -196,7 +280,11 @@
       "country": "United States",
       "latitude": 30.1366,
       "longitude": -97.6307,
-      "aliases": ["circuit-of-the-americas", "cota", "austin"]
+      "aliases": ["circuit-of-the-americas", "cota", "austin"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/circuit-of-the-americas.html",
+      "length_km": 5.515,
+      "turns": null,
+      "image_file": "circuit-of-the-americas.png"
     },
     {
       "id": "barcelona-catalunya",
@@ -205,7 +293,11 @@
       "country": "Spain",
       "latitude": 41.5687,
       "longitude": 2.2567,
-      "aliases": ["barcelona", "catalunya"]
+      "aliases": ["barcelona", "catalunya"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/spain/circuit-de-barcelona-catalunya.html",
+      "length_km": 4.657,
+      "turns": null,
+      "image_file": "barcelona-catalunya.png"
     },
     {
       "id": "motorland-aragon",
@@ -214,7 +306,11 @@
       "country": "Spain",
       "latitude": 40.9672,
       "longitude": -0.4815,
-      "aliases": ["motorland", "aragon"]
+      "aliases": ["motorland", "aragon"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/spain/motorland-aragon.html",
+      "length_km": 5.344,
+      "turns": null,
+      "image_file": "motorland-aragon.png"
     },
     {
       "id": "paul-ricard",
@@ -223,7 +319,11 @@
       "country": "France",
       "latitude": 43.2503,
       "longitude": 5.7883,
-      "aliases": ["paul-ricard", "castellet", "le-castellet"]
+      "aliases": ["paul-ricard", "castellet", "le-castellet"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/france/paul-ricard.html",
+      "length_km": 5.770,
+      "turns": null,
+      "image_file": "paul-ricard.png"
     },
     {
       "id": "silverstone",
@@ -232,7 +332,11 @@
       "country": "United Kingdom",
       "latitude": 52.0738,
       "longitude": -1.0168,
-      "aliases": ["silverstone"]
+      "aliases": ["silverstone"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/united-kingdom/silverstone.html",
+      "length_km": 5.890,
+      "turns": null,
+      "image_file": "silverstone.png"
     },
     {
       "id": "portimao",
@@ -241,7 +345,11 @@
       "country": "Portugal",
       "latitude": 37.2304,
       "longitude": -8.6279,
-      "aliases": ["portimao", "algarve", "autodromo-do-algarve"]
+      "aliases": ["portimao", "algarve", "autodromo-do-algarve"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/portugal/algarve-portimao.html",
+      "length_km": 4.653,
+      "turns": null,
+      "image_file": "portimao.png"
     },
     {
       "id": "monza",
@@ -250,7 +358,11 @@
       "country": "Italy",
       "latitude": 45.6190,
       "longitude": 9.2870,
-      "aliases": ["monza"]
+      "aliases": ["monza"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/italy/monza.html",
+      "length_km": 5.793,
+      "turns": null,
+      "image_file": "monza.png"
     },
     {
       "id": "red-bull-ring",
@@ -259,7 +371,11 @@
       "country": "Austria",
       "latitude": 47.2185,
       "longitude": 14.7588,
-      "aliases": ["red-bull-ring", "spielberg", "a1-ring"]
+      "aliases": ["red-bull-ring", "spielberg", "a1-ring"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/austria/red-bull-ring-a-1-ring-osterrichring.html",
+      "length_km": 4.318,
+      "turns": null,
+      "image_file": "red-bull-ring.png"
     },
     {
       "id": "nurburgring",
@@ -268,7 +384,11 @@
       "country": "Germany",
       "latitude": 50.3347,
       "longitude": 6.9418,
-      "aliases": ["nurburgring", "nuerburgring"]
+      "aliases": ["nurburgring", "nuerburgring"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/germany/nurburgring.html",
+      "length_km": 4.551,
+      "turns": null,
+      "image_file": "nurburgring.png"
     },
     {
       "id": "mugello",
@@ -277,7 +397,11 @@
       "country": "Italy",
       "latitude": 43.9918,
       "longitude": 11.3698,
-      "aliases": ["mugello"]
+      "aliases": ["mugello"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/italy/mugello.html",
+      "length_km": 5.245,
+      "turns": null,
+      "image_file": "mugello.png"
     },
     {
       "id": "st-petersburg",
@@ -286,7 +410,11 @@
       "country": "United States",
       "latitude": 27.770,
       "longitude": -82.636,
-      "aliases": ["st-petersburg", "st-pete"]
+      "aliases": ["st-petersburg", "st-pete"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/st-petersburg.html",
+      "length_km": 2.897,
+      "turns": null,
+      "image_file": "st-petersburg.png"
     },
     {
       "id": "barber",
@@ -295,7 +423,11 @@
       "country": "United States",
       "latitude": 33.5327,
       "longitude": -86.6195,
-      "aliases": ["barber"]
+      "aliases": ["barber"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/barber-motorsports-park.html",
+      "length_km": 3.700,
+      "turns": 16,
+      "image_file": "barber.png"
     },
     {
       "id": "miami",
@@ -304,7 +436,11 @@
       "country": "United States",
       "latitude": 25.958,
       "longitude": -80.2389,
-      "aliases": ["miami-grand-prix", "homestead-miami", "homestead"]
+      "aliases": ["miami-grand-prix", "homestead-miami", "homestead"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/miami-international-autodrome.html",
+      "length_km": 5.410,
+      "turns": 19,
+      "image_file": "miami.png"
     },
     {
       "id": "nola",
@@ -313,7 +449,11 @@
       "country": "United States",
       "latitude": 29.8876,
       "longitude": -90.1908,
-      "aliases": ["nola"]
+      "aliases": ["nola"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/nola-motorsports-park.html",
+      "length_km": 4.423,
+      "turns": null,
+      "image_file": "nola.png"
     },
     {
       "id": "montreal",
@@ -322,7 +462,11 @@
       "country": "Canada",
       "latitude": 45.5035,
       "longitude": -73.5227,
-      "aliases": ["montreal", "gilles-villeneuve"]
+      "aliases": ["montreal", "gilles-villeneuve"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/canada/circuit-gilles-villeneuve,-montreal.html",
+      "length_km": 4.361,
+      "turns": null,
+      "image_file": "montreal.png"
     },
     {
       "id": "toronto",
@@ -331,7 +475,11 @@
       "country": "Canada",
       "latitude": 43.6350,
       "longitude": -79.4125,
-      "aliases": ["toronto"]
+      "aliases": ["toronto"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/canada/toronto-exhibition-place.html",
+      "length_km": 2.824,
+      "turns": null,
+      "image_file": "toronto.png"
     },
     {
       "id": "martinsville",
@@ -340,7 +488,11 @@
       "country": "United States",
       "latitude": 36.6340,
       "longitude": -79.8511,
-      "aliases": ["martinsville"]
+      "aliases": ["martinsville"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/martinsville-speedway.html",
+      "length_km": 0.846,
+      "turns": null,
+      "image_file": "martinsville.png"
     },
     {
       "id": "charlotte",
@@ -349,7 +501,11 @@
       "country": "United States",
       "latitude": 35.3515,
       "longitude": -80.6834,
-      "aliases": ["charlotte"]
+      "aliases": ["charlotte"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/charlotte-motor-speedway.html",
+      "length_km": 3.734,
+      "turns": null,
+      "image_file": "charlotte.png"
     },
     {
       "id": "misano",
@@ -358,7 +514,11 @@
       "country": "Italy",
       "latitude": 43.9568,
       "longitude": 12.6833,
-      "aliases": ["misano"]
+      "aliases": ["misano"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/italy/misano.html",
+      "length_km": 4.200,
+      "turns": null,
+      "image_file": "misano.png"
     },
     {
       "id": "jerez",
@@ -367,7 +527,11 @@
       "country": "Spain",
       "latitude": 36.7050,
       "longitude": -6.0338,
-      "aliases": ["jerez"]
+      "aliases": ["jerez"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/spain/jerez.html",
+      "length_km": 4.429,
+      "turns": null,
+      "image_file": "jerez.png"
     },
     {
       "id": "vallelunga",
@@ -376,7 +540,11 @@
       "country": "Italy",
       "latitude": 42.1565,
       "longitude": 12.3682,
-      "aliases": ["vallelunga"]
+      "aliases": ["vallelunga"],
+      "racingcircuits_url": "https://www.racingcircuits.info/europe/italy/vallelunga.html",
+      "length_km": 4.085,
+      "turns": null,
+      "image_file": "vallelunga.png"
     },
     {
       "id": "carolina-motorsports-park",
@@ -385,7 +553,11 @@
       "country": "United States",
       "latitude": 34.4884,
       "longitude": -80.5941,
-      "aliases": ["carolina-motorsports-park", "cmp"]
+      "aliases": ["carolina-motorsports-park", "cmp"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/carolina-motorsports-park.html",
+      "length_km": 3.668,
+      "turns": null,
+      "image_file": "carolina-motorsports-park.png"
     },
     {
       "id": "the-firm",
@@ -394,7 +566,11 @@
       "country": "United States",
       "latitude": 29.8324,
       "longitude": -82.0531,
-      "aliases": ["circuit-florida", "florida"]
+      "aliases": ["circuit-florida", "florida"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/the-firm.html",
+      "length_km": 2.575,
+      "turns": 10,
+      "image_file": "the-firm.png"
     },
     {
       "id": "mx5-shootout",
@@ -403,7 +579,50 @@
       "country": "United States",
       "latitude": 34.1413,
       "longitude": -83.8173,
-      "aliases": ["mx-5-cup-shootout", "mazda-mx-5-cup-shootout"]
+      "aliases": ["mx-5-cup-shootout", "mazda-mx-5-cup-shootout"],
+      "racingcircuits_url": null,
+      "length_km": null,
+      "turns": null,
+      "image_file": null
+    },
+    {
+      "id": "trois-rivieres",
+      "official_name": "Grand Prix de Trois-Rivieres",
+      "short_name": "Trois-Rivieres",
+      "country": "Canada",
+      "latitude": 46.3432,
+      "longitude": -72.5427,
+      "aliases": ["trois-rivieres"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/canada/trois-rivieres.html",
+      "length_km": 2.450,
+      "turns": null,
+      "image_file": "trois-rivieres.png"
+    },
+    {
+      "id": "sonoma",
+      "official_name": "Sonoma Raceway",
+      "short_name": "Sonoma",
+      "country": "United States",
+      "latitude": 38.1570,
+      "longitude": -122.4575,
+      "aliases": ["sonoma-raceway", "sears-point", "infineon"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/usa/sonoma-raceway.html",
+      "length_km": 3.838,
+      "turns": null,
+      "image_file": "sonoma.png"
+    },
+    {
+      "id": "mont-tremblant",
+      "official_name": "Circuit Mont-Tremblant",
+      "short_name": "Mont-Tremblant",
+      "country": "Canada",
+      "latitude": 46.1961,
+      "longitude": -74.6033,
+      "aliases": ["circuit-mont-tremblant", "tremblant"],
+      "racingcircuits_url": "https://www.racingcircuits.info/north-america/canada/mont-tremblant.html",
+      "length_km": 4.260,
+      "turns": null,
+      "image_file": "mont-tremblant.png"
     }
   ]
 }
