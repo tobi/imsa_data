@@ -95,6 +95,10 @@ class DatabaseLinter
     check_driver_license_distribution
     check_missing_licenses
 
+    # Session type consistency
+    check_session_type_consistency
+    check_race_events_have_qualifying
+
     # Class normalization
     check_class_normalization
 
@@ -120,7 +124,7 @@ class DatabaseLinter
 
   def check_required_columns
     section "Checking required columns in laps table"
-    required = %w[series_code year event session car class driver_name lap lap_time chassis homologation manufacturer]
+    required = %w[series_code year event session car class driver lap lap_time chassis homologation manufacturer]
 
     existing = query("SELECT column_name FROM information_schema.columns WHERE table_name = 'laps'").map { |r| r['column_name'] }
 
@@ -559,7 +563,7 @@ class DatabaseLinter
   def check_driver_license_distribution
     section "Checking driver license distribution"
     distribution = query(<<~SQL)
-      SELECT license, COUNT(DISTINCT driver_id) as drivers
+      SELECT license, COUNT(DISTINCT driver) as drivers
       FROM laps
       WHERE license IS NOT NULL
       GROUP BY license
@@ -577,12 +581,12 @@ class DatabaseLinter
   def check_missing_licenses
     section "Checking for missing licenses"
     missing = query_single(<<~SQL)
-      SELECT COUNT(DISTINCT driver_id)
+      SELECT COUNT(DISTINCT driver)
       FROM laps
       WHERE license IS NULL
     SQL
 
-    total = query_single("SELECT COUNT(DISTINCT driver_id) FROM laps")
+    total = query_single("SELECT COUNT(DISTINCT driver) FROM laps")
 
     if missing.to_i == 0
       ok "All drivers have license data"
@@ -592,6 +596,58 @@ class DatabaseLinter
         warn "#{missing} drivers (#{pct}%) missing license data"
       else
         info "#{missing} drivers (#{pct}%) missing license data"
+      end
+    end
+  end
+
+  def check_session_type_consistency
+    section "Checking session type consistency"
+
+    # Valid session types: race, qualify, qualify-race, test-N
+    valid_pattern = /^(race|qualify|qualify-race|test-\d+)$/
+
+    sessions = query(<<~SQL)
+      SELECT session, COUNT(*) as laps
+      FROM laps
+      GROUP BY session
+      ORDER BY laps DESC
+    SQL
+
+    invalid = sessions.reject { |row| row['session'] =~ valid_pattern }
+
+    if invalid.empty?
+      ok "All sessions have valid normalized types (race, qualify, qualify-race, test-N)"
+    else
+      invalid.each do |row|
+        error "Invalid session type: '#{row['session']}' (#{row['laps']} laps) - should be race, qualify, qualify-race, or test-N"
+      end
+    end
+  end
+
+  def check_race_events_have_qualifying
+    section "Checking race events have qualifying sessions"
+
+    # Events with race sessions should also have qualifying sessions
+    events_missing_qualify = query(<<~SQL)
+      WITH event_sessions AS (
+        SELECT
+          series_code, year, event,
+          MAX(CASE WHEN session = 'race' THEN 1 ELSE 0 END) as has_race,
+          MAX(CASE WHEN session IN ('qualify', 'qualify-race') THEN 1 ELSE 0 END) as has_qualify
+        FROM laps
+        GROUP BY series_code, year, event
+      )
+      SELECT series_code, year, event
+      FROM event_sessions
+      WHERE has_race = 1 AND has_qualify = 0
+      ORDER BY series_code, year, event
+    SQL
+
+    if events_missing_qualify.empty?
+      ok "All race events have qualifying sessions"
+    else
+      events_missing_qualify.each do |row|
+        warn "Race event missing qualifying: #{row['series_code']}/#{row['year']}/#{row['event']}"
       end
     end
   end
@@ -627,7 +683,7 @@ class DatabaseLinter
         COUNT(DISTINCT event) as events,
         COUNT(DISTINCT session_id) as sessions,
         COUNT(*) as laps,
-        COUNT(DISTINCT driver_id) as drivers,
+        COUNT(DISTINCT driver) as drivers,
         COUNT(DISTINCT chassis) as chassis_types
       FROM laps
       GROUP BY series_code

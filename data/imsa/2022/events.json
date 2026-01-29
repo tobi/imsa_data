@@ -15,11 +15,6 @@
     "event_folder": "03-st-petersburg-street-course"
   },
   {
-    "event_number": "04",
-    "event_name": "PCCNA Sebring Test",
-    "event_folder": "04-pccna-sebring-test"
-  },
-  {
     "event_number": "05",
     "event_name": "Sebring International Raceway",
     "event_folder": "05-sebring-international-raceway"
@@ -55,19 +50,9 @@
     "event_folder": "11-watkins-glen-international"
   },
   {
-    "event_number": "12",
-    "event_name": "MX-5 Cup Road America",
-    "event_folder": "12-mx-5-cup-road-america"
-  },
-  {
     "event_number": "13",
     "event_name": "Canadian Tire Motorsport Park",
     "event_folder": "13-canadian-tire-motorsport-park"
-  },
-  {
-    "event_number": "14",
-    "event_name": "PCCNA - Toronto Street Course",
-    "event_folder": "14-pccna-toronto-street-course"
   },
   {
     "event_number": "15",
@@ -93,10 +78,5 @@
     "event_number": "19",
     "event_name": "Road Atlanta",
     "event_folder": "19-road-atlanta"
-  },
-  {
-    "event_number": "20",
-    "event_name": "LST Portimao",
-    "event_folder": "20-lst-portimao"
   }
 ]

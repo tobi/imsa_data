@@ -55,7 +55,8 @@ FROM read_csv(
     null_padding=true,
     normalize_names=true
 )
-WHERE VEHICLE IS NOT NULL;
+WHERE VEHICLE IS NOT NULL
+  AND regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != '';
 
 -- Normalize track names and filter to main classes
 CREATE OR REPLACE TABLE chassis_lookup AS

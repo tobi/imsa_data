@@ -48,7 +48,9 @@ CREATE TEMP TABLE event_weather_raw AS
             'WIND_DIRECTION': 'INT',
             'RAIN': 'INT'
         }
-    );
+    )
+    -- Filter out files that don't match the expected timestamp pattern
+    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-weather\.csv$', 4) != '';
 
 
 CREATE OR REPLACE TABLE event_weather AS WITH

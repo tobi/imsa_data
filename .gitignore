@@ -6,3 +6,4 @@ output/hf
 node_modules
 duckdb*
 node_modules
+.observablehq/

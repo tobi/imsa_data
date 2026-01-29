@@ -6,6 +6,9 @@ require 'csv'
 require 'set'
 require 'json'
 
+# Load driver normalizer
+require_relative 'lib/driver_normalizer'
+
 # Series Configuration
 # Defines timing URLs and patterns for each supported racing series
 SERIES_CONFIG = {
@@ -65,6 +68,7 @@ class EnduranceSeriesImporter
     end
 
     @visited = Set.new
+    @driver_normalizer = DriverNormalizer.new('driver_cache.json')
     puts "Initialized #{@series_config[:name]} importer"
   end
 
@@ -119,6 +123,9 @@ class EnduranceSeriesImporter
     save_events_manifest(output_path, year, events_manifest)
 
     puts "\n  Total: #{total_csvs} CSV files across #{events.length} events"
+    
+    # Save driver cache and report
+    save_driver_cache
   end
 
   def import_year_via_directory_listing(year, year_prefix, output_path)
@@ -149,9 +156,19 @@ class EnduranceSeriesImporter
 
     # Save events manifest
     save_events_manifest(output_path, year, events_manifest)
+    
+    # Save driver cache and report
+    save_driver_cache
   end
 
   private
+  
+  def save_driver_cache
+    return unless @driver_normalizer
+    
+    @driver_normalizer.save_cache
+    @driver_normalizer.report
+  end
 
   def save_events_manifest(output_path, year, events)
     manifest_path = File.join(output_path, @series_code, year.to_s, 'events.json')
@@ -450,6 +467,11 @@ class EnduranceSeriesImporter
       rows = normalize_weather_temperatures(rows)
     end
 
+    # For laps and results files, normalize driver names
+    if (target_file.end_with?('-laps.csv') || target_file.end_with?('-results.csv')) && rows.any?
+      rows = normalize_driver_names(rows)
+    end
+
     File.open(target_file, 'w') do |output|
       rows.each do |row|
         output.puts(CSV.generate_line(row))
@@ -501,6 +523,58 @@ class EnduranceSeriesImporter
         celsius = row[track_idx].to_f
         new_row[track_idx] = ((celsius * 9.0 / 5.0) + 32).round(2).to_s
       end
+      new_row
+    end
+  end
+
+  def normalize_driver_names(rows)
+    return rows if rows.length < 2 || @driver_normalizer.nil?
+
+    header = rows.first.map { |h| h&.strip&.upcase }
+    
+    # Find driver name columns
+    # Laps files: DRIVER_NAME
+    # Results files: DRIVER1_FIRSTNAME + DRIVER1_SECONDNAME (up to DRIVER6)
+    driver_name_idx = header.index('DRIVER_NAME')
+    
+    # Collect firstname/lastname pairs for results files
+    driver_pairs = []
+    (1..6).each do |n|
+      first_idx = header.index("DRIVER#{n}_FIRSTNAME")
+      second_idx = header.index("DRIVER#{n}_SECONDNAME")
+      if first_idx && second_idx
+        driver_pairs << [first_idx, second_idx]
+      end
+    end
+    
+    return rows if driver_name_idx.nil? && driver_pairs.empty?
+    
+    rows.each_with_index.map do |row, idx|
+      next row if idx == 0  # Skip header
+      
+      new_row = row.dup
+      
+      # Normalize DRIVER_NAME column (laps files)
+      if driver_name_idx && new_row[driver_name_idx]
+        new_row[driver_name_idx] = @driver_normalizer.normalize(new_row[driver_name_idx])
+      end
+      
+      # Normalize DRIVER#_FIRSTNAME + SECONDNAME pairs (results files)
+      driver_pairs.each do |first_idx, second_idx|
+        first = new_row[first_idx]
+        second = new_row[second_idx]
+        
+        if first && second && !first.strip.empty? && !second.strip.empty?
+          # Combine first + last, normalize, then split back
+          full_name = "#{first} #{second}"
+          normalized = @driver_normalizer.normalize(full_name)
+          parts = normalized.split(' ', 2)
+          
+          new_row[first_idx] = parts[0] || first
+          new_row[second_idx] = parts[1] || second
+        end
+      end
+      
       new_row
     end
   end

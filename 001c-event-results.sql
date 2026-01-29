@@ -34,6 +34,7 @@ WITH raw_results AS (
         normalize_names=true
     )
     WHERE POSITION IS NOT NULL
+      AND regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != ''
 )
 SELECT
     series_code,

@@ -12,6 +12,7 @@ CREATE TEMP TABLE event_laps_raw AS
         lap_number as lap,
         driver_name as driver_name,
         _class as class,
+        _group as driver_group,  -- Contains driver category for WEC/ELMS (Silver, PRO, etc.)
         team as team,
         parse_time(lap_time) as lap_time,
         parse_time(s1) as lap_time_s1,
@@ -57,13 +58,25 @@ CREATE TEMP TABLE event_laps_raw AS
             'top_speed': 'INT',
             'flag_at_fl': 'STRING',
         }
-    );
+    )
+    -- Filter out files that don't match the expected timestamp pattern
+    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-laps\.csv$', 4) != '';
 
 
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
         series_code, series, start_date, year, normalize_track_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
+        -- Map driver_group to standard license format
+        CASE 
+            WHEN driver_group ILIKE '%platinum%' THEN 'Platinum'
+            WHEN driver_group ILIKE '%gold%' THEN 'Gold'
+            WHEN driver_group ILIKE '%silver%' THEN 'Silver'
+            WHEN driver_group ILIKE '%bronze%' THEN 'Bronze'
+            WHEN driver_group ILIKE '%pro%' THEN 'Gold'  -- PRO typically maps to Gold/Platinum
+            WHEN driver_group ILIKE '%am%' THEN 'Bronze'  -- Am typically Bronze
+            ELSE NULL
+        END AS group_license,
         DENSE_RANK() OVER (ORDER BY series_code, year, event, session, start_date) as session_id,
     FROM event_laps_raw
     WHERE is_main_class(class)  -- Filter out support series
@@ -71,7 +84,8 @@ named_laps AS (
 ),
 stint_starts AS (
     SELECT
-        *,
+        series_code, series, start_date, year, event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, 
+        car, class, team, session_time, clock_time, pit_time, flags, driver_name, group_license, session_id,
         CASE WHEN LAG (driver_name) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) = driver_name THEN 0 ELSE 1
         END AS stint_start
     FROM named_laps
@@ -157,6 +171,7 @@ ranked_stints AS (
         ranked_stints.stint_number,
         ranked_stints.stint_lap,
         ranked_stints.team AS stint_team,
+        ranked_stints.group_license AS group_license,
         ed.license AS ed_license,
         ed.license_rank AS ed_license_rank,
         ed.country AS ed_country,
@@ -201,6 +216,7 @@ ranked_stints AS (
         lwd.stint_number,
         lwd.stint_lap,
         lwd.stint_team,
+        lwd.group_license,
         lwd.ed_license,
         lwd.ed_license_rank,
         lwd.ed_country,
@@ -258,8 +274,8 @@ SELECT
     stint_start,
     stint_number,
     stint_lap,
-    COALESCE(ed_license, dv_license) AS license,
-    COALESCE(ed_license_rank, dv_license_rank) AS license_rank,
+    COALESCE(ed_license, group_license, dv_license) AS license,
+    COALESCE(ed_license_rank, license_rank(group_license), dv_license_rank) AS license_rank,
     COALESCE(ed_country, dv_country) AS driver_country,
     COALESCE(ed_team, stint_team, dv_team) AS team_name,
     COALESCE(cl_chassis, ed_chassis) AS chassis,

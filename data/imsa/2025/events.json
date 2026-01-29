@@ -25,11 +25,6 @@
     "event_folder": "04-st-petersburg-street-course"
   },
   {
-    "event_number": "05",
-    "event_name": "Circuit of the Americas (VPRC)",
-    "event_folder": "05-circuit-of-the-americas-vprc-"
-  },
-  {
     "event_number": "06",
     "event_name": "Sebring International Raceway",
     "event_folder": "06-sebring-international-raceway"
@@ -70,11 +65,6 @@
     "event_folder": "12-mid-ohio-sports-car-course"
   },
   {
-    "event_number": "13",
-    "event_name": "Circuit Gilles Villeneuve (PCCNA)",
-    "event_folder": "13-circuit-gilles-villeneuve-pccna-"
-  },
-  {
     "event_number": "14",
     "event_name": "Watkins Glen International",
     "event_folder": "14-watkins-glen-international"
@@ -110,11 +100,6 @@
     "event_folder": "18-martinsville-speedway-test"
   },
   {
-    "event_number": "19",
-    "event_name": "Circuit of the Americas (MC)",
-    "event_folder": "19-circuit-of-the-americas-mc-"
-  },
-  {
     "event_number": "20",
     "event_name": "Indianapolis Motor Speedway RC",
     "event_folder": "20-indianapolis-motor-speedway-rc"
@@ -130,23 +115,8 @@
     "event_folder": "22-road-atlanta"
   },
   {
-    "event_number": "23",
-    "event_name": "Circuit of the Americas (PCCNA)",
-    "event_folder": "23-circuit-of-the-americas-pccna-"
-  },
-  {
-    "event_number": "24",
-    "event_name": "Martinsville (MX-5 Cup)",
-    "event_folder": "24-martinsville-mx-5-cup-"
-  },
-  {
     "event_number": "25",
     "event_name": "Circuit Florida",
     "event_folder": "25-circuit-florida"
-  },
-  {
-    "event_number": "26",
-    "event_name": "Misano World Circuit (LST)",
-    "event_folder": "26-misano-world-circuit-lst-"
   }
 ]
