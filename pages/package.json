@@ -1,0 +1,20 @@
+{
+  "name": "imsa-data-pages",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "observable preview",
+    "build": "observable build",
+    "clean": "observable clean"
+  },
+  "devDependencies": {
+    "@observablehq/framework": "^1.12.0"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.29.0",
+    "@observablehq/plot": "^0.6.17",
+    "apache-arrow": "^17.0.0",
+    "d3": "^7.9.0"
+  }
+}
