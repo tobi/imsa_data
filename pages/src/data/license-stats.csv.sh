@@ -2,7 +2,8 @@
 # License tier performance statistics
 # Compares Platinum/Gold/Silver/Bronze driver speeds
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 SELECT

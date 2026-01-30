@@ -5,5 +5,8 @@ output/*.parquet
 output/hf
 node_modules
 duckdb*
-node_modules
 .observablehq/
+
+# Pages generated files
+pages/dist/
+pages/src/.observablehq/

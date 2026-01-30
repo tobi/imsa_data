@@ -4,7 +4,8 @@
 # NOTE: Only uses relative metrics (Q1%) - never averages raw lap times across events
 # Outputs CSV to stdout for Observable Framework
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 WITH driver_track_events AS (

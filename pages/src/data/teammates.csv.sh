@@ -3,7 +3,8 @@
 # Shows all driver pairings who shared a car in the same event
 # Outputs CSV to stdout for Observable Framework
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 WITH car_drivers AS (

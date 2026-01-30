@@ -3,7 +3,8 @@
 # Aggregates team stats from event_driver_summary
 # Outputs CSV to stdout for Observable Framework
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 WITH team_stats AS (
