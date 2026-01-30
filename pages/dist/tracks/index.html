@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.3">
+<title>Tracks | Motorsport DB</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="preload" as="style" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="stylesheet" type="text/css" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="modulepreload" href="../_observablehq/client.caf1c4a3.js">
+<link rel="modulepreload" href="../_observablehq/runtime.e080113b.js">
+<link rel="modulepreload" href="../_observablehq/stdlib.bd1ab7c4.js">
+<link rel="modulepreload" href="../_import/components/stat-card.9034ddf1.js">
+<link rel="modulepreload" href="../_import/components/track-images.941d03a5.js">
+<link rel="modulepreload" href="../_npm/d3@7.9.0/e324157d.js">
+<link rel="modulepreload" href="../_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="../_observablehq/stdlib/inputs.c5e5548b.js">
+<link rel="modulepreload" href="../_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="../_npm/isoformat@0.2.1/18cbf477.js">
+<link rel="modulepreload" href="../_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="../_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="../_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="../_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="../_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="../_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="../_npm/d3-delaunay@6.0.4/5ced1d52.js">
+<link rel="modulepreload" href="../_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="../_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="../_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="../_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="../_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="../_npm/d3-format@3.1.2/3785bf2d.js">
+<link rel="modulepreload" href="../_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="../_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="../_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="../_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="../_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="../_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="../_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="../_npm/d3-scale@4.0.2/720b7f0a.js">
+<link rel="modulepreload" href="../_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="../_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="../_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="../_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="../_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="../_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="../_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="../_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="../_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="../_npm/delaunator@5.0.1/02d43215.js">
+<link rel="modulepreload" href="../_npm/robust-predicates@3.0.2/aa00730b.js">
+<script type="module">
+
+import {define} from "../_observablehq/client.caf1c4a3.js";
+import {registerFile} from "../_observablehq/stdlib.bd1ab7c4.js";
+
+registerFile("../assets/tracks/bahrain.png", {"name":"../assets/tracks/bahrain.png","mimeType":"image/png","path":"../_file/assets/tracks/bahrain.53170749.png","lastModified":1769522914960,"size":86535});
+registerFile("../assets/tracks/barber.png", {"name":"../assets/tracks/barber.png","mimeType":"image/png","path":"../_file/assets/tracks/barber.d826a5d6.png","lastModified":1769522885328,"size":70106});
+registerFile("../assets/tracks/barcelona-catalunya.png", {"name":"../assets/tracks/barcelona-catalunya.png","mimeType":"image/png","path":"../_file/assets/tracks/barcelona-catalunya.c49a6c1b.png","lastModified":1769522917380,"size":82694});
+registerFile("../assets/tracks/belle-isle.png", {"name":"../assets/tracks/belle-isle.png","mimeType":"image/png","path":"../_file/assets/tracks/belle-isle.6b4e5db5.png","lastModified":1769522873120,"size":92393});
+registerFile("../assets/tracks/carolina-motorsports-park.png", {"name":"../assets/tracks/carolina-motorsports-park.png","mimeType":"image/png","path":"../_file/assets/tracks/carolina-motorsports-park.67d88331.png","lastModified":1769522950677,"size":67719});
+registerFile("../assets/tracks/charlotte.png", {"name":"../assets/tracks/charlotte.png","mimeType":"image/png","path":"../_file/assets/tracks/charlotte.b2133993.png","lastModified":1769522948105,"size":182851});
+registerFile("../assets/tracks/circuit-of-the-americas.png", {"name":"../assets/tracks/circuit-of-the-americas.png","mimeType":"image/png","path":"../_file/assets/tracks/circuit-of-the-americas.f1dbfe29.png","lastModified":1769522883644,"size":416255});
+registerFile("../assets/tracks/daytona.png", {"name":"../assets/tracks/daytona.png","mimeType":"image/png","path":"../_file/assets/tracks/daytona.f4b25ce0.png","lastModified":1769522851952,"size":126742});
+registerFile("../assets/tracks/detroit.png", {"name":"../assets/tracks/detroit.png","mimeType":"image/png","path":"../_file/assets/tracks/detroit.8e37ed3e.png","lastModified":1769522882504,"size":73376});
+registerFile("../assets/tracks/fuji.png", {"name":"../assets/tracks/fuji.png","mimeType":"image/png","path":"../_file/assets/tracks/fuji.d3cf4ebd.png","lastModified":1769522913888,"size":65645});
+registerFile("../assets/tracks/imola.png", {"name":"../assets/tracks/imola.png","mimeType":"image/png","path":"../_file/assets/tracks/imola.a04f1b0f.png","lastModified":1769522901220,"size":100097});
+registerFile("../assets/tracks/indianapolis.png", {"name":"../assets/tracks/indianapolis.png","mimeType":"image/png","path":"../_file/assets/tracks/indianapolis.97c4d046.png","lastModified":1769522869976,"size":62287});
+registerFile("../assets/tracks/jerez.png", {"name":"../assets/tracks/jerez.png","mimeType":"image/png","path":"../_file/assets/tracks/jerez.6c0f583e.png","lastModified":1769522935445,"size":78417});
+registerFile("../assets/tracks/laguna-seca.png", {"name":"../assets/tracks/laguna-seca.png","mimeType":"image/png","path":"../_file/assets/tracks/laguna-seca.cc503a68.png","lastModified":1769522857232,"size":63932});
+registerFile("../assets/tracks/le-mans.png", {"name":"../assets/tracks/le-mans.png","mimeType":"image/png","path":"../_file/assets/tracks/le-mans.2563afa5.png","lastModified":1769522898360,"size":165418});
+registerFile("../assets/tracks/lime-rock.png", {"name":"../assets/tracks/lime-rock.png","mimeType":"image/png","path":"../_file/assets/tracks/lime-rock.b9602d2b.png","lastModified":1769522868220,"size":82575});
+registerFile("../assets/tracks/long-beach.png", {"name":"../assets/tracks/long-beach.png","mimeType":"image/png","path":"../_file/assets/tracks/long-beach.3e538011.png","lastModified":1769522869096,"size":73027});
+registerFile("../assets/tracks/losail.png", {"name":"../assets/tracks/losail.png","mimeType":"image/png","path":"../_file/assets/tracks/losail.f59d3c0f.png","lastModified":1769522996233,"size":104008});
+registerFile("../assets/tracks/martinsville.png", {"name":"../assets/tracks/martinsville.png","mimeType":"image/png","path":"../_file/assets/tracks/martinsville.168013be.png","lastModified":1769522949021,"size":49696});
+registerFile("../assets/tracks/miami.png", {"name":"../assets/tracks/miami.png","mimeType":"image/png","path":"../_file/assets/tracks/miami.e35e37bd.png","lastModified":1769522887824,"size":107975});
+registerFile("../assets/tracks/mid-ohio.png", {"name":"../assets/tracks/mid-ohio.png","mimeType":"image/png","path":"../_file/assets/tracks/mid-ohio.43e4586c.png","lastModified":1769522991977,"size":74419});
+registerFile("../assets/tracks/misano.png", {"name":"../assets/tracks/misano.png","mimeType":"image/png","path":"../_file/assets/tracks/misano.e329fedb.png","lastModified":1769522934133,"size":107829});
+registerFile("../assets/tracks/mont-tremblant.png", {"name":"../assets/tracks/mont-tremblant.png","mimeType":"image/png","path":"../_file/assets/tracks/mont-tremblant.2c0302df.png","lastModified":1769522961401,"size":81941});
+registerFile("../assets/tracks/montreal.png", {"name":"../assets/tracks/montreal.png","mimeType":"image/png","path":"../_file/assets/tracks/montreal.ec36e8f2.png","lastModified":1769522958497,"size":73318});
+registerFile("../assets/tracks/monza.png", {"name":"../assets/tracks/monza.png","mimeType":"image/png","path":"../_file/assets/tracks/monza.a411f53b.png","lastModified":1769522901844,"size":81109});
+registerFile("../assets/tracks/mosport.png", {"name":"../assets/tracks/mosport.png","mimeType":"image/png","path":"../_file/assets/tracks/mosport.a223c743.png","lastModified":1769522884488,"size":83632});
+registerFile("../assets/tracks/motorland-aragon.png", {"name":"../assets/tracks/motorland-aragon.png","mimeType":"image/png","path":"../_file/assets/tracks/motorland-aragon.ba61e4b4.png","lastModified":1769522927232,"size":154597});
+registerFile("../assets/tracks/mugello.png", {"name":"../assets/tracks/mugello.png","mimeType":"image/png","path":"../_file/assets/tracks/mugello.f2b82226.png","lastModified":1769522902424,"size":93413});
+registerFile("../assets/tracks/nola.png", {"name":"../assets/tracks/nola.png","mimeType":"image/png","path":"../_file/assets/tracks/nola.d3e99c1e.png","lastModified":1769522946973,"size":73573});
+registerFile("../assets/tracks/nurburgring.png", {"name":"../assets/tracks/nurburgring.png","mimeType":"image/png","path":"../_file/assets/tracks/nurburgring.3e1ddd86.png","lastModified":1769522929056,"size":57808});
+registerFile("../assets/tracks/paul-ricard.png", {"name":"../assets/tracks/paul-ricard.png","mimeType":"image/png","path":"../_file/assets/tracks/paul-ricard.ea5a2809.png","lastModified":1769522927820,"size":96293});
+registerFile("../assets/tracks/portimao.png", {"name":"../assets/tracks/portimao.png","mimeType":"image/png","path":"../_file/assets/tracks/portimao.15b601ed.png","lastModified":1769523019521,"size":83178});
+registerFile("../assets/tracks/red-bull-ring.png", {"name":"../assets/tracks/red-bull-ring.png","mimeType":"image/png","path":"../_file/assets/tracks/red-bull-ring.40a0edfc.png","lastModified":1769522933333,"size":135637});
+registerFile("../assets/tracks/road-america.png", {"name":"../assets/tracks/road-america.png","mimeType":"image/png","path":"../_file/assets/tracks/road-america.cef94f9f.png","lastModified":1769522854004,"size":80671});
+registerFile("../assets/tracks/road-atlanta.png", {"name":"../assets/tracks/road-atlanta.png","mimeType":"image/png","path":"../_file/assets/tracks/road-atlanta.f2605df6.png","lastModified":1769522994253,"size":136473});
+registerFile("../assets/tracks/sao-paulo.png", {"name":"../assets/tracks/sao-paulo.png","mimeType":"image/png","path":"../_file/assets/tracks/sao-paulo.36433752.png","lastModified":1769522916816,"size":149238});
+registerFile("../assets/tracks/sebring.png", {"name":"../assets/tracks/sebring.png","mimeType":"image/png","path":"../_file/assets/tracks/sebring.ee441773.png","lastModified":1769522993077,"size":74945});
+registerFile("../assets/tracks/silverstone.png", {"name":"../assets/tracks/silverstone.png","mimeType":"image/png","path":"../_file/assets/tracks/silverstone.d1388068.png","lastModified":1769522912520,"size":127108});
+registerFile("../assets/tracks/sonoma.png", {"name":"../assets/tracks/sonoma.png","mimeType":"image/png","path":"../_file/assets/tracks/sonoma.9527b959.png","lastModified":1769522897464,"size":75855});
+registerFile("../assets/tracks/spa-francorchamps.png", {"name":"../assets/tracks/spa-francorchamps.png","mimeType":"image/png","path":"../_file/assets/tracks/spa-francorchamps.0cc85895.png","lastModified":1769522899932,"size":127115});
+registerFile("../assets/tracks/st-petersburg.png", {"name":"../assets/tracks/st-petersburg.png","mimeType":"image/png","path":"../_file/assets/tracks/st-petersburg.3e3c3550.png","lastModified":1769522886696,"size":50832});
+registerFile("../assets/tracks/the-firm.png", {"name":"../assets/tracks/the-firm.png","mimeType":"image/png","path":"../_file/assets/tracks/the-firm.a1be81b8.png","lastModified":1769522951965,"size":69406});
+registerFile("../assets/tracks/toronto.png", {"name":"../assets/tracks/toronto.png","mimeType":"image/png","path":"../_file/assets/tracks/toronto.90cb1dca.png","lastModified":1769522960117,"size":80614});
+registerFile("../assets/tracks/trois-rivieres.png", {"name":"../assets/tracks/trois-rivieres.png","mimeType":"image/png","path":"../_file/assets/tracks/trois-rivieres.826c41d8.png","lastModified":1769522960681,"size":86032});
+registerFile("../assets/tracks/vallelunga.png", {"name":"../assets/tracks/vallelunga.png","mimeType":"image/png","path":"../_file/assets/tracks/vallelunga.2f2f32ca.png","lastModified":1769522994985,"size":82421});
+registerFile("../assets/tracks/virginia-international-raceway.png", {"name":"../assets/tracks/virginia-international-raceway.png","mimeType":"image/png","path":"../_file/assets/tracks/virginia-international-raceway.677b2265.png","lastModified":1769522871104,"size":103423});
+registerFile("../assets/tracks/watkins-glen.png", {"name":"../assets/tracks/watkins-glen.png","mimeType":"image/png","path":"../_file/assets/tracks/watkins-glen.f1f87b19.png","lastModified":1769522850316,"size":64719});
+registerFile("../data/track-stats.csv", {"name":"../data/track-stats.csv","mimeType":"text/csv","path":"../_file/data/track-stats.e205f04e.csv","lastModified":1769523764797,"size":3883});
+
+define({id: "e81c1a25", outputs: ["statCard","trackImages","getTrackImageUrl"], body: async () => {
+const [{statCard}, {trackImages, getTrackImageUrl}] = await Promise.all([import("../_import/components/stat-card.9034ddf1.js"), import("../_import/components/track-images.941d03a5.js")]);
+
+return {statCard,trackImages,getTrackImageUrl};
+}});
+
+define({id: "b8ee295d", inputs: ["FileAttachment","trackImages"], outputs: ["trackStats","trackImageUrls"], body: async (FileAttachment,trackImages) => {
+const trackStats = await FileAttachment("../data/track-stats.csv").csv({typed: true});
+
+// Pre-resolve all track image URLs
+const trackImageUrls = {};
+for (const [id, file] of Object.entries(trackImages)) {
+  try {
+    trackImageUrls[id] = await file.url();
+  } catch (e) {
+    trackImageUrls[id] = null;
+  }
+}
+return {trackStats,trackImageUrls};
+}});
+
+define({id: "66e8c2cc", inputs: ["trackStats","view","Inputs"], outputs: ["countryOptions","countryFilter"], body: (trackStats,view,Inputs) => {
+const countryOptions = ["All", ...new Set(trackStats.map(t => t.track_country).filter(Boolean))].sort();
+const countryFilter = view(Inputs.select(countryOptions, {label: "Country", value: "All"}));
+return {countryOptions,countryFilter};
+}});
+
+define({id: "9411ac63", inputs: ["trackStats","countryFilter"], outputs: ["filteredTracks"], body: (trackStats,countryFilter) => {
+let filteredTracks = trackStats;
+if (countryFilter !== "All") {
+  filteredTracks = filteredTracks.filter(t => t.track_country === countryFilter);
+}
+return {filteredTracks};
+}});
+
+define({id: "282ac807", inputs: ["display","statCard","filteredTracks"], body: (display,statCard,filteredTracks) => {
+display(statCard({
+  title: "Circuits",
+  value: filteredTracks.length
+}));
+}});
+
+define({id: "40ccfb63", inputs: ["filteredTracks","display","statCard"], outputs: ["countries"], body: (filteredTracks,display,statCard) => {
+const countries = new Set(filteredTracks.map(t => t.track_country));
+display(statCard({
+  title: "Countries",
+  value: countries.size
+}));
+return {countries};
+}});
+
+define({id: "8fe55ee1", inputs: ["d3","filteredTracks","display","statCard"], outputs: ["totalEvents"], body: (d3,filteredTracks,display,statCard) => {
+const totalEvents = d3.sum(filteredTracks, t => t.event_count);
+display(statCard({
+  title: "Total Events",
+  value: totalEvents
+}));
+return {totalEvents};
+}});
+
+define({id: "5754df98", inputs: ["d3","filteredTracks","display","statCard"], outputs: ["avgFcy"], body: (d3,filteredTracks,display,statCard) => {
+const avgFcy = d3.mean(filteredTracks.filter(t => t.fcy_pct > 0), t => t.fcy_pct);
+display(statCard({
+  title: "Avg FCY Rate",
+  value: avgFcy ? avgFcy.toFixed(1) + "%" : "-"
+}));
+return {avgFcy};
+}});
+
+define({id: "e8f435f6", inputs: ["display","htl","filteredTracks","trackImageUrls"], body: (display,htl,filteredTracks,trackImageUrls) => {
+display(htl.html`${filteredTracks.map(track => {
+  const imgUrl = trackImageUrls[track.track_id];
+  return htl.html`
+  <a href="./[track]?track=${track.track_id}" class="track-card">
+    <div class="track-image">
+      ${imgUrl
+        ? htl.html`<img src="${imgUrl}" alt="${track.track_official_name}" />`
+        : htl.html`<div class="no-image">No layout</div>`}
+    </div>
+    <div class="track-info">
+      <div class="track-name">${track.track_official_name}</div>
+      <div class="track-country">${track.track_country}</div>
+      <div class="track-stats">
+        <span>${track.event_count} events</span>
+        <span>${track.rain_pct}% rain</span>
+        <span>${track.fcy_pct ? track.fcy_pct.toFixed(1) + '% FCY' : '-'}</span>
+      </div>
+    </div>
+  </a>
+`})}`);
+}});
+
+define({id: "0df259fe", inputs: ["d3","trackStats","display","Inputs"], outputs: ["byCountry"], body: (d3,trackStats,display,Inputs) => {
+const byCountry = d3.rollups(
+  trackStats,
+  v => ({
+    count: v.length,
+    events: d3.sum(v, d => d.event_count),
+    avgRain: d3.mean(v, d => d.rain_pct)
+  }),
+  d => d.track_country
+).map(([country, stats]) => ({country, ...stats}))
+ .sort((a, b) => b.count - a.count);
+
+display(Inputs.table(byCountry, {
+  columns: ["country", "count", "events", "avgRain"],
+  header: {
+    country: "Country",
+    count: "Circuits",
+    events: "Events",
+    avgRain: "Avg Rain %"
+  },
+  format: {
+    avgRain: d => d?.toFixed(1) + "%" || "-"
+  }
+}));
+return {byCountry};
+}});
+
+define({id: "6134ed7e", inputs: ["trackStats","display","Inputs"], outputs: ["wetTracks"], body: (trackStats,display,Inputs) => {
+const wetTracks = trackStats
+  .filter(t => t.event_count >= 3)
+  .sort((a, b) => b.rain_pct - a.rain_pct);
+
+display(Inputs.table(wetTracks, {
+  columns: ["track_official_name", "track_country", "event_count", "wet_events", "rain_pct", "avg_air_temp_f"],
+  header: {
+    track_official_name: "Circuit",
+    track_country: "Country",
+    event_count: "Events",
+    wet_events: "Wet Events",
+    rain_pct: "Rain %",
+    avg_air_temp_f: "Avg Temp (F)"
+  },
+  format: {
+    rain_pct: d => d?.toFixed(1) + "%",
+    avg_air_temp_f: d => d?.toFixed(1) || "-"
+  }
+}));
+return {wetTracks};
+}});
+
+define({id: "2a357b98", inputs: ["trackStats","display","Inputs"], outputs: ["fcyTracks"], body: (trackStats,display,Inputs) => {
+const fcyTracks = trackStats
+  .filter(t => t.total_laps > 1000)
+  .sort((a, b) => b.fcy_pct - a.fcy_pct);
+
+display(Inputs.table(fcyTracks, {
+  columns: ["track_official_name", "track_country", "event_count", "fcy_laps", "total_laps", "fcy_pct"],
+  header: {
+    track_official_name: "Circuit",
+    track_country: "Country",
+    event_count: "Events",
+    fcy_laps: "FCY Laps",
+    total_laps: "Total Laps",
+    fcy_pct: "FCY %"
+  },
+  format: {
+    fcy_laps: d => d?.toLocaleString(),
+    total_laps: d => d?.toLocaleString(),
+    fcy_pct: d => d?.toFixed(2) + "%"
+  }
+}));
+return {fcyTracks};
+}});
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="../">Motorsport DB</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="../">Overview</a></li>
+    <li class="observablehq-link"><a href="../elo">Elo Ratings</a></li>
+    <li class="observablehq-link"><a href="../drivers/">Drivers</a></li>
+    <li class="observablehq-link"><a href="../teams/">Teams</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./">Tracks</a></li>
+    <li class="observablehq-link"><a href="../events/">Events</a></li>
+    <li class="observablehq-link"><a href="../series/">Seasons</a></li>
+    <li class="observablehq-link"><a href="../compare">Compare</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-weight: bold;">Motorsport DB</span>
+  </div>
+</header>
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#filters">Filters</a></li>
+<li class="observablehq-secondary-link"><a href="#circuit-directory">Circuit Directory</a></li>
+<li class="observablehq-secondary-link"><a href="#by-country">By Country</a></li>
+<li class="observablehq-secondary-link"><a href="#weather-statistics">Weather Statistics</a></li>
+<li class="observablehq-secondary-link"><a href="#full-course-yellow-rates">Full Course Yellow Rates</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="racing-circuits" tabindex="-1"><a class="observablehq-header-anchor" href="#racing-circuits">Racing Circuits</a></h1>
+<p>Browse all circuits across IMSA, WEC, ELMS, Asian Le Mans, and Le Mans Cup.</p>
+<div class="observablehq observablehq--block"><!--:e81c1a25:--></div>
+<div class="observablehq observablehq--block"><!--:b8ee295d:--></div>
+<h2 id="filters" tabindex="-1"><a class="observablehq-header-anchor" href="#filters">Filters</a></h2>
+<div class="observablehq observablehq--block"><!--:66e8c2cc:--></div>
+<div class="observablehq observablehq--block"><!--:9411ac63:--></div>
+<div class="card-grid">
+<div class="observablehq observablehq--block"><!--:282ac807:--></div>
+<div class="observablehq observablehq--block"><!--:40ccfb63:--></div>
+<div class="observablehq observablehq--block"><!--:8fe55ee1:--></div>
+<div class="observablehq observablehq--block"><!--:5754df98:--></div>
+</div>
+<h2 id="circuit-directory" tabindex="-1"><a class="observablehq-header-anchor" href="#circuit-directory">Circuit Directory</a></h2>
+<div class="track-grid">
+<div class="observablehq observablehq--block"><!--:e8f435f6:--></div>
+</div>
+<h2 id="by-country" tabindex="-1"><a class="observablehq-header-anchor" href="#by-country">By Country</a></h2>
+<div class="observablehq observablehq--block"><!--:0df259fe:--></div>
+<h2 id="weather-statistics" tabindex="-1"><a class="observablehq-header-anchor" href="#weather-statistics">Weather Statistics</a></h2>
+<p>Tracks ranked by likelihood of rain.</p>
+<div class="observablehq observablehq--block"><!--:6134ed7e:--></div>
+<h2 id="full-course-yellow-rates" tabindex="-1"><a class="observablehq-header-anchor" href="#full-course-yellow-rates">Full Course Yellow Rates</a></h2>
+<p>Tracks with highest FCY percentages (based on race laps).</p>
+<div class="observablehq observablehq--block"><!--:2a357b98:--></div>
+<style>
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.track-card {
+  display: block;
+  text-decoration: none;
+  color: var(--theme-foreground);
+  border: 1px solid var(--theme-foreground-faintest);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.track-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.track-image {
+  height: 140px;
+  background: var(--theme-background-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.track-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.no-image {
+  color: var(--theme-foreground-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.track-info {
+  padding: 0.75rem;
+}
+
+.track-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.track-country {
+  font-size: 0.8rem;
+  color: var(--theme-foreground-muted);
+  margin-bottom: 0.5rem;
+}
+
+.track-stats {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--theme-foreground-muted);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+</style>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="../teams/"><span>Teams</span></a><a rel="next" href="../events/"><span>Events</span></a></nav>
+<div>Built with Observable Framework</div>
+</footer>
+</div>
+</body>
+</html>

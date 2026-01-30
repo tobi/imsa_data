@@ -1,0 +1,35 @@
+#!/bin/bash
+# Data loader for event directory
+# Outputs CSV to stdout for Observable Framework
+
+DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+
+duckdb "$DB_PATH" -csv -c "
+SELECT
+    event_id,
+    series_code,
+    year,
+    event_number,
+    event_name,
+    track,
+    track_id,
+    track_official_name,
+    track_country,
+    track_lat,
+    track_lon,
+    start_date,
+    end_date,
+    session_count,
+    race_count,
+    race_duration_minutes,
+    race_type,
+    avg_air_temp_f,
+    avg_track_temp_f,
+    avg_humidity_pct,
+    had_rain,
+    dry,
+    is_race
+FROM events
+WHERE is_race = true
+ORDER BY start_date DESC;
+"

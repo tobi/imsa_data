@@ -1,20 +1,15 @@
 {
-  "name": "imsa-data-pages",
+  "name": "imsa-racing-dashboard",
   "version": "1.0.0",
-  "private": true,
+  "description": "IMSA Racing Dashboard - Observable Framework visualization",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "observable preview",
     "build": "observable build",
     "clean": "observable clean"
   },
-  "devDependencies": {
-    "@observablehq/framework": "^1.12.0"
-  },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.29.0",
-    "@observablehq/plot": "^0.6.17",
-    "apache-arrow": "^17.0.0",
-    "d3": "^7.9.0"
+    "@observablehq/framework": "^1.13.3"
   }
 }

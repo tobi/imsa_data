@@ -1,0 +1,464 @@
+# Observable Framework
+
+> Observable Framework is a free, open-source static site generator for data apps, dashboards, reports, and more. Write Markdown with reactive JavaScript, SQL, Python, R, and any language you like. Framework compiles it into a static site with instant page loads.
+
+Observable Framework combines JavaScript on the front-end for interactive graphics with any language on the back-end for data analysis via data loaders.
+
+## Core Concepts
+
+- **Markdown Pages**: Write pages in Markdown with embedded JavaScript code blocks
+- **Data Loaders**: Generate static data snapshots at build time using any language
+- **Reactive JavaScript**: Code re-runs automatically when referenced variables change
+- **Static Site Generation**: Compiles to fast, deployable static HTML/JS/CSS
+
+## Getting Started
+
+Create a new app:
+```bash
+npx "@observablehq/framework@latest" create
+```
+
+Start the development server:
+```bash
+npm run dev
+```
+
+Build for production:
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+.
+├─ src/                    # source root
+│  ├─ .observablehq/
+│  │  └─ cache/            # data loader cache
+│  ├─ components/
+│  │  └─ chart.js          # shared JavaScript module
+│  ├─ data/
+│  │  └─ quakes.csv.ts     # data loader
+│  ├─ index.md             # home page
+│  └─ dashboard.md         # additional page
+├─ observablehq.config.js  # app configuration
+└─ package.json
+```
+
+## Markdown
+
+Framework Markdown extends CommonMark with:
+- **JavaScript code blocks** (`\`\`\`js`) - reactive code that runs in the browser
+- **Inline expressions** (`${...}`) - interpolate values into prose
+- **YAML front matter** - page configuration
+- **HTML blocks** - for layouts and custom elements
+- **Grids and cards** - dashboard layout helpers
+
+### Front Matter Options
+```yaml
+---
+title: My Page
+toc: false        # disable table of contents
+theme: dashboard  # use dashboard theme
+sidebar: false    # hide sidebar
+sql:
+  data: ./data.parquet  # register SQL tables
+---
+```
+
+### JavaScript Code Blocks
+
+Expression blocks display their result:
+```js
+1 + 2  // displays: 3
+```
+
+Program blocks define variables:
+```js
+const data = await FileAttachment("data.csv").csv({typed: true});
+```
+
+Show code with `echo` directive:
+```js echo
+Plot.barX(data, {y: "name", x: "value"}).plot()
+```
+
+### Inline Expressions
+
+Interpolate values: `The count is ${count}.`
+
+### Grids and Cards
+
+```html
+<div class="grid grid-cols-2">
+  <div class="card">Content A</div>
+  <div class="card">Content B</div>
+</div>
+```
+
+Grid classes: `grid-cols-1`, `grid-cols-2`, `grid-cols-3`, `grid-cols-4`
+Span classes: `grid-colspan-2`, `grid-rowspan-2`
+
+### Notes/Callouts
+
+```html
+<div class="note">This is a note.</div>
+<div class="tip">This is a tip.</div>
+<div class="warning">This is a warning.</div>
+<div class="caution">This is a caution.</div>
+```
+
+## JavaScript
+
+### display(value)
+Display content on the page. Returns the value.
+```js
+display(Plot.barX(data).plot());
+display({hello: "world"});  // inspector view
+```
+
+### resize(render)
+Responsive rendering - re-renders when container size changes:
+```js
+resize((width, height) => Plot.barX(data).plot({width, height}))
+```
+
+### Built-in Variables
+- `width` - current width of main element (reactive)
+- `now` - current time in milliseconds (reactive, updates continuously)
+
+### Implicit Display
+Expression code blocks automatically display their result:
+```js
+Plot.barX(data).plot()  // automatically displayed
+```
+
+## Reactivity
+
+Code blocks run like a spreadsheet - automatically re-running when referenced variables change.
+
+### Top-Level Variables
+Variables declared in one code block can be referenced in others:
+```js
+const x = 1;
+```
+```js
+x + 1  // displays: 2
+```
+
+### Promises
+Promises are implicitly awaited across code blocks:
+```js
+const data = FileAttachment("data.csv").csv();
+```
+```js
+data  // already resolved, not a promise
+```
+
+### Generators
+Generators yield values over time, triggering re-renders:
+```js
+const pointer = Generators.observe((notify) => {
+  const handler = (e) => notify([e.clientX, e.clientY]);
+  addEventListener("pointermove", handler);
+  return () => removeEventListener("pointermove", handler);
+});
+```
+
+### Inputs
+Use `view` to create reactive inputs:
+```js
+const selection = view(Inputs.select(["A", "B", "C"], {label: "Choose:"}));
+```
+```js
+selection  // re-runs when selection changes
+```
+
+### Mutables
+For state that can be modified from multiple places:
+```js
+import {Mutable} from "observablehq:stdlib";
+const count = Mutable(0);
+const increment = () => ++count.value;
+```
+
+### invalidation
+Promise that resolves when code block is invalidated (for cleanup):
+```js
+const interval = setInterval(() => console.log("tick"), 1000);
+invalidation.then(() => clearInterval(interval));
+```
+
+## Files (FileAttachment)
+
+Load files from your source directory:
+```js
+import {FileAttachment} from "observablehq:stdlib";
+
+// Various formats
+const json = await FileAttachment("data.json").json();
+const csv = await FileAttachment("data.csv").csv({typed: true});
+const tsv = await FileAttachment("data.tsv").tsv({typed: true});
+const text = await FileAttachment("readme.txt").text();
+const parquet = await FileAttachment("data.parquet").arrow();
+const image = await FileAttachment("photo.jpg").image();
+const xlsx = await FileAttachment("data.xlsx").xlsx();
+const sqlite = await FileAttachment("database.sqlite").sqlite();
+const zip = await FileAttachment("archive.zip").zip();
+```
+
+File properties:
+- `file.name` - filename
+- `file.mimeType` - MIME type
+- `file.lastModified` - modification timestamp
+- `file.size` - size in bytes
+- `file.href` - resolved URL
+
+**Important**: FileAttachment paths must be static string literals for static analysis.
+
+## Data Loaders
+
+Data loaders run at build time to generate static data snapshots.
+
+### File-Based Routing
+The loader `quakes.csv.js` generates `quakes.csv`:
+```js
+// src/data/quakes.csv.js
+const response = await fetch("https://earthquake.usgs.gov/...");
+const data = await response.json();
+process.stdout.write(csvFormat(data.features));
+```
+
+### Supported Languages
+- `.js` - JavaScript (node)
+- `.ts` - TypeScript (tsx)
+- `.py` - Python (python3)
+- `.R` - R (Rscript)
+- `.sh` - Shell script (sh)
+- `.exe` - Executable
+
+### Archives
+Data loaders can generate ZIP/tar archives; extract files with FileAttachment:
+```js
+FileAttachment("data/file.csv")  // from data.zip
+```
+
+### Caching
+- Cache stored in `.observablehq/cache`
+- Loader re-runs if source file is newer than cached output
+- Clear cache: `rm -rf src/.observablehq/cache`
+
+## SQL
+
+SQL code blocks query data with DuckDB:
+
+### Register Tables (front matter)
+```yaml
+---
+sql:
+  flights: ./data/flights.parquet
+  weather: https://example.com/weather.csv
+---
+```
+
+### SQL Code Blocks
+```sql
+SELECT * FROM flights WHERE delay > 60 LIMIT 10
+```
+
+### Named Results
+```sql id=delayed
+SELECT origin, count(*) as n FROM flights WHERE delay > 60 GROUP BY 1
+```
+Then reference `delayed` in JavaScript.
+
+### Destructuring
+```sql id=[top]
+SELECT * FROM flights ORDER BY delay DESC LIMIT 1
+```
+
+### Interpolation
+```sql
+SELECT * FROM flights WHERE origin = ${selectedAirport}
+```
+
+### SQL Tagged Template
+```js
+const result = await sql`SELECT count(*) FROM flights`;
+```
+
+## Imports
+
+### npm Imports
+```js
+import confetti from "npm:canvas-confetti";
+import * as d3 from "npm:d3";
+import {rollup} from "npm:d3-array";
+```
+
+### Local Imports
+```js
+import {MyChart} from "./components/chart.js";
+```
+
+### Node Imports
+After `npm install`:
+```js
+import _ from "lodash";
+```
+
+### Implicit Imports (available by default)
+- `FileAttachment`, `Generators`, `Mutable`, `resize` from stdlib
+- `Plot` - Observable Plot
+- `d3` - D3.js
+- `Inputs` - Observable Inputs
+- `html`, `svg` - Hypertext Literal
+- `DuckDBClient`, `sql` - DuckDB
+- `Arrow`, `aq` - Apache Arrow, Arquero
+- `L` - Leaflet
+- `tex` - KaTeX
+- `mermaid`, `dot` - Diagrams
+- And more...
+
+## Configuration (observablehq.config.js)
+
+```js
+export default {
+  title: "My App",
+  root: "src",           // source directory
+  output: "dist",        // build output
+  theme: "dashboard",    // or ["light", "dark"]
+
+  pages: [
+    {name: "Overview", path: "/overview"},
+    {
+      name: "Analysis",
+      pages: [
+        {name: "Sales", path: "/analysis/sales"},
+        {name: "Users", path: "/analysis/users"}
+      ]
+    }
+  ],
+
+  head: '<link rel="icon" href="favicon.png">',
+  header: "My Company",
+  footer: "Built with Observable Framework",
+
+  sidebar: true,
+  pager: true,
+  toc: {show: true, label: "Contents"},
+  search: true
+};
+```
+
+### Theme Options
+Light themes: `air`, `cotton`, `glacier`, `parchment`
+Dark themes: `coffee`, `deep-space`, `ink`, `midnight`, `near-midnight`, `ocean-floor`, `slate`, `stark`, `sun-faded`
+Modifiers: `alt` (swap backgrounds), `wide` (full-width)
+Aliases: `default`, `dashboard`, `light`, `dark`
+
+## Deploying
+
+### GitHub Pages
+Create `.github/workflows/deploy.yml`:
+```yaml
+name: Deploy
+on:
+  push: {branches: [main]}
+  schedule: [{cron: "15 10 * * *"}]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: dist}
+      - uses: actions/deploy-pages@v4
+```
+
+### Static Hosting
+The `dist` folder can be deployed to any static hosting:
+- GitHub Pages
+- Netlify
+- Vercel
+- Cloudflare Pages
+- Self-hosted
+
+## Observable Plot
+
+Built-in charting library:
+```js
+Plot.plot({
+  marks: [
+    Plot.barY(data, {x: "category", y: "value"}),
+    Plot.ruleY([0])
+  ]
+})
+```
+
+Common marks: `dot`, `line`, `area`, `bar`, `rect`, `cell`, `text`, `rule`, `tick`, `link`, `arrow`, `image`, `geo`, `raster`, `contour`
+
+Options: `x`, `y`, `fill`, `stroke`, `r`, `opacity`, `tip` (tooltips)
+
+## Observable Inputs
+
+```js
+// Select
+view(Inputs.select(["A", "B", "C"], {label: "Choice"}))
+
+// Radio
+view(Inputs.radio(["A", "B", "C"], {label: "Choice"}))
+
+// Checkbox
+view(Inputs.checkbox(["A", "B", "C"], {label: "Options"}))
+
+// Range/Slider
+view(Inputs.range([0, 100], {label: "Value", step: 1}))
+
+// Text
+view(Inputs.text({label: "Name", placeholder: "Enter name"}))
+
+// Search (with datalist)
+view(Inputs.search(data, {label: "Search"}))
+
+// Table
+view(Inputs.table(data, {columns: ["name", "value"]}))
+
+// Button
+view(Inputs.button("Click me", {reduce: () => count++}))
+```
+
+## DuckDB
+
+```js
+// Create client
+const db = await DuckDBClient.of({
+  flights: FileAttachment("flights.parquet")
+});
+
+// Query
+const result = await db.query("SELECT * FROM flights LIMIT 10");
+
+// SQL tagged template
+const delayed = await db.sql`SELECT * FROM flights WHERE delay > 60`;
+```
+
+## Links
+
+- Documentation: https://observablehq.com/framework/
+- GitHub: https://github.com/observablehq/framework
+- Examples: https://github.com/observablehq/framework/tree/main/examples
+- Observable Plot: https://observablehq.com/plot/
+- Observable Inputs: https://observablehq.com/framework/inputs/
+- D3: https://d3js.org/

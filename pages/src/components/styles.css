@@ -1,0 +1,290 @@
+/* Shared Styles for Motorsport DB */
+
+/* ===========================================
+   PILL FILTERS
+   =========================================== */
+
+.pill-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pill-filter-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--theme-foreground-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.25rem;
+}
+
+.pill-filter-options {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--theme-background-alt);
+  border: 1px solid var(--theme-foreground-faintest);
+  color: var(--theme-foreground-muted);
+  white-space: nowrap;
+}
+
+.pill:hover {
+  border-color: var(--theme-foreground-focus);
+  color: var(--theme-foreground);
+  background: var(--theme-background);
+}
+
+.pill-active {
+  background: var(--pill-active-color, var(--theme-foreground-focus));
+  border-color: var(--pill-active-color, var(--theme-foreground-focus));
+  color: white;
+}
+
+.pill-active:hover {
+  background: var(--pill-active-color, var(--theme-foreground-focus));
+  border-color: var(--pill-active-color, var(--theme-foreground-focus));
+  color: white;
+  filter: brightness(1.1);
+}
+
+/* Pill filter row layout */
+.pill-filters-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ===========================================
+   TABLE STYLING
+   =========================================== */
+
+/* Override Observable's default table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+/* Styled table wrapper */
+.styled-table {
+  border: 1px solid var(--theme-foreground-faintest);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.styled-table table {
+  margin: 0;
+}
+
+/* Table header */
+th {
+  background: var(--theme-background-alt);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--theme-foreground-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--theme-foreground-faintest);
+}
+
+/* Sortable header styling */
+th[data-sort] {
+  cursor: pointer;
+}
+
+th[data-sort]:hover {
+  color: var(--theme-foreground);
+}
+
+/* Table cells */
+td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--theme-foreground-faintest);
+  vertical-align: middle;
+}
+
+/* Zebra striping */
+tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--theme-background-alt) 50%, transparent);
+}
+
+/* Hover effect */
+tbody tr:hover {
+  background: var(--theme-background-alt);
+}
+
+/* Last row no border */
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Numeric alignment */
+td.num, th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clickable row */
+tr.clickable {
+  cursor: pointer;
+}
+
+tr.clickable:hover {
+  background: color-mix(in srgb, var(--theme-foreground-focus) 8%, var(--theme-background));
+}
+
+/* ===========================================
+   LINKS IN TABLES
+   =========================================== */
+
+/* Table link styling */
+.table-link {
+  color: var(--theme-foreground);
+  text-decoration: none;
+  transition: color 0.1s;
+}
+
+.table-link:hover {
+  color: var(--theme-foreground-focus);
+  text-decoration: underline;
+}
+
+/* Driver link with optional license color */
+.driver-link {
+  font-weight: 500;
+}
+
+/* Team link */
+.team-link {
+  color: var(--theme-foreground-muted);
+}
+
+.team-link:hover {
+  color: var(--theme-foreground-focus);
+}
+
+/* Event link */
+.event-link {
+  font-weight: 500;
+}
+
+/* Track link */
+.track-link {
+  color: var(--theme-foreground-muted);
+}
+
+/* ===========================================
+   BADGES
+   =========================================== */
+
+.license-badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.license-badge.platinum {
+  background: #e63946;
+  color: white;
+}
+
+.license-badge.gold {
+  background: #2a9d8f;
+  color: white;
+}
+
+.license-badge.silver {
+  background: #457b9d;
+  color: white;
+}
+
+.license-badge.bronze {
+  background: #e76f51;
+  color: white;
+}
+
+.class-badge {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 3px;
+  background: var(--theme-foreground-faintest);
+  color: var(--theme-foreground-muted);
+}
+
+.series-badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.series-badge.imsa { background: #e63946; color: white; }
+.series-badge.wec { background: #2a9d8f; color: white; }
+.series-badge.elms { background: #457b9d; color: white; }
+.series-badge.alms { background: #e9c46a; color: #333; }
+.series-badge.lmc { background: #9b5de5; color: white; }
+
+/* ===========================================
+   RESPONSIVE TABLE
+   =========================================== */
+
+@media (max-width: 768px) {
+  th, td {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  th {
+    font-size: 0.65rem;
+  }
+
+  /* Hide less important columns on mobile */
+  .hide-mobile {
+    display: none;
+  }
+}
+
+/* ===========================================
+   SCROLLABLE TABLE CONTAINER
+   =========================================== */
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
+.table-scroll table {
+  min-width: 600px;
+}

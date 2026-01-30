@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.3">
+<title>Race Pace Analysis Techniques - Research Document | Motorsport DB</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="preload" as="style" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="stylesheet" type="text/css" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="modulepreload" href="../_observablehq/client.caf1c4a3.js">
+<link rel="modulepreload" href="../_observablehq/runtime.e080113b.js">
+<link rel="modulepreload" href="../_observablehq/stdlib.bd1ab7c4.js">
+<link rel="modulepreload" href="../_observablehq/stdlib/duckdb.20461150.js">
+<link rel="modulepreload" href="../_observablehq/stdlib/inputs.c5e5548b.js">
+<link rel="modulepreload" href="../_npm/@duckdb/duckdb-wasm@1.29.0/d1cf3c5a.js">
+<link rel="modulepreload" href="../_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="../_npm/isoformat@0.2.1/18cbf477.js">
+<link rel="modulepreload" href="../_npm/apache-arrow@21.1.0/63de76cd.js">
+<link rel="modulepreload" href="../_npm/tslib@2.8.1/b62a9c4a.js">
+<link rel="modulepreload" href="../_npm/flatbuffers@25.9.23/c82700c2.js">
+<script type="module">
+
+import {define} from "../_observablehq/client.caf1c4a3.js";
+
+define({id: "5e98daf2", inputs: ["display","Inputs","sql"], body: async (display,Inputs,sql) => {
+display(Inputs.table(await sql`WHERE bpillar_quartile IN (1, 2)`, {select: false}));
+}});
+
+define({id: "5e98daf2-1", inputs: ["display","Inputs","sql"], body: async (display,Inputs,sql) => {
+display(Inputs.table(await sql`WHERE bpillar_quartile IN (1, 2)`, {select: false}));
+}});
+
+define({id: "bd896bc5", inputs: ["display","Inputs","sql"], body: async (display,Inputs,sql) => {
+display(Inputs.table(await sql`SELECT
+    driver_name,
+    lap_time,
+    lap_time - class_best AS delta_to_class_best,
+    lap_time - car_q1_avg AS delta_to_own_pace
+FROM laps
+WHERE bpillar_quartile IN (1, 2)
+  AND class = 'GTP'
+  AND event_id = 'daytona_2024'`, {select: false}));
+}});
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="../">Motorsport DB</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="../">Overview</a></li>
+    <li class="observablehq-link"><a href="../elo">Elo Ratings</a></li>
+    <li class="observablehq-link"><a href="../drivers/">Drivers</a></li>
+    <li class="observablehq-link"><a href="../teams/">Teams</a></li>
+    <li class="observablehq-link"><a href="../tracks/">Tracks</a></li>
+    <li class="observablehq-link"><a href="../events/">Events</a></li>
+    <li class="observablehq-link"><a href="../series/">Seasons</a></li>
+    <li class="observablehq-link"><a href="../compare">Compare</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-weight: bold;">Motorsport DB</span>
+  </div>
+</header>
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#critical-analysis-rules">Critical Analysis Rules</a></li>
+<li class="observablehq-secondary-link"><a href="#1-stint-analysis-methods">1. Stint Analysis Methods</a></li>
+<li class="observablehq-secondary-link"><a href="#2-fuel-corrected-lap-times">2. Fuel-Corrected Lap Times</a></li>
+<li class="observablehq-secondary-link"><a href="#3-traffic-impact-analysis">3. Traffic Impact Analysis</a></li>
+<li class="observablehq-secondary-link"><a href="#4-strategy-analysis-undercut-overcut-detection">4. Strategy Analysis: Undercut/Overcut Detection</a></li>
+<li class="observablehq-secondary-link"><a href="#5-weather-impact-analysis">5. Weather Impact Analysis</a></li>
+<li class="observablehq-secondary-link"><a href="#6-multiclass-racing-class-differentials">6. Multiclass Racing: Class Differentials</a></li>
+<li class="observablehq-secondary-link"><a href="#7-data-cleaning-and-lap-time-normalization">7. Data Cleaning and Lap Time Normalization</a></li>
+<li class="observablehq-secondary-link"><a href="#8-key-data-sources">8. Key Data Sources</a></li>
+<li class="observablehq-secondary-link"><a href="#9-visualization-recommendations">9. Visualization Recommendations</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="race-pace-analysis-techniques-research-document" tabindex="-1"><a class="observablehq-header-anchor" href="#race-pace-analysis-techniques-research-document">Race Pace Analysis Techniques - Research Document</a></h1>
+<p>This document summarizes professional race pace analysis methods used in F1, WEC, and IMSA motorsport series. These techniques inform our dashboard visualization approach.</p>
+<hr>
+<h2 id="critical-analysis-rules" tabindex="-1"><a class="observablehq-header-anchor" href="#critical-analysis-rules">Critical Analysis Rules</a></h2>
+<blockquote>
+<p><strong>These rules MUST be followed for all pace analysis in our system.</strong></p>
+</blockquote>
+<h3 id="what-you-can-never-do" tabindex="-1"><a class="observablehq-header-anchor" href="#what-you-can-never-do">What You Can NEVER Do</a></h3>
+<ol>
+<li><strong>NEVER compare lap times across different events</strong> - Track conditions, weather, and layouts vary too much</li>
+<li><strong>NEVER compare lap times across different classes</strong> - GTP, LMP2, GTD are completely different cars with 5-15+ second pace differences</li>
+<li><strong>NEVER average raw lap times for pace analysis</strong> - Traffic, FCY, pit laps corrupt averages</li>
+</ol>
+<h3 id="what-you-can-do" tabindex="-1"><a class="observablehq-header-anchor" href="#what-you-can-do">What You CAN Do</a></h3>
+<ul>
+<li>Compare drivers in the <strong>SAME CLASS</strong> at the <strong>SAME EVENT</strong></li>
+<li>Use delta from class leader or car's own best for relative pace</li>
+<li>Stint-to-stint comparisons within same event</li>
+<li>Weather-adjusted comparisons (wet laps only compared to other wet laps)</li>
+</ul>
+<h3 id="the-bpillar-quartile-filter" tabindex="-1"><a class="observablehq-header-anchor" href="#the-bpillar-quartile-filter">The bpillar_quartile Filter</a></h3>
+<p><strong>For representative pace analysis, always use:</strong></p>
+<div class="observablehq observablehq--block"><!--:5e98daf2:--></div>
+<p>This automatically excludes:</p>
+<ul>
+<li>First lap of race</li>
+<li>Pit in/out laps</li>
+<li>Full course yellow / safety car laps</li>
+<li>Traffic-affected laps</li>
+<li>Outlier slow laps</li>
+</ul>
+<p>Quartiles 1 and 2 represent the fastest 50% of a car's laps, giving clean "race pace" data.</p>
+<h3 id="delta-based-visualization" tabindex="-1"><a class="observablehq-header-anchor" href="#delta-based-visualization">Delta-Based Visualization</a></h3>
+<p><strong>Always show pace as DELTA from a reference</strong>, not absolute times:</p>
+<ul>
+<li>Delta from class best lap</li>
+<li>Delta from car's own Q1 average (fastest quartile)</li>
+<li>Delta from stint average</li>
+</ul>
+<p>This makes cross-event trend analysis meaningful (e.g., "Driver X was +0.3s off class pace at Daytona, +0.5s at Sebring").</p>
+<hr>
+<h2 id="1-stint-analysis-methods" tabindex="-1"><a class="observablehq-header-anchor" href="#1-stint-analysis-methods">1. Stint Analysis Methods</a></h2>
+<h3 id="degradation-metrics" tabindex="-1"><a class="observablehq-header-anchor" href="#degradation-metrics">Degradation Metrics</a></h3>
+<p>Two primary metrics are used to measure tire degradation:</p>
+<ol>
+<li><strong>Cumulative Degradation</strong>: The difference in lap time between the current lap and the first lap of the tire stint</li>
+<li><strong>Progressive Degradation</strong>: The difference in lap time between the current lap and the previous lap</li>
+</ol>
+<h3 id="analysis-approaches" tabindex="-1"><a class="observablehq-header-anchor" href="#analysis-approaches">Analysis Approaches</a></h3>
+<p><strong>State-Space Modeling</strong> (Academic/Professional)</p>
+<ul>
+<li>Lap times modeled as a function of fuel mass and latent tire pace</li>
+<li>Pit stops treated as state resets</li>
+<li>Compound-specific degradation rates tracked separately</li>
+<li>Source: <a href="https://arxiv.org/pdf/2512.00640" target="_blank" rel="noopener noreferrer">A State-Space Approach to Modeling Tire Degradation</a></li>
+</ul>
+<p><strong>Weighted Average Method</strong></p>
+<ul>
+<li>Calculate average slope (lap time increase) for each driver per stint</li>
+<li>Weight by stint length: a 20-lap stint contributes more than a 5-lap stint</li>
+<li>Measure degradation as "seconds per 10 laps" for comparability</li>
+<li>Source: <a href="https://f1pace.com/p/2024-bahrain-gp-tire-degradation/" target="_blank" rel="noopener noreferrer">F1 Pace Analysis</a></li>
+</ul>
+<p><strong>Machine Learning Approaches</strong></p>
+<ul>
+<li>XGBoost models can predict tire degradation within 1.7 laps accuracy</li>
+<li>Feature engineering includes 50+ tire performance indicators:
+<ul>
+<li>Temperature gradients</li>
+<li>Pressure variations</li>
+<li>Compound-specific degradation rates</li>
+<li>Circuit-specific wear patterns</li>
+</ul>
+</li>
+<li>Source: <a href="https://schilamkur.github.io/Predict-Tire-Deg/" target="_blank" rel="noopener noreferrer">F1 Tire Degradation Prediction</a></li>
+</ul>
+<h3 id="compound-specific-findings" tabindex="-1"><a class="observablehq-header-anchor" href="#compound-specific-findings">Compound-Specific Findings</a></h3>
+<table>
+<thead>
+<tr>
+<th>Compound</th>
+<th>Degradation Pattern</th>
+<th>Predictability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Soft</td>
+<td>Strongest, most consistent degradation</td>
+<td>Most predictable</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>Significant degradation</td>
+<td>Moderate</td>
+</tr>
+<tr>
+<td>Hard</td>
+<td>May stabilize or improve after initial wear</td>
+<td>Less predictable</td>
+</tr>
+<tr>
+<td>Intermediate</td>
+<td>Can show negative degradation (times improve)</td>
+<td>Variable</td>
+</tr>
+</tbody>
+</table>
+<h3 id="degradation-curves" tabindex="-1"><a class="observablehq-header-anchor" href="#degradation-curves">Degradation Curves</a></h3>
+<p>Strategists define degradation curves for each compound showing:</p>
+<ul>
+<li>Warm-up phase</li>
+<li>Optimal operating window</li>
+<li>Wear degradation phase</li>
+<li>Overheating risk zone</li>
+</ul>
+<p>These curves feed into strategy simulations predicting race outcomes.</p>
+<hr>
+<h2 id="2-fuel-corrected-lap-times" tabindex="-1"><a class="observablehq-header-anchor" href="#2-fuel-corrected-lap-times">2. Fuel-Corrected Lap Times</a></h2>
+<h3 id="the-problem" tabindex="-1"><a class="observablehq-header-anchor" href="#the-problem">The Problem</a></h3>
+<p>Cars get faster as they burn fuel - approximately 3+ seconds faster from race start to finish in F1 with a full 110kg fuel load.</p>
+<h3 id="standard-correction-values" tabindex="-1"><a class="observablehq-header-anchor" href="#standard-correction-values">Standard Correction Values</a></h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Correction Factor</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ted Kravitz (BBC)</td>
+<td>0.035 sec/kg</td>
+<td>General rule</td>
+</tr>
+<tr>
+<td>Pat Symonds Paper</td>
+<td>0.036-0.037 sec/kg</td>
+<td>Academic study</td>
+</tr>
+<tr>
+<td>Benzing Analysis</td>
+<td>0.02-0.04 sec/kg</td>
+<td>Circuit dependent</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Circuit-Dependent Adjustments:</strong></p>
+<ul>
+<li>Low-speed circuits: ~0.04 sec/kg</li>
+<li>Medium-speed circuits: ~0.03 sec/kg</li>
+<li>High-speed circuits: ~0.02 sec/kg</li>
+</ul>
+<h3 id="calculation-formula" tabindex="-1"><a class="observablehq-header-anchor" href="#calculation-formula">Calculation Formula</a></h3>
+<pre><code>Fuel Corrected Lap Time = Actual Lap Time - (Fuel Penalty x Remaining Fuel Mass)
+</code></pre>
+<p>Where:</p>
+<ul>
+<li>Fuel penalty = ~0.03-0.035 sec/kg (adjust by circuit)</li>
+<li>Fuel consumption = ~2.5-2.8 kg/lap (varies by circuit, driving style, safety car)</li>
+</ul>
+<h3 id="example-turkey-gp" tabindex="-1"><a class="observablehq-header-anchor" href="#example-turkey-gp">Example: Turkey GP</a></h3>
+<ul>
+<li>Fuel consumption: 2.7 kg/lap</li>
+<li>Fuel penalty: 0.3 sec per 10 kg</li>
+<li>Total time penalty at race start: ~4.5 seconds vs race end</li>
+</ul>
+<h3 id="caveats" tabindex="-1"><a class="observablehq-header-anchor" href="#caveats">Caveats</a></h3>
+<ul>
+<li>Relationship is not strictly linear</li>
+<li>Affected by: tire loads, ride height changes, center of gravity</li>
+<li>Fuel burn rate varies by driver and lap (lift-and-coast vs pushing)</li>
+<li>Safety car laps use less fuel</li>
+</ul>
+<p>Sources: <a href="https://www.f1technical.net/forum/viewtopic.php?t=7982" target="_blank" rel="noopener noreferrer">F1 Technical Forum</a>, <a href="https://medium.com/@umakschually/fuel-correction-29ccd98ae62b" target="_blank" rel="noopener noreferrer">Fuel Correction Analysis</a></p>
+<hr>
+<h2 id="3-traffic-impact-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#3-traffic-impact-analysis">3. Traffic Impact Analysis</a></h2>
+<h3 id="dirty-air-effects" tabindex="-1"><a class="observablehq-header-anchor" href="#dirty-air-effects">Dirty Air Effects</a></h3>
+<p>When following another car, downforce loss causes significant lap time penalties:</p>
+<table>
+<thead>
+<tr>
+<th>Distance</th>
+<th>Downforce Retained (2019)</th>
+<th>Downforce Retained (2022 baseline)</th>
+<th>Downforce Retained (2025)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 car length (10m)</td>
+<td>~55%</td>
+<td>~85%</td>
+<td>~65%</td>
+</tr>
+<tr>
+<td>2 car lengths (20m)</td>
+<td>~65%</td>
+<td>~95%</td>
+<td>~80%</td>
+</tr>
+</tbody>
+</table>
+<p>A car can lose <strong>up to 50% of downforce</strong> in dirty air, leading to slower lap times and reduced grip.</p>
+<p>Source: <a href="https://www.the-race.com/formula-1/exclusive-new-data-f1-aero-losses-ruining-close-racing/" target="_blank" rel="noopener noreferrer">The Race - F1 Dirty Air Data</a></p>
+<h3 id="quantifying-traffic-time-loss" tabindex="-1"><a class="observablehq-header-anchor" href="#quantifying-traffic-time-loss">Quantifying Traffic Time Loss</a></h3>
+<p><strong>Drag vs Downforce Trade-off:</strong></p>
+<ul>
+<li>Clean air downforce: ~680 kg</li>
+<li>At 1 car length: ~390 kg downforce (but drag reduced to 184 kg, 68 HP needed)</li>
+<li>At half car length: drag 161 kg, 54 HP needed</li>
+</ul>
+<p><strong>Observed Time Losses:</strong></p>
+<ul>
+<li>Hungary 2006 example: ~10 seconds lost over several laps when stuck behind battling lapped cars</li>
+<li>Following within 1 second of another car at Suzuka 2025 was "incredibly difficult"</li>
+</ul>
+<h3 id="detection-methods-for-traffic-laps" tabindex="-1"><a class="observablehq-header-anchor" href="#detection-methods-for-traffic-laps">Detection Methods for Traffic Laps</a></h3>
+<p><strong>Gap-Based Weighting:</strong></p>
+<ul>
+<li>Laps with &lt;0.5 sec gap to car ahead: weight near 0% (heavily obstructed)</li>
+<li>Laps with &gt;3 sec gap: weight at 100% (clear air)</li>
+<li>Intermediate gaps: proportional weighting</li>
+</ul>
+<p><strong>Practical Implementation:</strong></p>
+<ul>
+<li>Flag laps where gap to car ahead &lt; threshold (1-2 seconds)</li>
+<li>Create separate analysis with and without traffic laps</li>
+<li>Source: <a href="https://f1bythenumbers.com/2020-abu-dhabi-gp-race-pace/" target="_blank" rel="noopener noreferrer">F1 By The Numbers</a></li>
+</ul>
+<hr>
+<h2 id="4-strategy-analysis-undercut-overcut-detection" tabindex="-1"><a class="observablehq-header-anchor" href="#4-strategy-analysis-undercut-overcut-detection">4. Strategy Analysis: Undercut/Overcut Detection</a></h2>
+<h3 id="undercut-definition" tabindex="-1"><a class="observablehq-header-anchor" href="#undercut-definition">Undercut Definition</a></h3>
+<p>Pitting <strong>earlier</strong> than competitor to gain advantage through:</p>
+<ol>
+<li>Fresh tire grip advantage</li>
+<li>Faster out-lap on new tires</li>
+<li>Potentially gaining track position</li>
+</ol>
+<p><strong>Key phases:</strong> In-lap, pit stop execution, out-lap</p>
+<h3 id="overcut-definition" tabindex="-1"><a class="observablehq-header-anchor" href="#overcut-definition">Overcut Definition</a></h3>
+<p>Staying out <strong>longer</strong> on worn tires, betting that:</p>
+<ol>
+<li>Competitor struggles to get new tires up to temperature</li>
+<li>Your committed in-lap on stable (worn) tires is faster than their cold out-lap</li>
+</ol>
+<h3 id="detection-patterns" tabindex="-1"><a class="observablehq-header-anchor" href="#detection-patterns">Detection Patterns</a></h3>
+<p><strong>Undercut Indicators:</strong></p>
+<ul>
+<li>Driver A pits 1-3 laps before Driver B</li>
+<li>Driver A's out-lap significantly faster than Driver B's in-lap</li>
+<li>Position change occurs during pit stop phase</li>
+</ul>
+<p><strong>Overcut Indicators:</strong></p>
+<ul>
+<li>Driver A stays out while Driver B pits</li>
+<li>Driver A's subsequent laps faster than expected (fresh tires warming up slowly for Driver B)</li>
+<li>Position maintained or gained despite pitting later</li>
+</ul>
+<h3 id="factors-affecting-strategy-success" tabindex="-1"><a class="observablehq-header-anchor" href="#factors-affecting-strategy-success">Factors Affecting Strategy Success</a></h3>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Favors Undercut</th>
+<th>Favors Overcut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tire warm-up</td>
+<td>Fast warm-up</td>
+<td>Slow warm-up</td>
+</tr>
+<tr>
+<td>Degradation</td>
+<td>High deg tracks</td>
+<td>Low deg tracks</td>
+</tr>
+<tr>
+<td>Track type</td>
+<td>Good overtaking</td>
+<td>Monaco-style (hard to pass)</td>
+</tr>
+<tr>
+<td>Pit crew</td>
+<td>Fast stops essential</td>
+<td>Less critical</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-points-for-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#data-points-for-analysis">Data Points for Analysis</a></h3>
+<p>Teams capture 1,000+ data points per second, running over 2 million predictive simulations. Key inputs:</p>
+<ul>
+<li>DRS train positions (being stuck negates undercut)</li>
+<li>Rival tire state and pace</li>
+<li>Pit lane time delta</li>
+<li>Warm-up characteristics by compound</li>
+</ul>
+<p>Sources: <a href="https://www.gpfans.com/en/f1-news/1016512/f1-undercut-overcut-explained/" target="_blank" rel="noopener noreferrer">GPFans Strategy Explained</a>, <a href="https://www.catapult.com/blog/motorsports-race-strategy-undercut-overcut" target="_blank" rel="noopener noreferrer">Catapult Sports</a></p>
+<hr>
+<h2 id="5-weather-impact-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#5-weather-impact-analysis">5. Weather Impact Analysis</a></h2>
+<h3 id="wet-vs-dry-lap-time-differences" tabindex="-1"><a class="observablehq-header-anchor" href="#wet-vs-dry-lap-time-differences">Wet vs Dry Lap Time Differences</a></h3>
+<p><strong>Typical Differential:</strong></p>
+<ul>
+<li>Full wet conditions: <strong>8-12 seconds per lap</strong> slower than dry</li>
+<li>British GP example: Pole time in wet was 10 seconds slower than fastest dry race lap (100s vs 90s)</li>
+</ul>
+<h3 id="tire-selection-thresholds" tabindex="-1"><a class="observablehq-header-anchor" href="#tire-selection-thresholds">Tire Selection Thresholds</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Tire</th>
+<th>Typical Pace Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dry</td>
+<td>Slicks</td>
+<td>Baseline</td>
+</tr>
+<tr>
+<td>Damp/Drying</td>
+<td>Intermediates</td>
+<td>3-6 seconds</td>
+</tr>
+<tr>
+<td>Full wet</td>
+<td>Wet tires</td>
+<td>8-12+ seconds</td>
+</tr>
+<tr>
+<td>Wrong tire (slicks on wet)</td>
+<td>N/A</td>
+<td>Multiple seconds per lap, increasing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="temperature-effects" tabindex="-1"><a class="observablehq-header-anchor" href="#temperature-effects">Temperature Effects</a></h3>
+<p><strong>Track Temperature:</strong></p>
+<ul>
+<li>Higher track temps = higher tire temps = more grip (within optimal window)</li>
+<li>Each compound has different ideal temperature windows:
+<ul>
+<li>Softer compounds (C5, C6): lower temps</li>
+<li>Harder compounds: higher temps</li>
+<li>Wet tires: lower optimal window</li>
+</ul>
+</li>
+</ul>
+<p><strong>Cold Conditions:</strong></p>
+<ul>
+<li>Reduced grip due to tires not reaching operating temperature</li>
+<li>Slower lap times</li>
+<li>More difficult warm-up phases</li>
+</ul>
+<h3 id="rain-specific-considerations" tabindex="-1"><a class="observablehq-header-anchor" href="#rain-specific-considerations">Rain-Specific Considerations</a></h3>
+<ul>
+<li>Racing line rubber washed away ("green" track)</li>
+<li>Reduced visibility</li>
+<li>Different optimal lines (avoiding standing water)</li>
+<li>Grip level varies across track surface</li>
+</ul>
+<p><strong>Setup Adjustments:</strong></p>
+<ul>
+<li>Decrease on-throttle differential by 20-50% depending on rain intensity</li>
+<li>Higher diff values cause snap oversteer in wet</li>
+</ul>
+<p>Sources: <a href="https://www.catapult.com/blog/race-strategy-f1-track-surface" target="_blank" rel="noopener noreferrer">Catapult - Track Surface Impact</a>, <a href="https://motorsportengineer.net/how-weather-conditions-influence-performance-in-formula-1/" target="_blank" rel="noopener noreferrer">Motorsport Engineer</a></p>
+<hr>
+<h2 id="6-multiclass-racing-class-differentials" tabindex="-1"><a class="observablehq-header-anchor" href="#6-multiclass-racing-class-differentials">6. Multiclass Racing: Class Differentials</a></h2>
+<h3 id="imsa-class-performance-hierarchy" tabindex="-1"><a class="observablehq-header-anchor" href="#imsa-class-performance-hierarchy">IMSA Class Performance Hierarchy</a></h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Typical Lap Time vs GTP</th>
+<th>Power</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GTP</td>
+<td>Baseline</td>
+<td>643-697 HP</td>
+<td>LMDh/Hypercar</td>
+</tr>
+<tr>
+<td>LMP2</td>
+<td>+3-5 seconds</td>
+<td>~600 HP</td>
+<td>Spec ORECA chassis</td>
+</tr>
+<tr>
+<td>LMP3</td>
+<td>+8-10 seconds</td>
+<td>~450 HP</td>
+<td>Entry-level prototype</td>
+</tr>
+<tr>
+<td>GTD PRO</td>
+<td>+10-15 seconds</td>
+<td>~500 HP</td>
+<td>Factory GT3</td>
+</tr>
+<tr>
+<td>GTD</td>
+<td>+10-15 seconds</td>
+<td>~500 HP</td>
+<td>Customer GT3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2023 Rolex 24 Example (Daytona):</strong></p>
+<ul>
+<li>GTP fastest lap: ~1:35.6</li>
+<li>LMP2 fastest lap: ~1:39.6 (+4 seconds)</li>
+<li>LMP3 fastest lap: ~1:43.5 (+8 seconds)</li>
+<li>GTD PRO fastest lap: ~1:45.5 (+10 seconds)</li>
+</ul>
+<h3 id="wec-class-structure" tabindex="-1"><a class="observablehq-header-anchor" href="#wec-class-structure">WEC Class Structure</a></h3>
+<p>Similar hierarchy:</p>
+<ul>
+<li>Hypercar/GTP: fastest</li>
+<li>LMP2: ~5 seconds slower</li>
+<li>LMGT3: ~10-15 seconds slower</li>
+</ul>
+<h3 id="implications-for-pace-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#implications-for-pace-analysis">Implications for Pace Analysis</a></h3>
+<p><strong>Class Traffic:</strong></p>
+<ul>
+<li>Prototype leaders regularly lap GT cars multiple times</li>
+<li>"Blue flag" situations create traffic analysis complexity</li>
+<li>Time lost varies by track layout (narrow vs wide circuits)</li>
+</ul>
+<p><strong>Balance of Performance (BoP):</strong></p>
+<ul>
+<li>Classes use BoP to equalize cars within class</li>
+<li>Adjusts: power, weight, aerodynamics</li>
+<li>Affects pace analysis when BoP changes mid-season</li>
+</ul>
+<h3 id="endurance-specific-factors" tabindex="-1"><a class="observablehq-header-anchor" href="#endurance-specific-factors">Endurance-Specific Factors</a></h3>
+<p><strong>Stint Duration (WEC):</strong></p>
+<ul>
+<li>Typical stint: 45-60 minutes (fuel window)</li>
+<li>Driver changes add strategic dimension</li>
+<li>Some teams run quadruple stints on tires (4+ fuel stops per tire set)</li>
+</ul>
+<p><strong>Tire Strategy:</strong></p>
+<ul>
+<li>Teams may change only partial tire sets (e.g., right-side only)</li>
+<li>Double/triple stinting tires common in endurance</li>
+<li>Degradation curves differ from sprint races</li>
+</ul>
+<p>Sources: <a href="https://www.imsa.com/weathertech/discover/the-classes/" target="_blank" rel="noopener noreferrer">IMSA Class Guide</a>, <a href="https://sportscar365.com/imsa/iwsc/double-stinting-tires-adds-variable-to-gtp-race-strategy/" target="_blank" rel="noopener noreferrer">Sportscar365</a></p>
+<hr>
+<h2 id="7-data-cleaning-and-lap-time-normalization" tabindex="-1"><a class="observablehq-header-anchor" href="#7-data-cleaning-and-lap-time-normalization">7. Data Cleaning and Lap Time Normalization</a></h2>
+<h3 id="imsa-specific-bpillar-quartile" tabindex="-1"><a class="observablehq-header-anchor" href="#imsa-specific-bpillar-quartile">IMSA-Specific: bpillar_quartile</a></h3>
+<p>Our database includes a pre-computed <code>bpillar_quartile</code> column that categorizes each lap:</p>
+<table>
+<thead>
+<tr>
+<th>Quartile</th>
+<th>Description</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Fastest 25% of car's laps</td>
+<td>Best representative pace</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Second fastest 25%</td>
+<td>Good representative pace</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Third quartile</td>
+<td>Mixed - some traffic/conditions</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Slowest 25%</td>
+<td>Pit laps, FCY, traffic, lap 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Standard filter for pace analysis:</strong></p>
+<div class="observablehq observablehq--block"><!--:5e98daf2-1:--></div>
+<p>This is preferred over manual outlier detection as it's pre-computed and consistent.</p>
+<h3 id="laps-to-exclude-general-methodology" tabindex="-1"><a class="observablehq-header-anchor" href="#laps-to-exclude-general-methodology">Laps to Exclude (General Methodology)</a></h3>
+<p>Before pace analysis, remove:</p>
+<ol>
+<li><strong>Lap 1</strong> - Start chaos, cold tires, dirty air</li>
+<li><strong>Safety car / FCY laps</strong> - Artificially slow</li>
+<li><strong>In-laps</strong> - Preparing for pit stop</li>
+<li><strong>Out-laps</strong> - Cold tires, pit lane exit</li>
+<li><strong>Safety car restart laps</strong> - Variable pace</li>
+<li><strong>Red flag affected laps</strong></li>
+</ol>
+<h3 id="outlier-detection-methods-when-bpillar-quartile-unavailable" tabindex="-1"><a class="observablehq-header-anchor" href="#outlier-detection-methods-when-bpillar-quartile-unavailable">Outlier Detection Methods (When bpillar_quartile unavailable)</a></h3>
+<p><strong>IQR Method:</strong></p>
+<ul>
+<li>Calculate Q1, Q3, IQR for lap times</li>
+<li>Remove laps outside [Q1 - 1.5<em>IQR, Q3 + 1.5</em>IQR]</li>
+<li>Limitation: may remove legitimate slow laps (driver error, mechanical issue)</li>
+</ul>
+<p><strong>Generalized ESD Method:</strong></p>
+<ul>
+<li>Statistical test for multiple outliers</li>
+<li>Tests at significance level (typically 5%)</li>
+<li>Can identify safety car laps when explicit data unavailable</li>
+</ul>
+<h3 id="cross-event-comparison-delta-method" tabindex="-1"><a class="observablehq-header-anchor" href="#cross-event-comparison-delta-method">Cross-Event Comparison (Delta Method)</a></h3>
+<p><strong>Never compare absolute lap times across events.</strong> Instead:</p>
+<ol>
+<li><strong>Delta from Class Best:</strong> <code>lap_time - MIN(lap_time) OVER (PARTITION BY event, class)</code></li>
+<li><strong>Delta from Car's Q1 Average:</strong> Compare to car's own fastest quartile average</li>
+<li><strong>Percentile within Class/Event:</strong> Where does this lap rank within the event?</li>
+</ol>
+<p><strong>Example Query Pattern:</strong></p>
+<div class="observablehq observablehq--block"><!--:bd896bc5:--></div>
+<h3 id="recommended-workflow" tabindex="-1"><a class="observablehq-header-anchor" href="#recommended-workflow">Recommended Workflow</a></h3>
+<pre><code>1. Filter to specific event + class (NEVER cross-event raw comparison)
+2. Apply bpillar_quartile IN (1, 2) filter
+3. Calculate reference pace (class best, car Q1 average)
+4. Compute deltas from reference
+5. For cross-event trends: compare DELTAS, not absolute times
+6. Account for weather if conditions varied
+</code></pre>
+<p>Source: <a href="https://f1bythenumbers.com/2019-f1-season-all-the-laps/" target="_blank" rel="noopener noreferrer">F1 By The Numbers Methodology</a>, <a href="https://forums.autosport.com/topic/206970-estimating-race-pace-a-statistical-model/" target="_blank" rel="noopener noreferrer">Autosport Forums</a></p>
+<hr>
+<h2 id="8-key-data-sources" tabindex="-1"><a class="observablehq-header-anchor" href="#8-key-data-sources">8. Key Data Sources</a></h2>
+<h3 id="f1-data" tabindex="-1"><a class="observablehq-header-anchor" href="#f1-data">F1 Data</a></h3>
+<ul>
+<li><strong>FastF1 Python Library:</strong> Lap-by-lap data, telemetry, tire info, weather</li>
+<li><strong>Official F1 Timing:</strong> Live timing data during sessions</li>
+<li><strong>AWS F1 Insights:</strong> Car performance analysis, tire performance</li>
+</ul>
+<h3 id="imsa-wec-data" tabindex="-1"><a class="observablehq-header-anchor" href="#imsa-wec-data">IMSA/WEC Data</a></h3>
+<ul>
+<li><strong>Official timing &amp; scoring:</strong> Lap times, positions, pit stops</li>
+<li><strong>Race broadcasts:</strong> Sector times, stint information</li>
+<li><strong>Team press releases:</strong> Strategy explanations, tire choices</li>
+</ul>
+<h3 id="tools-and-platforms" tabindex="-1"><a class="observablehq-header-anchor" href="#tools-and-platforms">Tools &amp; Platforms</a></h3>
+<ul>
+<li><a href="https://tracinginsights.com/" target="_blank" rel="noopener noreferrer">TracingInsights</a> - F1 analytics</li>
+<li><a href="https://f1pace.com/" target="_blank" rel="noopener noreferrer">F1 Pace</a> - Degradation analysis</li>
+<li><a href="https://www.catapult.com/" target="_blank" rel="noopener noreferrer">Catapult Sports</a> - Professional strategy tools</li>
+</ul>
+<hr>
+<h2 id="9-visualization-recommendations" tabindex="-1"><a class="observablehq-header-anchor" href="#9-visualization-recommendations">9. Visualization Recommendations</a></h2>
+<p>Based on this research, recommended visualizations for our dashboard.</p>
+<blockquote>
+<p><strong>Key Principle:</strong> Always show DELTA from reference, never raw lap times for comparisons.</p>
+</blockquote>
+<h3 id="stint-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#stint-analysis">Stint Analysis</a></h3>
+<ul>
+<li>Line chart: <strong>delta from stint average</strong> vs lap number (shows degradation)</li>
+<li>Trend line overlay showing degradation slope (seconds per 10 laps)</li>
+<li>Compare degradation rates between drivers in same class</li>
+</ul>
+<h3 id="pace-comparison-single-event" tabindex="-1"><a class="observablehq-header-anchor" href="#pace-comparison-single-event">Pace Comparison (Single Event)</a></h3>
+<ul>
+<li>Box plots: <strong>delta from class best</strong> distribution per driver</li>
+<li>Bar chart: average delta per driver (using bpillar_quartile 1-2 laps only)</li>
+<li>Scatter plot: lap time vs lap number with Q1/Q2 laps highlighted</li>
+</ul>
+<h3 id="cross-event-trends-delta-only" tabindex="-1"><a class="observablehq-header-anchor" href="#cross-event-trends-delta-only">Cross-Event Trends (Delta Only)</a></h3>
+<ul>
+<li>Line chart: <strong>delta from class pace</strong> across events for a driver/team</li>
+<li>Shows consistency: "Was +0.3s off at Daytona, +0.5s at Sebring"</li>
+<li>Never show absolute times on same axis for different events</li>
+</ul>
+<h3 id="traffic-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#traffic-analysis">Traffic Analysis</a></h3>
+<ul>
+<li>Highlight bpillar_quartile 3-4 laps on lap time chart</li>
+<li>Show lap time distribution: Q1-2 (clean) vs Q3-4 (affected)</li>
+<li>Position vs time chart showing class traffic encounters</li>
+</ul>
+<h3 id="strategy" tabindex="-1"><a class="observablehq-header-anchor" href="#strategy">Strategy</a></h3>
+<ul>
+<li>Pit stop timing visualization (within single event)</li>
+<li>Stint length comparison between competitors</li>
+<li>Position delta through pit windows</li>
+</ul>
+<h3 id="weather" tabindex="-1"><a class="observablehq-header-anchor" href="#weather">Weather</a></h3>
+<ul>
+<li>Separate wet and dry lap visualizations (NEVER on same scale)</li>
+<li>Flag weather-affected sessions clearly</li>
+<li>Show pace delta within weather condition only</li>
+</ul>
+<h3 id="anti-patterns-to-avoid" tabindex="-1"><a class="observablehq-header-anchor" href="#anti-patterns-to-avoid">Anti-Patterns to Avoid</a></h3>
+<ul>
+<li>Raw lap time comparison across events</li>
+<li>Mixing classes on same visualization</li>
+<li>Averaging all laps (use Q1-2 filter)</li>
+<li>Showing absolute times for cross-event analysis</li>
+</ul>
+<hr>
+<p><em>Document prepared for Motorsport DB Dashboard development</em>
+<em>Research completed: January 2026</em></p>
+</main>
+<footer id="observablehq-footer">
+<div>Built with Observable Framework</div>
+</footer>
+</div>
+</body>
+</html>

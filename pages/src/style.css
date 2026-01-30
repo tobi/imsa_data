@@ -1,0 +1,130 @@
+/* IMSA Racing Dashboard Theme */
+
+:root {
+  /* License colors */
+  --license-p: #e63946;  /* Platinum - Red */
+  --license-s: #457b9d;  /* Silver - Blue */
+  --license-g: #2a9d8f;  /* Gold - Green */
+  --license-b: #e76f51;  /* Bronze - Orange */
+  --license-l: #9b5de5;  /* No license - Purple */
+
+  /* Racing theme colors */
+  --racing-accent: #e63946;
+  --racing-secondary: #1d3557;
+  --racing-background: #f1faee;
+
+  /* Class colors for IMSA */
+  --class-gtp: #e63946;
+  --class-lmp2: #457b9d;
+  --class-gtd-pro: #2a9d8f;
+  --class-gtd: #e9c46a;
+}
+
+/* License badge styles */
+.license-badge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.license-p { background-color: var(--license-p); color: white; }
+.license-s { background-color: var(--license-s); color: white; }
+.license-g { background-color: var(--license-g); color: white; }
+.license-b { background-color: var(--license-b); color: white; }
+.license-l { background-color: var(--license-l); color: white; }
+
+/* Stat cards */
+.stat-card {
+  background: var(--theme-background-alt);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--theme-foreground-faintest);
+}
+
+.stat-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--theme-foreground-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-card .value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-card .subtitle {
+  font-size: 0.75rem;
+  color: var(--theme-foreground-muted);
+  margin-top: 0.25rem;
+}
+
+/* Grid layouts */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+/* Driver table styles */
+.driver-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.driver-table th,
+.driver-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--theme-foreground-faintest);
+}
+
+.driver-table th {
+  font-weight: 600;
+  color: var(--theme-foreground-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.driver-table tr:hover {
+  background-color: var(--theme-background-alt);
+}
+
+/* Position indicators */
+.position {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.position-1 { background-color: #ffd700; color: black; }
+.position-2 { background-color: #c0c0c0; color: black; }
+.position-3 { background-color: #cd7f32; color: white; }
+
+/* Chart containers */
+.chart-container {
+  margin: 1.5rem 0;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card .value {
+    font-size: 1.5rem;
+  }
+}

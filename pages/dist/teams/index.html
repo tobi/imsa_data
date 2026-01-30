@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.3">
+<title>Teams | Motorsport DB</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="preload" as="style" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="stylesheet" type="text/css" href="../_observablehq/stdlib/inputs.ea9fd553.css">
+<link rel="modulepreload" href="../_observablehq/client.caf1c4a3.js">
+<link rel="modulepreload" href="../_observablehq/runtime.e080113b.js">
+<link rel="modulepreload" href="../_observablehq/stdlib.bd1ab7c4.js">
+<link rel="modulepreload" href="../_npm/d3@7.9.0/e324157d.js">
+<link rel="modulepreload" href="../_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="../_observablehq/stdlib/inputs.c5e5548b.js">
+<link rel="modulepreload" href="../_npm/@observablehq/plot@0.6.17/7c43807f.js">
+<link rel="modulepreload" href="../_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="../_npm/isoformat@0.2.1/18cbf477.js">
+<link rel="modulepreload" href="../_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="../_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="../_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="../_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="../_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="../_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="../_npm/d3-delaunay@6.0.4/5ced1d52.js">
+<link rel="modulepreload" href="../_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="../_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="../_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="../_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="../_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="../_npm/d3-format@3.1.2/3785bf2d.js">
+<link rel="modulepreload" href="../_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="../_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="../_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="../_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="../_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="../_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="../_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="../_npm/d3-scale@4.0.2/720b7f0a.js">
+<link rel="modulepreload" href="../_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="../_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="../_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="../_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="../_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="../_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="../_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="../_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="../_npm/interval-tree-1d@1.0.4/53fe8176.js">
+<link rel="modulepreload" href="../_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="../_npm/delaunator@5.0.1/02d43215.js">
+<link rel="modulepreload" href="../_npm/binary-search-bounds@2.0.5/cbf6ba23.js">
+<link rel="modulepreload" href="../_npm/robust-predicates@3.0.2/aa00730b.js">
+<script type="module">
+
+import {define} from "../_observablehq/client.caf1c4a3.js";
+import {registerFile} from "../_observablehq/stdlib.bd1ab7c4.js";
+
+registerFile("../data/teams.csv", {"name":"../data/teams.csv","mimeType":"text/csv","path":"../_file/data/teams.bef859d7.csv","lastModified":1769523597972,"size":13973});
+
+define({id: "0a4c68b6", inputs: ["FileAttachment"], outputs: ["teams"], body: (FileAttachment) => {
+const teams = FileAttachment("../data/teams.csv").csv({typed: true});
+return {teams};
+}});
+
+define({id: "3307ff9a", inputs: ["Inputs","teams","Generators"], outputs: ["searchInput","searchValue"], body: (Inputs,teams,Generators) => {
+const searchInput = Inputs.search(teams, {placeholder: "Search teams..."});
+const searchValue = Generators.input(searchInput);
+return {searchInput,searchValue};
+}});
+
+define({id: "f9feade6", inputs: ["Inputs","teams","Generators"], outputs: ["seriesFilter","selectedSeries"], body: (Inputs,teams,Generators) => {
+const seriesFilter = Inputs.select(
+  ["All", ...new Set(teams.map(t => t.last_series).filter(Boolean))],
+  {value: "All", label: "Series"}
+);
+const selectedSeries = Generators.input(seriesFilter);
+return {seriesFilter,selectedSeries};
+}});
+
+define({id: "3487351b", mode: "inline", inputs: ["searchInput","display"], body: async (searchInput,display) => {
+display(await(
+searchInput
+))
+}});
+
+define({id: "b85dc53d", mode: "inline", inputs: ["seriesFilter","display"], body: async (seriesFilter,display) => {
+display(await(
+seriesFilter
+))
+}});
+
+define({id: "7cadfa10", inputs: ["searchValue","selectedSeries"], outputs: ["filteredTeams"], body: (searchValue,selectedSeries) => {
+const filteredTeams = searchValue.filter(t => {
+  if (selectedSeries === "All") return true;
+  return t.last_series === selectedSeries;
+});
+return {filteredTeams};
+}});
+
+define({id: "077f126a", mode: "inline", inputs: ["filteredTeams","display"], body: async (filteredTeams,display) => {
+display(await(
+filteredTeams.length
+))
+}});
+
+define({id: "7678dd08", mode: "inline", inputs: ["teams","display"], body: async (teams,display) => {
+display(await(
+teams.length
+))
+}});
+
+define({id: "40a4fcbe", inputs: ["Inputs","filteredTeams","htl"], outputs: ["table"], body: (Inputs,filteredTeams,htl) => {
+const table = Inputs.table(filteredTeams, {
+  columns: [
+    "team",
+    "total_events",
+    "unique_drivers",
+    "total_laps",
+    "last_class",
+    "last_series",
+    "first_year",
+    "last_year"
+  ],
+  header: {
+    team: "Team",
+    total_events: "Events",
+    unique_drivers: "Drivers",
+    total_laps: "Total Laps",
+    last_class: "Class",
+    last_series: "Series",
+    first_year: "First",
+    last_year: "Last"
+  },
+  format: {
+    team: d => htl.html`<a href="./[team]?team=${encodeURIComponent(d)}">${d}</a>`,
+    total_laps: d => d ? d.toLocaleString() : "-"
+  },
+  sort: "total_events",
+  reverse: true,
+  width: {
+    team: 250,
+    total_events: 70,
+    unique_drivers: 70,
+    total_laps: 90,
+    last_class: 80,
+    last_series: 60,
+    first_year: 50,
+    last_year: 50
+  },
+  rows: 25
+});
+return {table};
+}});
+
+define({id: "0d4fc4a7", mode: "inline", inputs: ["table","display"], body: async (table,display) => {
+display(await(
+table
+))
+}});
+
+define({id: "efdb5175", inputs: ["d3","teams"], outputs: ["seriesCounts","seriesData"], body: (d3,teams) => {
+const seriesCounts = d3.rollup(teams, v => v.length, d => d.last_series || "Unknown");
+const seriesData = Array.from(seriesCounts, ([series, count]) => ({series, count}))
+  .sort((a, b) => b.count - a.count);
+return {seriesCounts,seriesData};
+}});
+
+define({id: "403c11b0", inputs: ["Plot","seriesData","display"], body: async (Plot,seriesData,display) => {
+display(await(
+Plot.plot({
+  width: 500,
+  height: 200,
+  marginLeft: 80,
+  x: {label: "Teams"},
+  y: {label: null},
+  marks: [
+    Plot.barX(seriesData, {
+      y: "series",
+      x: "count",
+      fill: "#457b9d",
+      tip: true
+    }),
+    Plot.ruleX([0])
+  ]
+})
+))
+}});
+
+define({id: "d086bd84", inputs: ["teams"], outputs: ["topTeams"], body: (teams) => {
+const topTeams = teams.slice(0, 15);
+return {topTeams};
+}});
+
+define({id: "50674f5b", inputs: ["Plot","topTeams","display"], body: async (Plot,topTeams,display) => {
+display(await(
+Plot.plot({
+  width: 800,
+  height: 400,
+  marginLeft: 200,
+  x: {label: "Events"},
+  y: {label: null},
+  marks: [
+    Plot.barX(topTeams, {
+      y: "team",
+      x: "total_events",
+      fill: "#2a9d8f",
+      tip: true,
+      title: d => `${d.team}\n${d.total_events} events\n${d.unique_drivers} drivers\n${d.total_laps.toLocaleString()} laps`
+    }),
+    Plot.ruleX([0])
+  ]
+})
+))
+}});
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="../">Motorsport DB</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="../">Overview</a></li>
+    <li class="observablehq-link"><a href="../elo">Elo Ratings</a></li>
+    <li class="observablehq-link"><a href="../drivers/">Drivers</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./">Teams</a></li>
+    <li class="observablehq-link"><a href="../tracks/">Tracks</a></li>
+    <li class="observablehq-link"><a href="../events/">Events</a></li>
+    <li class="observablehq-link"><a href="../series/">Seasons</a></li>
+    <li class="observablehq-link"><a href="../compare">Compare</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-weight: bold;">Motorsport DB</span>
+  </div>
+</header>
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type)[id], h2:first-child[id], :not(h1) + h2[id]">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#teams-by-series">Teams by Series</a></li>
+<li class="observablehq-secondary-link"><a href="#most-active-teams">Most Active Teams</a></li>
+</ol>
+</nav>
+</aside>
+<main id="observablehq-main" class="observablehq">
+<h1 id="team-directory" tabindex="-1"><a class="observablehq-header-anchor" href="#team-directory">Team Directory</a></h1>
+<p>Browse all teams across IMSA, WEC, ELMS, Asian Le Mans, and Le Mans Cup.</p>
+<div class="observablehq observablehq--block"><!--:0a4c68b6:--></div>
+<div class="observablehq observablehq--block"><!--:3307ff9a:--></div>
+<div class="observablehq observablehq--block"><!--:f9feade6:--></div>
+<div class="grid grid-cols-2" style="max-width: 600px;">
+  <div><observablehq-loading></observablehq-loading><!--:3487351b:--></div>
+  <div><observablehq-loading></observablehq-loading><!--:b85dc53d:--></div>
+</div>
+<div class="observablehq observablehq--block"><!--:7cadfa10:--></div>
+<div class="tip">Showing <observablehq-loading></observablehq-loading><!--:077f126a:--> of <observablehq-loading></observablehq-loading><!--:7678dd08:--> teams</div>
+<div class="observablehq observablehq--block"><!--:40a4fcbe:--></div>
+<p><observablehq-loading></observablehq-loading><!--:0d4fc4a7:--></p>
+<h2 id="teams-by-series" tabindex="-1"><a class="observablehq-header-anchor" href="#teams-by-series">Teams by Series</a></h2>
+<div class="observablehq observablehq--block"><!--:efdb5175:--></div>
+<div class="observablehq observablehq--block"><observablehq-loading></observablehq-loading><!--:403c11b0:--></div>
+<h2 id="most-active-teams" tabindex="-1"><a class="observablehq-header-anchor" href="#most-active-teams">Most Active Teams</a></h2>
+<p>Teams with the most event participations.</p>
+<div class="observablehq observablehq--block"><!--:d086bd84:--></div>
+<div class="observablehq observablehq--block"><observablehq-loading></observablehq-loading><!--:50674f5b:--></div>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="../drivers/"><span>Drivers</span></a><a rel="next" href="../tracks/"><span>Tracks</span></a></nav>
+<div>Built with Observable Framework</div>
+</footer>
+</div>
+</body>
+</html>

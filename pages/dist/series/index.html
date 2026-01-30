@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="generator" content="Observable Framework v1.13.3">
+<title>Seasons | Motorsport DB</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="../_observablehq/theme-air,near-midnight,alt,wide.db1cdf55.css">
+<link rel="modulepreload" href="../_observablehq/client.caf1c4a3.js">
+<link rel="modulepreload" href="../_observablehq/runtime.e080113b.js">
+<link rel="modulepreload" href="../_observablehq/stdlib.bd1ab7c4.js">
+<link rel="modulepreload" href="../_npm/d3@7.9.0/e324157d.js">
+<link rel="modulepreload" href="../_npm/htl@0.3.1/72f4716c.js">
+<link rel="modulepreload" href="../_npm/d3-dsv@3.0.1/9cffc2bd.js">
+<link rel="modulepreload" href="../_npm/d3-array@3.2.4/e93ca09f.js">
+<link rel="modulepreload" href="../_npm/d3-axis@3.0.0/0f2de24d.js">
+<link rel="modulepreload" href="../_npm/d3-brush@3.0.0/65eb105b.js">
+<link rel="modulepreload" href="../_npm/d3-chord@3.0.1/7ef8fb2e.js">
+<link rel="modulepreload" href="../_npm/d3-color@3.1.0/aeb57b94.js">
+<link rel="modulepreload" href="../_npm/d3-contour@4.0.2/1d2aed74.js">
+<link rel="modulepreload" href="../_npm/d3-delaunay@6.0.4/5ced1d52.js">
+<link rel="modulepreload" href="../_npm/d3-dispatch@3.0.1/9ba9c7f3.js">
+<link rel="modulepreload" href="../_npm/d3-drag@3.0.0/4202580c.js">
+<link rel="modulepreload" href="../_npm/d3-ease@3.0.1/cdd7e898.js">
+<link rel="modulepreload" href="../_npm/d3-fetch@3.0.1/b4e2ad9a.js">
+<link rel="modulepreload" href="../_npm/d3-force@3.0.0/5e804d15.js">
+<link rel="modulepreload" href="../_npm/d3-format@3.1.2/3785bf2d.js">
+<link rel="modulepreload" href="../_npm/d3-geo@3.1.1/40599fb3.js">
+<link rel="modulepreload" href="../_npm/d3-hierarchy@3.1.2/e49e792c.js">
+<link rel="modulepreload" href="../_npm/d3-interpolate@3.0.1/8d1e5425.js">
+<link rel="modulepreload" href="../_npm/d3-path@3.1.0/20d3f133.js">
+<link rel="modulepreload" href="../_npm/d3-polygon@3.0.1/7553081f.js">
+<link rel="modulepreload" href="../_npm/d3-quadtree@3.0.1/0dfd751c.js">
+<link rel="modulepreload" href="../_npm/d3-random@3.0.1/3c90ee06.js">
+<link rel="modulepreload" href="../_npm/d3-scale@4.0.2/720b7f0a.js">
+<link rel="modulepreload" href="../_npm/d3-scale-chromatic@3.1.0/ba24c2e7.js">
+<link rel="modulepreload" href="../_npm/d3-selection@3.0.0/4d94e5b7.js">
+<link rel="modulepreload" href="../_npm/d3-shape@3.2.0/6d3a6726.js">
+<link rel="modulepreload" href="../_npm/d3-time@3.1.0/9f03c579.js">
+<link rel="modulepreload" href="../_npm/d3-time-format@4.1.0/07c9626f.js">
+<link rel="modulepreload" href="../_npm/d3-timer@3.0.1/b58a267d.js">
+<link rel="modulepreload" href="../_npm/d3-transition@3.0.1/004da2ac.js">
+<link rel="modulepreload" href="../_npm/d3-zoom@3.0.0/b5786b3f.js">
+<link rel="modulepreload" href="../_npm/internmap@2.0.3/e08981d9.js">
+<link rel="modulepreload" href="../_npm/delaunator@5.0.1/02d43215.js">
+<link rel="modulepreload" href="../_npm/robust-predicates@3.0.2/aa00730b.js">
+<script type="module">
+
+import {define} from "../_observablehq/client.caf1c4a3.js";
+import {registerFile} from "../_observablehq/stdlib.bd1ab7c4.js";
+
+registerFile("../data/event-stats.csv", {"name":"../data/event-stats.csv","mimeType":"text/csv","path":"../_file/data/event-stats.f1320331.csv","lastModified":1769480974502,"size":17828});
+registerFile("../data/seasons.csv", {"name":"../data/seasons.csv","mimeType":"text/csv","path":"../_file/data/seasons.3db41281.csv","lastModified":1769480974694,"size":1243});
+
+define({id: "a0348d96", inputs: ["FileAttachment"], outputs: ["seasons","eventStats"], body: async (FileAttachment) => {
+const seasons = await FileAttachment("../data/seasons.csv").csv({typed: true});
+const eventStats = await FileAttachment("../data/event-stats.csv").csv({typed: true});
+return {seasons,eventStats};
+}});
+
+define({id: "444f158e", inputs: ["d3","seasons"], outputs: ["bySeries","seriesMeta","seriesList"], body: (d3,seasons) => {
+// Group seasons by series with additional stats
+const bySeries = d3.group(seasons, d => d.series_code);
+
+// Series metadata
+const seriesMeta = {
+  imsa: { name: "IMSA WeatherTech SportsCar Championship", color: "#e63946", icon: "🏁" },
+  wec: { name: "FIA World Endurance Championship", color: "#2a9d8f", icon: "🌍" },
+  elms: { name: "European Le Mans Series", color: "#457b9d", icon: "🇪🇺" },
+  alms: { name: "Asian Le Mans Series", color: "#e9c46a", icon: "🌏" },
+  lmc: { name: "Le Mans Cup", color: "#9b5de5", icon: "🏆" }
+};
+
+// Get unique series from data
+const seriesList = [...bySeries.keys()].sort();
+return {bySeries,seriesMeta,seriesList};
+}});
+
+define({id: "65c9f8f0", inputs: ["seriesList","seriesMeta","bySeries","d3","display","htl","eventStats"], body: (seriesList,seriesMeta,bySeries,d3,display,htl,eventStats) => {
+for (const seriesCode of seriesList) {
+  const meta = seriesMeta[seriesCode] || { name: seriesCode.toUpperCase(), color: "#666", icon: "🏎️" };
+  const seriesSeasons = bySeries.get(seriesCode) || [];
+  const totalLaps = d3.sum(seriesSeasons, d => d.total_laps);
+  const totalEvents = d3.sum(seriesSeasons, d => d.events);
+  const uniqueDrivers = d3.max(seriesSeasons, d => d.drivers);
+
+  display(htl.html`
+    <div class="series-section" style="--series-color: ${meta.color}">
+      <div class="series-section-header">
+        <span class="series-icon">${meta.icon}</span>
+        <div class="series-info">
+          <h2 class="series-name">${meta.name}</h2>
+          <div class="series-meta">
+            ${seriesSeasons.length} seasons · ${totalEvents} races · ${(totalLaps / 1e6).toFixed(1)}M laps
+          </div>
+        </div>
+      </div>
+      <div class="season-grid">
+        ${seriesSeasons.sort((a, b) => b.year - a.year).map(season => {
+          const seriesEvents = eventStats.filter(e => e.series_code === seriesCode && e.year === season.year);
+          const wetRaces = seriesEvents.filter(e => e.had_rain).length;
+
+          return htl.html`
+            <a href="./${seriesCode}-${season.year}" class="season-card">
+              <div class="season-year">${season.year}</div>
+              <div class="season-stats">
+                <div class="season-stat">
+                  <span class="stat-value">${season.events}</span>
+                  <span class="stat-label">Races</span>
+                </div>
+                <div class="season-stat">
+                  <span class="stat-value">${season.drivers}</span>
+                  <span class="stat-label">Drivers</span>
+                </div>
+                <div class="season-stat">
+                  <span class="stat-value">${(season.total_laps / 1000).toFixed(0)}k</span>
+                  <span class="stat-label">Laps</span>
+                </div>
+              </div>
+              ${wetRaces > 0 ? htl.html`<div class="wet-badge">${wetRaces} wet</div>` : ''}
+            </a>
+          `;
+        })}
+      </div>
+    </div>
+  `);
+}
+}});
+
+</script>
+</head>
+<body>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="../">Motorsport DB</a></li>
+  </ol>
+  <ol>
+    <li class="observablehq-link"><a href="../">Overview</a></li>
+    <li class="observablehq-link"><a href="../elo">Elo Ratings</a></li>
+    <li class="observablehq-link"><a href="../drivers/">Drivers</a></li>
+    <li class="observablehq-link"><a href="../teams/">Teams</a></li>
+    <li class="observablehq-link"><a href="../tracks/">Tracks</a></li>
+    <li class="observablehq-link"><a href="../events/">Events</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./">Seasons</a></li>
+    <li class="observablehq-link"><a href="../compare">Compare</a></li>
+  </ol>
+</nav>
+<script>{const e=document.querySelector("#observablehq-sidebar"),o=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?o.checked=r==="true":o.indeterminate=!0;for(const t of document.querySelectorAll("#observablehq-sidebar summary")){const s=t.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${t.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-weight: bold;">Motorsport DB</span>
+  </div>
+</header>
+<main id="observablehq-main" class="observablehq">
+<h1 id="racing-seasons" tabindex="-1"><a class="observablehq-header-anchor" href="#racing-seasons">Racing Seasons</a></h1>
+<p>Browse racing seasons across all series.</p>
+<div class="observablehq observablehq--block"><!--:a0348d96:--></div>
+<div class="observablehq observablehq--block"><!--:444f158e:--></div>
+<div class="series-section-grid">
+<div class="observablehq observablehq--block"><!--:65c9f8f0:--></div>
+</div>
+<style>
+.series-section-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.series-section {
+  background: var(--theme-background-alt);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border-left: 4px solid var(--series-color);
+}
+
+.series-section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--theme-foreground-faintest);
+}
+
+.series-icon {
+  font-size: 2rem;
+}
+
+.series-info {
+  flex: 1;
+}
+
+.series-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--series-color);
+}
+
+.series-meta {
+  font-size: 0.8rem;
+  color: var(--theme-foreground-muted);
+  margin-top: 0.25rem;
+}
+
+.season-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.season-card {
+  display: block;
+  background: var(--theme-background);
+  border-radius: 6px;
+  padding: 0.875rem;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  border: 1px solid var(--theme-foreground-faintest);
+}
+
+.season-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--series-color);
+}
+
+.season-year {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--theme-foreground);
+  margin-bottom: 0.5rem;
+}
+
+.season-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.season-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--theme-foreground);
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--theme-foreground-muted);
+  text-transform: uppercase;
+}
+
+.wet-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.6rem;
+  background: #457b9d;
+  color: white;
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+  .series-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .season-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+</style>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="../events/"><span>Events</span></a><a rel="next" href="../compare"><span>Compare</span></a></nav>
+<div>Built with Observable Framework</div>
+</footer>
+</div>
+</body>
+</html>
