@@ -118,6 +118,44 @@ High-level overview of all sessions.
 #### `drivers` - Driver Directory
 Aggregated driver info with latest license and team.
 
+#### `driver_elo` - Elo Rating History
+Lap-by-lap Elo ratings computed independently per class. Every driver starts at 1500.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `driver_id` | VARCHAR | Normalized driver identifier |
+| `driver_name` | VARCHAR | Display name |
+| `class` | VARCHAR | GTP, LMP2, GTD, etc. (independent pools) |
+| `series_code` | VARCHAR | imsa, wec, elms |
+| `year` | VARCHAR | Season year |
+| `event` | VARCHAR | Event name |
+| `session_date` | TIMESTAMP | Event date |
+| `elo_before` | INTEGER | Elo before event (0 for first event) |
+| `elo_after` | INTEGER | Elo after event |
+| `delta` | INTEGER | Change (first event includes +1500 base) |
+| `laps` | INTEGER | Laps driven in event |
+| `cumulative_laps` | INTEGER | Career laps in class |
+
+**Key design**: First event's `delta` includes +1500 base, so `SUM(delta)` always equals current Elo.
+
+```sql
+-- Current Elo for a driver
+SELECT SUM(delta) as elo FROM driver_elo 
+WHERE driver_id = 'laurens vanthoor' AND class = 'GTP';
+
+-- Elo leaderboard
+SELECT driver_name, elo, total_laps FROM driver_elo_current 
+WHERE class = 'GTP' ORDER BY elo DESC LIMIT 10;
+
+-- Elo at a point in time
+SELECT SUM(delta) as elo FROM driver_elo 
+WHERE driver_id = 'laurens vanthoor' AND class = 'GTP'
+  AND session_date <= '2024-06-01';
+```
+
+#### `driver_elo_current` - Current Elo View
+Pre-aggregated leaderboard with current Elo, total laps, and event counts per driver/class.
+
 #### `tracks` - Circuit Database
 Track coordinates and metadata from `tracks.json`.
 
