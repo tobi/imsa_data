@@ -43,7 +43,7 @@ def load_lap_data(db_path)
     SELECT 
       driver_id,
       driver_name,
-      class,
+      COALESCE(class_category, class) as class,
       series_code,
       year,
       event,
