@@ -53,7 +53,7 @@ def load_lap_data(db_path)
       license,
       start_date as session_date
     FROM laps
-    WHERE session = 'race' 
+    WHERE (session = 'race' OR session LIKE 'race-hour-%')
       AND lap_time IS NOT NULL
       AND driver_id IS NOT NULL
     ORDER BY start_date, series_code, year, event, lap, lap_time
