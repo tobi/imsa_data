@@ -38,11 +38,13 @@ namespace :db do
 
     FileUtils.mkdir_p(OUTPUT_DIR)
 
-    sql_files = Dir["*.sql"].sort.collect { |file| ".read #{file}" }.join("\n")
+    # Phase 1: Run all SQL files except Elo (which needs precomputed CSV)
+    sql_files = Dir["*.sql"].sort.reject { |f| f.include?("elo") }
+    sql_commands = sql_files.collect { |file| ".read #{file}" }.join("\n")
 
-    puts "Creating DuckDB database..."
+    puts "Creating DuckDB database (phase 1: #{sql_files.length} SQL files)..."
     script = <<~SQL
-      #{sql_files}
+      #{sql_commands}
 
       COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
       COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
@@ -53,11 +55,26 @@ namespace :db do
       duckdb.write(script)
     end
 
+    # Phase 2: Compute Elo ratings
+    puts "Computing Elo ratings..."
+    system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+    
+    # Phase 3: Load Elo data
+    elo_sql_files = Dir["*.sql"].sort.select { |f| f.include?("elo") }
+    if elo_sql_files.any?
+      puts "Loading Elo data (phase 2: #{elo_sql_files.length} SQL files)..."
+      elo_commands = elo_sql_files.collect { |file| ".read #{file}" }.join("\n")
+      IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
+        duckdb.write(elo_commands)
+      end
+    end
+
     puts "Database updated successfully!"
     puts "  #{OUTPUT_DIR}/imsa.duckdb"
     puts "  #{OUTPUT_DIR}/drivers.csv"
     puts "  #{OUTPUT_DIR}/laps.csv"
     puts "  #{OUTPUT_DIR}/seasons.csv"
+    puts "  #{OUTPUT_DIR}/driver_elo.csv"
   end
 
   desc "Open the database in interactive mode"
