@@ -1,0 +1,47 @@
+{
+  "description": "European Le Mans Series - headline events only",
+  "events": [
+    {"year": "2021", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2021", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2021", "folder": "autodromo-nazionale-di-monza", "name": "Monza"},
+    {"year": "2021", "folder": "red-bull-ring", "name": "Spielberg"},
+    {"year": "2021", "folder": "spa-francorchamps", "name": "Spa"},
+    {"year": "2021", "folder": "autodromo-do-algarve", "name": "Portimao"},
+
+    {"year": "2022", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2022", "folder": "imola", "name": "Imola"},
+    {"year": "2022", "folder": "autodromo-nazionale-di-monza", "name": "Monza"},
+    {"year": "2022", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2022", "folder": "spa-francorchamps", "name": "Spa"},
+    {"year": "2022", "folder": "autodromo-do-algarve", "name": "Portimao"},
+
+    {"year": "2023", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2023", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2023", "folder": "circuito-motorland-aragon", "name": "Aragon"},
+    {"year": "2023", "folder": "spa-francorchamps", "name": "Spa"},
+    {"year": "2023", "folder": "autodromo-do-algarve", "name": "Portimao"},
+
+    {"year": "2024", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2024", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2024", "folder": "imola", "name": "Imola"},
+    {"year": "2024", "folder": "spa-francorchamps", "name": "Spa"},
+    {"year": "2024", "folder": "mugello", "name": "Mugello"},
+    {"year": "2024", "folder": "autodromo-do-algarve", "name": "Portimao"},
+
+    {"year": "2025", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2025", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2025", "folder": "imola", "name": "Imola"},
+    {"year": "2025", "folder": "spa-francorchamps", "name": "Spa"},
+    {"year": "2025", "folder": "silverstone", "name": "Silverstone"},
+    {"year": "2025", "folder": "autodromo-do-algarve", "name": "Portimao"}
+  ],
+  "ignore_sessions": {
+    "description": "race-20X sessions are partial class/driver data, not separate races",
+    "patterns": ["race-201", "race-202", "race-203", "race-204"]
+  },
+  "notes": [
+    "Only ELMS headline events included",
+    "Official test sessions are excluded",
+    "ELMS race-20X files contain Am/Pro/Pro-Am driver category data"
+  ]
+}
