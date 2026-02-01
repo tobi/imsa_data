@@ -1,0 +1,12 @@
+[
+  {
+    "event_number": "01",
+    "event_name": "Sepang",
+    "event_folder": "01-sepang"
+  },
+  {
+    "event_number": "02",
+    "event_name": "Dubai Autodrome",
+    "event_folder": "02-dubai-autodrome"
+  }
+]

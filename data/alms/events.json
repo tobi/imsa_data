@@ -1,0 +1,30 @@
+{
+  "description": "Asian Le Mans Series - headline events only",
+  "events": [
+    {"year": "2022", "folder": "dubai-autodrome", "name": "Dubai"},
+    {"year": "2022", "folder": "yas-marina", "name": "Yas Marina"},
+
+    {"year": "2023", "folder": "dubai-autodrome", "name": "Dubai"},
+    {"year": "2023", "folder": "yas-marina", "name": "Yas Marina"},
+
+    {"year": "2024", "folder": "sepang", "name": "Sepang"},
+    {"year": "2024", "folder": "dubai-autodrome", "name": "Dubai"},
+    {"year": "2024", "folder": "yas-marina", "name": "Yas Marina"},
+
+    {"year": "2025", "folder": "sepang", "name": "Sepang"},
+    {"year": "2025", "folder": "dubai-autodrome", "name": "Dubai"},
+    {"year": "2025", "folder": "yas-marina", "name": "Yas Marina"},
+
+    {"year": "2026", "folder": "sepang", "name": "Sepang"},
+    {"year": "2026", "folder": "dubai-autodrome", "name": "Dubai"}
+  ],
+  "multi_race_events": [
+    {"session_prefix": "race-201", "event_suffix": "Race 1"},
+    {"session_prefix": "race-202", "event_suffix": "Race 2"}
+  ],
+  "notes": [
+    "ALMS runs double-header weekends at most venues",
+    "race-201-hour-X files contain Race 1 data",
+    "race-202-hour-X files contain Race 2 data"
+  ]
+}

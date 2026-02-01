@@ -2,7 +2,8 @@
 # Enhanced event statistics for overview dashboard
 # Includes lap counts, class breakdown, weather, cautions
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 WITH event_laps AS (

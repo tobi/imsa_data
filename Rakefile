@@ -44,7 +44,9 @@ namespace :db do
 
     puts "Creating DuckDB database (phase 1: #{sql_files.length} SQL files)..."
     script = <<~SQL
+      .output /dev/null
       #{sql_commands}
+      .output stdout
 
       COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
       COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
@@ -58,7 +60,7 @@ namespace :db do
     # Phase 2: Compute Elo ratings
     puts "Computing Elo ratings..."
     system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
-    
+
     # Phase 3: Load Elo data
     elo_sql_files = Dir["*.sql"].sort.select { |f| f.include?("elo") }
     if elo_sql_files.any?
@@ -68,6 +70,8 @@ namespace :db do
         duckdb.write(elo_commands)
       end
     end
+
+    Rake::Task[:lint].invoke
 
     puts "Database updated successfully!"
     puts "  #{OUTPUT_DIR}/imsa.duckdb"
@@ -117,7 +121,7 @@ end
 desc "Import all series for a given year"
 task :import_all, [:year] do |t, args|
   year = args[:year] || Date.today.year
-  series_list = %w[imsa wec elms alms]
+  series_list = %w[imsa wec elms alms lmc]
 
   puts "Importing all series for #{year}..."
   puts "Series: #{series_list.join(', ')}"

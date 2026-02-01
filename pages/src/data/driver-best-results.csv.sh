@@ -3,7 +3,8 @@
 # Joins event_results with event_drivers to get driver-level position data
 # Outputs CSV to stdout for Observable Framework
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 -- Get position results per driver per event

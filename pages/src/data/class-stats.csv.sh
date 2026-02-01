@@ -2,7 +2,8 @@
 # Class performance statistics by series and year
 # For overview dashboard visualizations
 
-DB_PATH="${IMSA_DB:-../output/imsa.duckdb}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
 SELECT

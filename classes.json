@@ -66,6 +66,12 @@
       "series": ["wec", "elms", "alms"],
       "category": "gt",
       "description": "Le Mans GT3"
+    },
+    {
+      "class": "GT",
+      "series": ["alms"],
+      "category": "gt",
+      "description": "Asian Le Mans Series GT class"
     }
   ]
 }

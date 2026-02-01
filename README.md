@@ -58,17 +58,22 @@ motorsportdb/
 │   ├── drivers.csv           # Driver summary
 │   └── seasons.csv           # Season overview
 │
-├── SQL Schema Files           # Processed in order (000 → 008)
+├── SQL Schema Files           # Processed in order (000 → 110)
 │   ├── 000-settings.sql      # Tracks, classes, macros
-│   ├── 001-event-drivers.sql # Driver extraction from results
-│   ├── 001b-chassis.sql      # Chassis homologation lookup
-│   ├── 002-event-laps.sql    # Lap parsing with stints
-│   ├── 003-event-weather.sql # Weather data processing
-│   ├── 004-laps.sql          # Main laps table with weather join
-│   ├── 005-season-views.sql  # Year/series-specific views
-│   ├── 006-bpillar.sql       # BPillar performance filtering
-│   ├── 007-class-normalization.sql  # Cross-series class mapping
-│   └── 008-event-metadata.sql       # Circuit details, race types
+│   ├── 010-event-drivers.sql # Driver extraction from results
+│   ├── 011b-chassis.sql      # Chassis homologation lookup
+│   ├── 012c-event-results.sql # Results ingestion
+│   ├── 020-event-laps.sql    # Lap parsing with stints
+│   ├── 030-event-weather.sql # Weather data processing
+│   ├── 040-laps.sql          # Main laps table with weather join
+│   ├── 050-season-views.sql  # Year/series-specific views
+│   ├── 060-bpillar.sql       # BPillar performance filtering
+│   ├── 070-class-normalization.sql  # Cross-series class mapping
+│   ├── 071-events.sql        # Events table
+│   ├── 080-event-metadata.sql       # Circuit details, race types
+│   ├── 090-driver-identity.sql      # Driver identity and normalization
+│   ├── 100-driver-matching.sql      # Driver matching and merging
+│   └── 110-driver-ratings.sql       # Driver ratings
 │
 ├── Configuration Files
 │   ├── tracks.json           # 45 circuits with coordinates & aliases

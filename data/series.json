@@ -1,0 +1,10 @@
+{
+  "description": "Series-level metadata used during imports",
+  "series": [
+    {"series_code": "imsa", "temperature_unit": "F"},
+    {"series_code": "wec", "temperature_unit": "C"},
+    {"series_code": "elms", "temperature_unit": "C"},
+    {"series_code": "alms", "temperature_unit": "C"},
+    {"series_code": "lmc", "temperature_unit": "C"}
+  ]
+}

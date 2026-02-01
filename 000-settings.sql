@@ -43,6 +43,27 @@ CREATE OR REPLACE MACRO normalize_track_name(event_name) AS (
     )
 );
 
+-- Series metadata (temperature units, etc.)
+CREATE OR REPLACE TABLE series_metadata AS
+SELECT
+    unnest.series_code,
+    unnest.temperature_unit
+FROM read_json_auto('data/series.json') j,
+     UNNEST(j.series);
+
+CREATE OR REPLACE MACRO temperature(series_id, temp_value, avg_temp) AS (
+    CASE
+        WHEN temp_value IS NULL THEN NULL
+        WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'C'
+        THEN CASE
+            WHEN avg_temp IS NULL THEN (temp_value * 9 / 5) + 32
+            WHEN avg_temp > 45 THEN temp_value
+            ELSE (temp_value * 9 / 5) + 32
+        END
+        ELSE temp_value
+    END
+);
+
 -- Main series classes - loaded from classes.json
 -- Filters out support series (Porsche Cups, Ferrari Challenge, etc.)
 CREATE OR REPLACE TABLE main_classes AS
@@ -54,8 +75,23 @@ SELECT
 FROM read_json_auto('classes.json') j,
      UNNEST(j.classes);
 
-CREATE OR REPLACE MACRO is_main_class(c) AS (
-    c IN (SELECT class FROM main_classes)
+CREATE OR REPLACE MACRO is_main_class(series_code, class_name) AS (
+    class_name IN (
+        SELECT mc.class
+        FROM main_classes mc
+        WHERE list_contains(mc.series_list, series_code)
+    )
+);
+
+CREATE OR REPLACE MACRO normalize_license(license) AS (
+    CASE
+        WHEN license IS NULL THEN NULL
+        WHEN UPPER(TRIM(license)) IN ('P', 'PLATINUM') THEN 'Platinum'
+        WHEN UPPER(TRIM(license)) IN ('G', 'GOLD') THEN 'Gold'
+        WHEN UPPER(TRIM(license)) IN ('S', 'SILVER') THEN 'Silver'
+        WHEN UPPER(TRIM(license)) IN ('B', 'BRONZE') THEN 'Bronze'
+        ELSE license
+    END
 );
 
 CREATE OR REPLACE MACRO license_rank(license) AS (
@@ -100,5 +136,58 @@ CREATE OR REPLACE MACRO format_gap (t) AS (
     CASE
         WHEN t IS NULL THEN NULL
         ELSE FORMAT('{:+.3f}', t)
+    END
+);
+
+-- Load explicit event definitions from JSON files
+-- Each series defines its headline events per year
+CREATE OR REPLACE TABLE defined_events AS
+SELECT
+    regexp_extract(filename, 'data/([^/]+)/events.json', 1) as series_code,
+    unnest.year as year,
+    unnest.folder as event_folder,
+    unnest.name as display_name
+FROM read_json_auto('data/*/events.json', filename=true) j,
+     UNNEST(j.events) as unnest
+WHERE j.events IS NOT NULL;
+
+-- Multi-race session mappings (e.g., race-201 -> "Race 1")
+CREATE OR REPLACE TABLE multi_race_mappings AS
+SELECT
+    regexp_extract(filename, 'data/([^/]+)/events.json', 1) as series_code,
+    unnest.session_prefix,
+    unnest.event_suffix
+FROM read_json_auto('data/*/events.json', filename=true) j,
+     UNNEST(j.multi_race_events) as unnest
+WHERE j.multi_race_events IS NOT NULL;
+
+-- Sessions to ignore (partial data files)
+CREATE OR REPLACE TABLE ignored_sessions AS
+WITH json_data AS (
+    SELECT
+        regexp_extract(filename, 'data/([^/]+)/events.json', 1) as series_code,
+        j.*
+    FROM read_json_auto('data/*/events.json', filename=true) j
+    WHERE j.ignore_sessions IS NOT NULL AND j.ignore_sessions.patterns IS NOT NULL
+)
+SELECT
+    series_code,
+    UNNEST(ignore_sessions.patterns) as session_pattern
+FROM json_data;
+
+-- Macro to normalize session type (strips -hour-X suffix)
+CREATE OR REPLACE MACRO normalize_session(session_raw) AS (
+    regexp_replace(session_raw, '-hour-[0-9]+$', '')
+);
+
+-- Macro to get session type category
+CREATE OR REPLACE MACRO get_session_type(session_name) AS (
+    CASE
+        WHEN session_name LIKE 'race%' THEN 'race'
+        WHEN session_name LIKE 'qualifying%' OR session_name LIKE 'hyperpole%' OR session_name LIKE 'r24h-qualifying%' THEN 'qualifying'
+        WHEN session_name LIKE 'free%practice%' OR session_name LIKE 'practice%' OR session_name LIKE 'night%session%' OR session_name LIKE 'morning%session%' OR session_name LIKE 'afternoon%session%' THEN 'practice'
+        WHEN session_name LIKE 'warm%up%' THEN 'warmup'
+        WHEN session_name LIKE '%test%' OR session_name LIKE 'session-%' OR session_name LIKE 'lmp2%session' OR session_name LIKE 'lmgt3%session' OR session_name LIKE '%collective%' OR session_name LIKE 'bronze%' THEN 'test'
+        ELSE session_name
     END
 );

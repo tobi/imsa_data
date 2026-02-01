@@ -1,0 +1,244 @@
+
+CREATE TEMP TABLE event_drivers_raw AS
+WITH base_csv AS (
+    SELECT
+        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-results.csv
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as series_code,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 2) as year,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 3) as event,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 5) as session,
+        series_code || '-' || year as series,
+
+        -- Car, team, class, and chassis
+        TRIM(number) as car,
+        TEAM as team,
+        _CLASS as class,
+        VEHICLE as chassis,
+
+        -- Date
+        strptime(
+            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 4),
+            '%Y%m%d%H%M'
+        ) as start_date,
+
+        filename,
+
+        -- Driver columns - use COALESCE to handle different ID column names across series
+        DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME,
+        COALESCE(CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER1_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER1_ID,
+        DRIVER1_COUNTRY, DRIVER1_LICENSE,
+        DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME,
+        COALESCE(CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER2_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER2_ID,
+        DRIVER2_COUNTRY, DRIVER2_LICENSE,
+        DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME,
+        COALESCE(CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER3_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER3_ID,
+        DRIVER3_COUNTRY, DRIVER3_LICENSE,
+        DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME,
+        COALESCE(CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER4_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER4_ID,
+        DRIVER4_COUNTRY, DRIVER4_LICENSE,
+        DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME,
+        COALESCE(CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER5_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER5_ID,
+        DRIVER5_COUNTRY, DRIVER5_LICENSE,
+        DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME,
+        COALESCE(CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER6_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER6_ID,
+        DRIVER6_COUNTRY, DRIVER6_LICENSE
+
+    FROM read_csv(
+        "data/*/*/*/*results.csv",
+        union_by_name=true,
+        filename=true,
+        null_padding=true,
+        normalize_names=true
+    )
+    -- Filter out files that don't match the expected timestamp pattern
+    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != ''
+)
+SELECT
+    series_code,
+    series,
+    year,
+    event,
+    session,
+    start_date,
+    car,
+    team,
+    class,
+    chassis,
+    filename,
+    CONCAT(firstname, ' ', secondname) AS name,
+    driver_id,
+    country,
+    license
+FROM base_csv
+UNPIVOT (
+    (firstname, secondname, driver_id, country, license)
+    FOR driver_num IN (
+        (DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, DRIVER1_ID, DRIVER1_COUNTRY, DRIVER1_LICENSE) AS '1',
+        (DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, DRIVER2_ID, DRIVER2_COUNTRY, DRIVER2_LICENSE) AS '2',
+        (DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, DRIVER3_ID, DRIVER3_COUNTRY, DRIVER3_LICENSE) AS '3',
+        (DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, DRIVER4_ID, DRIVER4_COUNTRY, DRIVER4_LICENSE) AS '4',
+        (DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, DRIVER5_ID, DRIVER5_COUNTRY, DRIVER5_LICENSE) AS '5',
+        (DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, DRIVER6_ID, DRIVER6_COUNTRY, DRIVER6_LICENSE) AS '6'
+    )
+)
+WHERE firstname IS NOT NULL AND secondname IS NOT NULL;
+
+
+CREATE OR REPLACE TABLE event_drivers AS
+WITH base AS (
+    SELECT
+        edr.series_code,
+        edr.series,
+        edr.year,
+        edr.event as event_folder,
+        normalize_session(edr.session) as session_normalized,
+        -- Get event name from defined_events, add multi-race suffix if applicable
+        de.display_name ||
+        COALESCE(
+            (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
+             WHERE mrm.series_code = edr.series_code
+               AND normalize_session(edr.session) LIKE mrm.session_prefix || '%'),
+            ''
+        ) AS event,
+        -- Normalize session type
+        get_session_type(normalize_session(edr.session)) AS session,
+        edr.start_date,
+        edr.car,
+        edr.team,
+        edr.class,
+        edr.chassis,
+        edr.driver_id AS raw_driver_id,
+        REGEXP_REPLACE(TRIM(edr.name), '\\s+', ' ') AS name_clean,
+        edr.name AS name_original,
+        normalize_license(edr.license) AS license,
+        license_rank(normalize_license(edr.license)) AS license_rank,
+        edr.country
+    FROM event_drivers_raw edr
+    -- Only include events defined in events.json
+    INNER JOIN defined_events de
+        ON de.series_code = edr.series_code
+        AND de.year = edr.year
+        AND de.event_folder = edr.event
+    -- Filter out ignored sessions
+    WHERE NOT EXISTS (
+        SELECT 1 FROM ignored_sessions i
+        WHERE i.series_code = edr.series_code
+          AND normalize_session(edr.session) LIKE i.session_pattern || '%'
+    )
+), normalized AS (
+    SELECT
+        series_code,
+        series,
+        year,
+        event,
+        session,
+        start_date,
+        car,
+        team,
+        class,
+        chassis,
+        NULLIF(TRIM(raw_driver_id), '') AS provided_driver_id,
+        name_clean,
+        name_original,
+        name_clean AS canonical_name,
+        LOWER(name_clean) AS name_key,
+        license,
+        license_rank,
+        country
+    FROM base
+)
+SELECT
+    series_code,
+    series,
+    year,
+    event,
+    session,
+    start_date,
+    car,
+    name_key AS driver_id,  -- Use normalized name as unique ID
+    canonical_name,
+    name_original AS name,
+    provided_driver_id AS imsa_driver_id,  -- Keep IMSA ID as additional metadata
+    license,
+    license_rank,
+    team,
+    class,
+    chassis,
+    country
+FROM normalized
+WHERE is_main_class(series_code, class);
+
+-- fix some unfortunate data typos
+UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(license) WHERE license = 'Platinium';
+
+
+
+CREATE TEMP TABLE drivers_snapshot AS
+WITH ranked AS (
+    SELECT
+        driver_id,
+        canonical_name,
+        name,
+        imsa_driver_id,
+        license,
+        license_rank,
+        team,
+        country,
+        class,
+        year,
+        car,
+        start_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY driver_id
+            ORDER BY start_date DESC
+        ) AS row_num
+    FROM event_drivers
+)
+SELECT
+    driver_id,
+    canonical_name,
+    name AS preferred_name,
+    imsa_driver_id,
+    license,
+    license_rank,
+    country,
+    team,
+    class AS last_class,
+    year AS last_year,
+    car AS last_car,
+    start_date AS last_seen
+FROM ranked
+WHERE row_num = 1;
+
+CREATE OR REPLACE TABLE drivers (
+    driver_id VARCHAR PRIMARY KEY,
+    canonical_name VARCHAR,
+    preferred_name VARCHAR,
+    imsa_driver_id VARCHAR,
+    license VARCHAR,
+    license_rank INTEGER,
+    country VARCHAR,
+    team VARCHAR,
+    last_class VARCHAR,
+    last_year VARCHAR,
+    last_car VARCHAR,
+    last_seen TIMESTAMP
+);
+
+INSERT OR REPLACE INTO drivers
+SELECT
+    driver_id,
+    canonical_name,
+    preferred_name,
+    imsa_driver_id,
+    license,
+    CAST(license_rank AS INTEGER),
+    country,
+    team,
+    last_class,
+    last_year,
+    last_car,
+    last_seen
+FROM drivers_snapshot;
+
+-- SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;

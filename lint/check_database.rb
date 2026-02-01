@@ -82,6 +82,7 @@ class DatabaseLinter
 
     # Chassis & homologation checks
     check_unknown_chassis
+    check_similar_chassis
     check_unknown_homologation
     check_manufacturer_coverage
 
@@ -98,6 +99,7 @@ class DatabaseLinter
     # Session type consistency
     check_session_type_consistency
     check_race_events_have_qualifying
+    check_single_race_per_event
 
     # Class normalization
     check_class_normalization
@@ -124,7 +126,7 @@ class DatabaseLinter
 
   def check_required_columns
     section "Checking required columns in laps table"
-    required = %w[series_code year event session car class driver lap lap_time chassis homologation manufacturer]
+    required = %w[series_code year event session car class driver_name lap lap_time chassis homologation manufacturer]
 
     existing = query("SELECT column_name FROM information_schema.columns WHERE table_name = 'laps'").map { |r| r['column_name'] }
 
@@ -354,6 +356,51 @@ class DatabaseLinter
     end
   end
 
+  def levenshtein_distance(a, b)
+    return b.length if a.empty?
+    return a.length if b.empty?
+
+    prev_row = (0..b.length).to_a
+    a.each_char.with_index(1) do |char_a, i|
+      current_row = [i]
+      b.each_char.with_index(1) do |char_b, j|
+        insert_cost = current_row[j - 1] + 1
+        delete_cost = prev_row[j] + 1
+        replace_cost = prev_row[j - 1] + (char_a == char_b ? 0 : 1)
+        current_row << [insert_cost, delete_cost, replace_cost].min
+      end
+      prev_row = current_row
+    end
+
+    prev_row.last
+  end
+
+  def check_similar_chassis
+    section "Checking for similar chassis names"
+    chassis_rows = query("SELECT DISTINCT chassis FROM laps WHERE chassis IS NOT NULL ORDER BY chassis")
+    chassis_list = chassis_rows.map { |row| row['chassis'] }
+
+    pairs = []
+    chassis_list.each_with_index do |left, i|
+      (i + 1...chassis_list.length).each do |j|
+        right = chassis_list[j]
+        distance = levenshtein_distance(left.downcase, right.downcase)
+        if distance <= 2
+          pairs << [left, right, distance]
+        end
+      end
+    end
+
+    if pairs.empty?
+      ok "No near-duplicate chassis names"
+    else
+      pairs.sort_by! { |(_, _, distance)| distance }
+      pairs.first(20).each do |left, right, distance|
+        warn "Similar chassis names: '#{left}' vs '#{right}' (distance #{distance})"
+      end
+    end
+  end
+
   def check_unknown_homologation
     section "Checking homologation coverage"
     coverage = query(<<~SQL)
@@ -563,7 +610,7 @@ class DatabaseLinter
   def check_driver_license_distribution
     section "Checking driver license distribution"
     distribution = query(<<~SQL)
-      SELECT license, COUNT(DISTINCT driver) as drivers
+      SELECT license, COUNT(DISTINCT driver_name) as drivers
       FROM laps
       WHERE license IS NOT NULL
       GROUP BY license
@@ -581,12 +628,12 @@ class DatabaseLinter
   def check_missing_licenses
     section "Checking for missing licenses"
     missing = query_single(<<~SQL)
-      SELECT COUNT(DISTINCT driver)
+      SELECT COUNT(DISTINCT driver_name)
       FROM laps
       WHERE license IS NULL
     SQL
 
-    total = query_single("SELECT COUNT(DISTINCT driver) FROM laps")
+    total = query_single("SELECT COUNT(DISTINCT driver_name) FROM laps")
 
     if missing.to_i == 0
       ok "All drivers have license data"
@@ -603,8 +650,13 @@ class DatabaseLinter
   def check_session_type_consistency
     section "Checking session type consistency"
 
-    # Valid session types: race, qualify, qualify-race, test-N
-    valid_pattern = /^(race|qualify|qualify-race|test-\d+)$/
+    # Valid normalized session types:
+    # - race: main race sessions
+    # - qualifying: qualifying sessions
+    # - practice: free practice sessions
+    # - warmup: warmup sessions
+    # - test: private test sessions
+    valid_pattern = /^(race|qualifying|practice|warmup|test)$/
 
     sessions = query(<<~SQL)
       SELECT session, COUNT(*) as laps
@@ -616,10 +668,10 @@ class DatabaseLinter
     invalid = sessions.reject { |row| row['session'] =~ valid_pattern }
 
     if invalid.empty?
-      ok "All sessions have valid normalized types (race, qualify, qualify-race, test-N)"
+      ok "All sessions have valid normalized types (race, qualifying, practice, warmup, test)"
     else
       invalid.each do |row|
-        error "Invalid session type: '#{row['session']}' (#{row['laps']} laps) - should be race, qualify, qualify-race, or test-N"
+        error "Invalid session type: '#{row['session']}' (#{row['laps']} laps) - should be race, qualifying, practice, warmup, or test"
       end
     end
   end
@@ -633,7 +685,7 @@ class DatabaseLinter
         SELECT
           series_code, year, event,
           MAX(CASE WHEN session = 'race' THEN 1 ELSE 0 END) as has_race,
-          MAX(CASE WHEN session IN ('qualify', 'qualify-race') THEN 1 ELSE 0 END) as has_qualify
+          MAX(CASE WHEN session IN ('qualifying', 'qualify', 'qualify-race') THEN 1 ELSE 0 END) as has_qualify
         FROM laps
         GROUP BY series_code, year, event
       )
@@ -648,6 +700,37 @@ class DatabaseLinter
     else
       events_missing_qualify.each do |row|
         warn "Race event missing qualifying: #{row['series_code']}/#{row['year']}/#{row['event']}"
+      end
+    end
+  end
+
+  def check_single_race_per_event
+    section "Checking each event has at most 1 race session"
+
+    # Each event should have at most 1 race session
+    # Multi-race weekends (like ALMS Race 1/Race 2) should be split into separate events
+    # Note: Multiple qualifying sessions per event is valid - WEC/ELMS have separate
+    # qualifying for each class (qualifying-lmp2, qualifying-gt3) which are all normalized
+    # to "qualifying" but have different session_ids
+    events_with_multiple_races = query(<<~SQL)
+      WITH session_counts AS (
+        SELECT
+          series_code, year, event,
+          COUNT(DISTINCT CASE WHEN session = 'race' THEN session_id END) as race_count
+        FROM laps
+        GROUP BY series_code, year, event
+      )
+      SELECT series_code, year, event, race_count
+      FROM session_counts
+      WHERE race_count > 1
+      ORDER BY series_code, year, event
+    SQL
+
+    if events_with_multiple_races.empty?
+      ok "All events have at most 1 race session"
+    else
+      events_with_multiple_races.each do |row|
+        error "Event has #{row['race_count']} race sessions (should be 1): #{row['series_code']}/#{row['year']}/#{row['event']} - split into separate events"
       end
     end
   end
@@ -683,7 +766,7 @@ class DatabaseLinter
         COUNT(DISTINCT event) as events,
         COUNT(DISTINCT session_id) as sessions,
         COUNT(*) as laps,
-        COUNT(DISTINCT driver) as drivers,
+        COUNT(DISTINCT driver_name) as drivers,
         COUNT(DISTINCT chassis) as chassis_types
       FROM laps
       GROUP BY series_code
