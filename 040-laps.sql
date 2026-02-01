@@ -1,5 +1,5 @@
 -- Create a comprehensive laps table that joins event_laps with driver data and weather data
--- This file starts with '004-' to ensure it runs after all tables are created
+-- This file starts with '040-' to ensure it runs after all tables are created
 -- The series and series_code fields appear early for easy filtering
 
 -- Load driver aliases early so we can resolve them

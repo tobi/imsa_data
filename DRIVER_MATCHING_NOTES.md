@@ -92,7 +92,7 @@ CREATE TABLE driver_teams (
 ## Implementation Steps
 
 ### Phase 1: Fix WEC/ELMS Import
-1. Add WEC/ELMS column detection in `001-event-drivers.sql`
+1. Add WEC/ELMS column detection in `010-event-drivers.sql`
 2. Parse `DRIVER_1`, `DRIVER_2`, `DRIVER_3` format
 3. Note: No license data available in WEC/ELMS results
 

@@ -17,6 +17,10 @@ CREATE OR REPLACE TABLE event_metadata (
 );
 
 -- Extract basic metadata from existing laps data
+-- Match various race session naming patterns:
+-- IMSA/WEC: 'race', 'race-hour-X'
+-- ALMS: 'race-201-hour-X', 'race-202-hour-X', 'race-hour-X'
+-- ELMS: 'race'
 INSERT INTO event_metadata (series_code, year, event, race_duration_minutes)
 SELECT DISTINCT
     series_code,
@@ -26,7 +30,7 @@ SELECT DISTINCT
     -- session_time is already in seconds as DECIMAL(10,3)
     CAST(MAX(session_time) / 60 AS INTEGER) as race_duration_minutes
 FROM laps
-WHERE session = 'race' AND session_time IS NOT NULL
+WHERE (session = 'race' OR session LIKE 'race-%') AND session_time IS NOT NULL
 GROUP BY series_code, year, event;
 
 -- Update event types based on duration
@@ -50,14 +54,38 @@ WHERE event_metadata.event = t.short_name;
 -- Add special notes for notable races
 UPDATE event_metadata
 SET notes = CASE
+    -- IMSA endurance races
     WHEN race_duration_minutes >= 1400 AND event = 'Daytona' THEN '24 Hours of Daytona'
     WHEN race_duration_minutes >= 700 AND event = 'Sebring' THEN '12 Hours of Sebring'
     WHEN race_duration_minutes >= 550 AND event = 'Road Atlanta' THEN 'Petit Le Mans (10 hours)'
-    WHEN race_duration_minutes >= 1400 AND event = 'Le Mans' THEN '24 Hours of Le Mans'
-    WHEN race_duration_minutes BETWEEN 350 AND 400 AND event IN ('Spa', 'Silverstone', 'COTA', 'Fuji') THEN '6 Hours'
-    WHEN race_duration_minutes >= 450 AND event = 'Bahrain' THEN '8 Hours of Bahrain'
     WHEN race_duration_minutes >= 350 AND event = 'Watkins Glen' THEN '6 Hours of the Glen'
     WHEN race_duration_minutes >= 350 AND event = 'Indianapolis' THEN 'Battle on the Bricks'
+    -- WEC endurance races
+    WHEN race_duration_minutes >= 1400 AND event = 'Le Mans' THEN '24 Hours of Le Mans'
+    WHEN race_duration_minutes >= 450 AND event = 'Bahrain' THEN '8 Hours of Bahrain'
+    WHEN race_duration_minutes >= 350 AND event = 'Interlagos' THEN '6 Hours of Sao Paulo'
+    WHEN race_duration_minutes >= 350 AND event = 'COTA' THEN '6 Hours of COTA'
+    WHEN race_duration_minutes >= 350 AND event = 'Spa' THEN '6 Hours of Spa'
+    WHEN race_duration_minutes >= 350 AND event = 'Fuji' THEN '6 Hours of Fuji'
+    WHEN race_duration_minutes >= 350 AND event = 'Monza' THEN '6 Hours of Monza'
+    WHEN race_duration_minutes >= 350 AND event = 'Imola' THEN '6 Hours of Imola'
+    WHEN race_duration_minutes >= 350 AND event = 'Silverstone' THEN '6 Hours of Silverstone'
+    WHEN race_duration_minutes >= 350 AND event = 'Portimao' THEN '8 Hours of Portimao'
+    WHEN race_duration_minutes >= 350 AND event = 'Losail' THEN '6 Hours of Qatar'
+    -- Asian Le Mans Series (4 hour races)
+    WHEN series_code = 'alms' AND race_duration_minutes >= 200 AND event = 'Sepang' THEN '4 Hours of Sepang'
+    WHEN series_code = 'alms' AND race_duration_minutes >= 200 AND event = 'Dubai' THEN '4 Hours of Dubai'
+    WHEN series_code = 'alms' AND race_duration_minutes >= 200 AND event = 'Yas Marina' THEN '4 Hours of Abu Dhabi'
+    -- ELMS (4-6 hour races)
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Barcelona' THEN '4 Hours of Barcelona'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Imola' THEN '4 Hours of Imola'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Spa' THEN '4 Hours of Spa'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Paul Ricard' THEN '4 Hours of Le Castellet'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Portimao' THEN '4 Hours of Portimao'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Monza' THEN '4 Hours of Monza'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Mugello' THEN '4 Hours of Mugello'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Aragon' THEN '4 Hours of Aragon'
+    WHEN series_code = 'elms' AND race_duration_minutes >= 200 AND event = 'Red Bull Ring' THEN '4 Hours of Red Bull Ring'
     ELSE notes
 END;
 

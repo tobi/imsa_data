@@ -42,7 +42,9 @@ namespace :db do
 
     puts "Creating DuckDB database..."
     script = <<~SQL
+      .output /dev/null
       #{sql_files}
+      .output stdout
 
       COPY drivers TO '#{OUTPUT_DIR}/drivers.csv' (HEADER, DELIMITER ',');
       COPY laps TO '#{OUTPUT_DIR}/laps.csv' (HEADER, DELIMITER ',');
@@ -52,6 +54,8 @@ namespace :db do
     IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
       duckdb.write(script)
     end
+
+    Rake::Task[:lint].invoke
 
     puts "Database updated successfully!"
     puts "  #{OUTPUT_DIR}/imsa.duckdb"
@@ -100,7 +104,7 @@ end
 desc "Import all series for a given year"
 task :import_all, [:year] do |t, args|
   year = args[:year] || Date.today.year
-  series_list = %w[imsa wec elms alms]
+  series_list = %w[imsa wec elms alms lmc]
 
   puts "Importing all series for #{year}..."
   puts "Series: #{series_list.join(', ')}"
