@@ -51,16 +51,38 @@ SELECT
 FROM read_json_auto('data/series.json') j,
      UNNEST(j.series);
 
-CREATE OR REPLACE MACRO temperature(series_id, temp_value, avg_temp) AS (
+CREATE OR REPLACE MACRO temperature(series_id, temp_value, avg_air, avg_track) AS (
     CASE
         WHEN temp_value IS NULL THEN NULL
-        WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'C'
-        THEN CASE
-            WHEN avg_temp IS NULL THEN (temp_value * 9 / 5) + 32
-            WHEN avg_temp > 45 THEN temp_value
-            ELSE (temp_value * 9 / 5) + 32
-        END
-        ELSE temp_value
+        ELSE (
+            CASE
+                WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'C'
+                THEN (temp_value * 9 / 5) + 32
+                WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'mixed'
+                THEN CASE
+                    WHEN avg_air IS NULL THEN ERROR('Temperature unit ambiguous for ' || series_id || ': air=NULL, track=' || avg_track)
+                    WHEN avg_air <= 30 THEN (temp_value * 9 / 5) + 32
+                    WHEN avg_air >= 50 THEN temp_value
+                    WHEN (COALESCE(avg_track, avg_air) - avg_air) >= 20 THEN (temp_value * 9 / 5) + 32
+                    ELSE temp_value
+                END
+                ELSE temp_value
+            END
+        )
+    END
+);
+
+CREATE OR REPLACE MACRO temperature_checked_air(series_id, temp_value, avg_air, avg_track) AS (
+    CASE
+        WHEN temp_value IS NULL THEN NULL
+        ELSE temperature(series_id, temp_value, avg_air, avg_track)
+    END
+);
+
+CREATE OR REPLACE MACRO temperature_checked_track(series_id, temp_value, avg_air, avg_track) AS (
+    CASE
+        WHEN temp_value IS NULL THEN NULL
+        ELSE temperature(series_id, temp_value, avg_air, avg_track)
     END
 );
 

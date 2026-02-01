@@ -58,8 +58,34 @@ named_weather AS (
     SELECT
         series_code, year, normalize_track_name(event) as event, session, date,
         time_utc_seconds, time_utc,
-        temperature(series_code, air_temp_raw, AVG(air_temp_raw) OVER (PARTITION BY filename))::DECIMAL(6, 2) as air_temp_f,
-        temperature(series_code, track_temp_raw, AVG(air_temp_raw) OVER (PARTITION BY filename))::DECIMAL(6, 2) as track_temp_f,
+        AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
+            OVER (PARTITION BY filename) as avg_air_temp_raw,
+        AVG(CASE WHEN track_temp_raw BETWEEN -20 AND 200 THEN track_temp_raw END)
+            OVER (PARTITION BY filename) as avg_track_temp_raw,
+        temperature_checked_air(
+            series_code,
+            air_temp_raw,
+            AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
+                OVER (PARTITION BY filename),
+            COALESCE(
+                AVG(CASE WHEN track_temp_raw BETWEEN -20 AND 200 THEN track_temp_raw END)
+                    OVER (PARTITION BY filename),
+                AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
+                    OVER (PARTITION BY filename)
+            )
+        )::DECIMAL(6, 2) as air_temp_f,
+        temperature_checked_track(
+            series_code,
+            track_temp_raw,
+            AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
+                OVER (PARTITION BY filename),
+            COALESCE(
+                AVG(CASE WHEN track_temp_raw BETWEEN -20 AND 200 THEN track_temp_raw END)
+                    OVER (PARTITION BY filename),
+                AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
+                    OVER (PARTITION BY filename)
+            )
+        )::DECIMAL(6, 2) as track_temp_f,
         humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
         DENSE_RANK() OVER (ORDER BY series_code, year, event, session) as session_id,
