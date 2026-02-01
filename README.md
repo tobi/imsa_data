@@ -61,8 +61,8 @@ motorsportdb/
 ├── SQL Schema Files           # Processed in order (000 → 110)
 │   ├── 000-settings.sql      # Tracks, classes, macros
 │   ├── 010-event-drivers.sql # Driver extraction from results
-│   ├── 011b-chassis.sql      # Chassis homologation lookup
-│   ├── 012c-event-results.sql # Results ingestion
+│   ├── 011-chassis.sql      # Chassis homologation lookup
+│   ├── 013-event-results.sql # Results ingestion
 │   ├── 020-event-laps.sql    # Lap parsing with stints
 │   ├── 030-event-weather.sql # Weather data processing
 │   ├── 040-laps.sql          # Main laps table with weather join

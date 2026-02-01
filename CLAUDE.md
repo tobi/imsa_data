@@ -77,7 +77,7 @@ SQL files should:
 1. `import.rb` - Downloads raw CSV files from Al Kamel Systems
 2. `000-settings.sql` - Creates tracks, classes, macros
 3. `010-event-drivers.sql` - Processes results CSVs for driver data
-4. `011b-chassis.sql` - Processes results CSVs for chassis data
+4. `011-chassis.sql` - Processes results CSVs for chassis data
 5. `020-event-laps.sql` - Processes laps CSVs (main lap data)
 6. `030-event-weather.sql` - Processes weather CSVs
 7. `071-events.sql` - Creates events table
