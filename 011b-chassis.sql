@@ -7,7 +7,8 @@ CREATE OR REPLACE TABLE chassis_homologation AS
 SELECT
     unnest.pattern,
     unnest.homologation,
-    unnest.manufacturer
+    unnest.manufacturer,
+    COALESCE(unnest.canonical, unnest.pattern) AS canonical
 FROM read_json_auto('chassis.json') j,
      UNNEST(j.chassis);
 
@@ -35,6 +36,17 @@ CREATE OR REPLACE MACRO get_manufacturer(chassis_name) AS (
     )
 );
 
+CREATE OR REPLACE MACRO get_canonical_chassis(chassis_name) AS (
+    COALESCE(
+        (SELECT ch.canonical
+         FROM chassis_homologation ch
+         WHERE chassis_name ILIKE '%' || ch.pattern || '%'
+         ORDER BY LENGTH(ch.pattern) DESC
+         LIMIT 1),
+        chassis_name
+    )
+);
+
 CREATE TEMP TABLE chassis_raw AS
 SELECT DISTINCT
     regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-results\.csv$', 1) as series_code,
@@ -58,21 +70,34 @@ FROM read_csv(
 WHERE VEHICLE IS NOT NULL
   AND regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != '';
 
--- Normalize track names and filter to main classes
+-- Filter to defined events and main classes
 CREATE OR REPLACE TABLE chassis_lookup AS
 SELECT DISTINCT
-    series_code,
-    year,
-    normalize_track_name(event_raw) as event,
-    session,
-    start_date,
-    car,
-    class,
-    chassis,
-    get_homologation(chassis) as homologation,
-    get_manufacturer(chassis) as manufacturer
-FROM chassis_raw
-WHERE is_main_class(class);
+    cr.series_code,
+    cr.year,
+    -- Get event name from defined_events, add multi-race suffix if applicable
+    de.display_name ||
+    COALESCE(
+        (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
+         WHERE mrm.series_code = cr.series_code
+           AND normalize_session(cr.session) LIKE mrm.session_prefix || '%'),
+        ''
+    ) AS event,
+    -- Normalize session type using macro
+    get_session_type(normalize_session(cr.session)) AS session,
+    cr.start_date,
+    cr.car,
+    cr.class,
+    get_canonical_chassis(cr.chassis) as chassis,
+    get_homologation(cr.chassis) as homologation,
+    get_manufacturer(cr.chassis) as manufacturer
+FROM chassis_raw cr
+-- Only include events defined in events.json
+INNER JOIN defined_events de
+    ON de.series_code = cr.series_code
+    AND de.year = cr.year
+    AND de.event_folder = cr.event_raw
+WHERE is_main_class(cr.series_code, cr.class);
 
 -- Show chassis by series/class
 SELECT

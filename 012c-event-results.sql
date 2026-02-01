@@ -54,11 +54,11 @@ SELECT
     fastest_lap_time,
     team,
     class,
-    chassis,
+    get_canonical_chassis(chassis) as chassis,
     get_homologation(chassis) as homologation,
     get_manufacturer(chassis) as manufacturer
 FROM raw_results
-WHERE is_main_class(class)
+WHERE is_main_class(series_code, class)
 ORDER BY series_code, year, event, session, start_date, position;
 
 -- Summary of results by series

@@ -4,362 +4,506 @@
     {
       "pattern": "Porsche 963",
       "homologation": "LMDh",
-      "manufacturer": "Porsche"
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 963"
     },
     {
       "pattern": "Acura ARX-06",
       "homologation": "LMDh",
-      "manufacturer": "Acura"
+      "manufacturer": "Acura",
+      "canonical": "Acura ARX-06"
     },
     {
       "pattern": "Cadillac V-Series",
       "homologation": "LMDh",
-      "manufacturer": "Cadillac"
+      "manufacturer": "Cadillac",
+      "canonical": "Cadillac V-Series.R"
     },
     {
       "pattern": "Cadillac V-LMDh",
       "homologation": "LMDh",
-      "manufacturer": "Cadillac"
+      "manufacturer": "Cadillac",
+      "canonical": "Cadillac V-Series.R"
     },
     {
       "pattern": "BMW M Hybrid V8",
       "homologation": "LMDh",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M Hybrid V8"
     },
     {
       "pattern": "Lamborghini SC63",
       "homologation": "LMDh",
-      "manufacturer": "Lamborghini"
+      "manufacturer": "Lamborghini",
+      "canonical": "Lamborghini SC63"
     },
     {
       "pattern": "Alpine A424",
       "homologation": "LMH",
-      "manufacturer": "Alpine"
+      "manufacturer": "Alpine",
+      "canonical": "Alpine A424"
     },
     {
       "pattern": "Alpine A480",
       "homologation": "LMH",
-      "manufacturer": "Alpine"
+      "manufacturer": "Alpine",
+      "canonical": "Alpine A480"
     },
     {
       "pattern": "Glickenhaus 007",
       "homologation": "LMH",
-      "manufacturer": "Glickenhaus"
+      "manufacturer": "Glickenhaus",
+      "canonical": "Glickenhaus 007"
     },
     {
       "pattern": "Vanwall Vandervell",
       "homologation": "LMH",
-      "manufacturer": "Vanwall"
+      "manufacturer": "Vanwall",
+      "canonical": "Vanwall Vandervell 680"
     },
     {
       "pattern": "Isotta Fraschini",
       "homologation": "LMH",
-      "manufacturer": "Isotta Fraschini"
+      "manufacturer": "Isotta Fraschini",
+      "canonical": "Isotta Fraschini Tipo 6-C"
     },
     {
       "pattern": "Toyota GR010",
       "homologation": "LMH",
-      "manufacturer": "Toyota"
+      "manufacturer": "Toyota",
+      "canonical": "Toyota GR010 Hybrid"
     },
     {
       "pattern": "Ferrari 499P",
       "homologation": "LMH",
-      "manufacturer": "Ferrari"
+      "manufacturer": "Ferrari",
+      "canonical": "Ferrari 499P"
     },
     {
       "pattern": "Peugeot 9X8",
       "homologation": "LMH",
-      "manufacturer": "Peugeot"
+      "manufacturer": "Peugeot",
+      "canonical": "Peugeot 9X8"
     },
     {
       "pattern": "Aston Martin Valkyrie",
       "homologation": "LMH",
-      "manufacturer": "Aston Martin"
+      "manufacturer": "Aston Martin",
+      "canonical": "Aston Martin Valkyrie"
     },
     {
       "pattern": "Glickenhaus 007",
       "homologation": "LMH",
-      "manufacturer": "Glickenhaus"
+      "manufacturer": "Glickenhaus",
+      "canonical": "Glickenhaus 007"
     },
     {
       "pattern": "Acura DPi",
       "homologation": "DPi",
-      "manufacturer": "Acura"
+      "manufacturer": "Acura",
+      "canonical": "Acura ARX-05"
     },
     {
       "pattern": "Cadillac DPi",
       "homologation": "DPi",
-      "manufacturer": "Cadillac"
+      "manufacturer": "Cadillac",
+      "canonical": "Cadillac DPi-V.R"
     },
     {
       "pattern": "Mazda DPi",
       "homologation": "DPi",
-      "manufacturer": "Mazda"
+      "manufacturer": "Mazda",
+      "canonical": "Mazda RT24-P"
     },
     {
       "pattern": "Nissan DPi",
       "homologation": "DPi",
-      "manufacturer": "Nissan"
+      "manufacturer": "Nissan",
+      "canonical": "Nissan Onroak DPi"
+    },
+    {
+      "pattern": "ORECA LMP2 07",
+      "homologation": "LMP2",
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
+    },
+    {
+      "pattern": "Oreca 07 - Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
+    },
+    {
+      "pattern": "Oreca 07-Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
+    },
+    {
+      "pattern": "Oreca 07 Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
     },
     {
       "pattern": "ORECA LMP2",
       "homologation": "LMP2",
-      "manufacturer": "ORECA"
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
     },
     {
       "pattern": "ORECA  LMP2",
       "homologation": "LMP2",
-      "manufacturer": "ORECA"
-    },
-    {
-      "pattern": "Multimatic/Riley LMP2",
-      "homologation": "LMP2",
-      "manufacturer": "Multimatic"
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
     },
     {
       "pattern": "Oreca 07",
       "homologation": "LMP2",
-      "manufacturer": "ORECA"
+      "manufacturer": "ORECA",
+      "canonical": "Oreca 07 - Gibson"
+    },
+    {
+      "pattern": "Multimatic/Riley LMP2",
+      "homologation": "LMP2",
+      "manufacturer": "Multimatic",
+      "canonical": "Multimatic/Riley LMP2 - Gibson"
     },
     {
       "pattern": "Dallara LMP2",
       "homologation": "LMP2",
-      "manufacturer": "Dallara"
+      "manufacturer": "Dallara",
+      "canonical": "Dallara LMP2 - Gibson"
+    },
+    {
+      "pattern": "Ligier JS P217 - Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
+    },
+    {
+      "pattern": "Ligier JSP217 - Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
+    },
+    {
+      "pattern": "Ligier JSP217-Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
     },
     {
       "pattern": "Ligier JS P217",
       "homologation": "LMP2",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
     },
     {
       "pattern": "Ligier JSP217",
       "homologation": "LMP2",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
     },
     {
       "pattern": "Ligier LMP2",
       "homologation": "LMP2",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
     },
     {
       "pattern": "Ligier  LMP2",
       "homologation": "LMP2",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P217 - Gibson"
+    },
+    {
+      "pattern": "Aurus 01 - Gibson",
+      "homologation": "LMP2",
+      "manufacturer": "Aurus",
+      "canonical": "Aurus 01 - Gibson"
     },
     {
       "pattern": "Aurus 01",
       "homologation": "LMP2",
-      "manufacturer": "Aurus"
+      "manufacturer": "Aurus",
+      "canonical": "Aurus 01 - Gibson"
     },
     {
       "pattern": "Ligier JS P320",
       "homologation": "LMP3",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P320"
     },
     {
       "pattern": "Ligier JS P325",
       "homologation": "LMP3",
-      "manufacturer": "Ligier"
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P325"
     },
     {
       "pattern": "Duqueine D08",
       "homologation": "LMP3",
-      "manufacturer": "Duqueine"
+      "manufacturer": "Duqueine",
+      "canonical": "Duqueine D08"
     },
     {
       "pattern": "Duqueine D09",
       "homologation": "LMP3",
-      "manufacturer": "Duqueine"
+      "manufacturer": "Duqueine",
+      "canonical": "Duqueine D09"
     },
     {
       "pattern": "Duqueine M30",
       "homologation": "LMP3",
-      "manufacturer": "Duqueine"
+      "manufacturer": "Duqueine",
+      "canonical": "Duqueine M30"
     },
     {
       "pattern": "Ginetta G61",
       "homologation": "LMP3",
-      "manufacturer": "Ginetta"
+      "manufacturer": "Ginetta",
+      "canonical": "Ginetta G61"
     },
     {
       "pattern": "Corvette C8.R",
       "homologation": "GTE",
-      "manufacturer": "Chevrolet"
+      "manufacturer": "Chevrolet",
+      "canonical": "Corvette C8.R"
     },
     {
       "pattern": "Ferrari 488 GTE",
       "homologation": "GTE",
-      "manufacturer": "Ferrari"
+      "manufacturer": "Ferrari",
+      "canonical": "Ferrari 488 GTE"
     },
     {
       "pattern": "Porsche 911 RSR",
       "homologation": "GTE",
-      "manufacturer": "Porsche"
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 911 RSR"
     },
     {
       "pattern": "BMW M8 GTE",
       "homologation": "GTE",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M8 GTE"
     },
     {
       "pattern": "BMW M8 GTLM",
       "homologation": "GTE",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M8 GTE"
     },
     {
       "pattern": "Chevrolet Corvette C7.R",
       "homologation": "GTE",
-      "manufacturer": "Chevrolet"
+      "manufacturer": "Chevrolet",
+      "canonical": "Chevrolet Corvette C7.R"
     },
     {
       "pattern": "Ford GT",
       "homologation": "GTE",
-      "manufacturer": "Ford"
+      "manufacturer": "Ford",
+      "canonical": "Ford GT"
     },
     {
       "pattern": "Aston Martin Vantage AMR",
       "homologation": "GTE",
-      "manufacturer": "Aston Martin"
+      "manufacturer": "Aston Martin",
+      "canonical": "Aston Martin Vantage AMR"
     },
     {
       "pattern": "Ferrari 296 GT3",
       "homologation": "GT3",
-      "manufacturer": "Ferrari"
+      "manufacturer": "Ferrari",
+      "canonical": "Ferrari 296 GT3"
     },
     {
       "pattern": "Ferrari 296 LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Ferrari"
+      "manufacturer": "Ferrari",
+      "canonical": "Ferrari 296 GT3"
     },
     {
       "pattern": "Ferrari 488 GT3",
       "homologation": "GT3",
-      "manufacturer": "Ferrari"
+      "manufacturer": "Ferrari",
+      "canonical": "Ferrari 488 GT3"
     },
     {
       "pattern": "Porsche 911 GT3 R",
       "homologation": "GT3",
-      "manufacturer": "Porsche"
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 911 GT3 R"
     },
     {
       "pattern": "Porsche 911 GT3R",
       "homologation": "GT3",
-      "manufacturer": "Porsche"
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 911 GT3 R"
     },
     {
       "pattern": "BMW M4 GT3",
       "homologation": "GT3",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M4 GT3"
     },
     {
       "pattern": "BMW M4 LMGT3",
       "homologation": "GT3",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M4 GT3"
     },
     {
       "pattern": "BMW M6 GT3",
       "homologation": "GT3",
-      "manufacturer": "BMW"
+      "manufacturer": "BMW",
+      "canonical": "BMW M6 GT3"
     },
     {
       "pattern": "Mercedes-AMG GT3",
       "homologation": "GT3",
-      "manufacturer": "Mercedes-AMG"
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
     },
     {
       "pattern": "Mercedes AMG GT3",
       "homologation": "GT3",
-      "manufacturer": "Mercedes-AMG"
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
     },
     {
       "pattern": "Mercedes -AMG LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Mercedes-AMG"
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
     },
     {
       "pattern": "Mercedes-AMG LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Mercedes-AMG"
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
     },
     {
       "pattern": "Mercedes-AMG",
       "homologation": "GT3",
-      "manufacturer": "Mercedes-AMG"
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
     },
     {
       "pattern": "Audi R8 LMS GT3",
       "homologation": "GT3",
-      "manufacturer": "Audi"
+      "manufacturer": "Audi",
+      "canonical": "Audi R8 LMS GT3"
     },
     {
       "pattern": "Lamborghini Huracan GT3",
       "homologation": "GT3",
-      "manufacturer": "Lamborghini"
+      "manufacturer": "Lamborghini",
+      "canonical": "Lamborghini Huracan GT3"
     },
     {
       "pattern": "Lamborghini Huracan LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Lamborghini"
+      "manufacturer": "Lamborghini",
+      "canonical": "Lamborghini Huracan GT3"
     },
     {
       "pattern": "Lamborghini Temerario GT3",
       "homologation": "GT3",
-      "manufacturer": "Lamborghini"
+      "manufacturer": "Lamborghini",
+      "canonical": "Lamborghini Temerario GT3"
     },
     {
       "pattern": "McLaren 720S GT3",
       "homologation": "GT3",
-      "manufacturer": "McLaren"
+      "manufacturer": "McLaren",
+      "canonical": "McLaren 720S GT3"
     },
     {
       "pattern": "McLaren 720S LMGT3",
       "homologation": "GT3",
-      "manufacturer": "McLaren"
+      "manufacturer": "McLaren",
+      "canonical": "McLaren 720S GT3"
     },
     {
       "pattern": "Aston Martin Vantage GT3",
       "homologation": "GT3",
-      "manufacturer": "Aston Martin"
+      "manufacturer": "Aston Martin",
+      "canonical": "Aston Martin Vantage GT3"
     },
     {
       "pattern": "Aston Martin Vantage AMR LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Aston Martin"
+      "manufacturer": "Aston Martin",
+      "canonical": "Aston Martin Vantage GT3"
     },
     {
       "pattern": "Acura NSX GT3",
       "homologation": "GT3",
-      "manufacturer": "Acura"
+      "manufacturer": "Acura",
+      "canonical": "Acura NSX GT3"
     },
     {
       "pattern": "Lexus RC F GT3",
       "homologation": "GT3",
-      "manufacturer": "Lexus"
+      "manufacturer": "Lexus",
+      "canonical": "Lexus RC F GT3"
     },
     {
       "pattern": "Lexus RC F LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Lexus"
+      "manufacturer": "Lexus",
+      "canonical": "Lexus RC F GT3"
     },
     {
       "pattern": "Corvette Z06 GT3",
       "homologation": "GT3",
-      "manufacturer": "Chevrolet"
+      "manufacturer": "Chevrolet",
+      "canonical": "Corvette Z06 GT3"
     },
     {
       "pattern": "Corvette Z06 LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Chevrolet"
+      "manufacturer": "Chevrolet",
+      "canonical": "Corvette Z06 GT3"
     },
     {
       "pattern": "Ford Mustang GT3",
       "homologation": "GT3",
-      "manufacturer": "Ford"
+      "manufacturer": "Ford",
+      "canonical": "Ford Mustang GT3"
     },
     {
       "pattern": "Ford Mustang LMGT3",
       "homologation": "GT3",
-      "manufacturer": "Ford"
+      "manufacturer": "Ford",
+      "canonical": "Ford Mustang GT3"
+    },
+    {
+      "pattern": "MERCEDES GT3",
+      "homologation": "GT3",
+      "manufacturer": "Mercedes-AMG",
+      "canonical": "Mercedes-AMG GT3"
+    },
+    {
+      "pattern": "PORSCHE GT3",
+      "homologation": "GT3",
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 911 GT3 R"
+    },
+    {
+      "pattern": "LAMBORGHINI GT3",
+      "homologation": "GT3",
+      "manufacturer": "Lamborghini",
+      "canonical": "Lamborghini Huracan GT3"
+    },
+    {
+      "pattern": "Porsche 992 GT3",
+      "homologation": "GT3",
+      "manufacturer": "Porsche",
+      "canonical": "Porsche 911 GT3 R"
     }
   ]
 }
