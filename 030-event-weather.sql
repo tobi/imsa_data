@@ -13,9 +13,9 @@ CREATE TEMP TABLE event_weather_raw AS
             TRY_STRPTIME(time_utc_str, '%m/%d/%Y %I:%M:%S %p'),
             TRY_STRPTIME(time_utc_str, '%d-%b-%y %H:%M:%S')
         ) as time_utc,
-        -- Temperature is normalized to Fahrenheit at import time
-        air_temp::DECIMAL(6, 2) as air_temp_f,
-        track_temp::DECIMAL(6, 2) as track_temp_f,
+        -- Raw temperature values
+        air_temp::DECIMAL(6, 2) as air_temp_raw,
+        track_temp::DECIMAL(6, 2) as track_temp_raw,
         humidity::DECIMAL(6, 2) as humidity_percent,
         pressure::DECIMAL(6, 2) as pressure_inhg,
         wind_speed::DECIMAL(6, 2) as wind_speed_mph,
@@ -58,7 +58,9 @@ named_weather AS (
     SELECT
         series_code, year, normalize_track_name(event) as event, session, date,
         time_utc_seconds, time_utc,
-        air_temp_f, track_temp_f, humidity_percent, pressure_inhg,
+        temperature(series_code, air_temp_raw, AVG(air_temp_raw) OVER (PARTITION BY filename))::DECIMAL(6, 2) as air_temp_f,
+        temperature(series_code, track_temp_raw, AVG(air_temp_raw) OVER (PARTITION BY filename))::DECIMAL(6, 2) as track_temp_f,
+        humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
         DENSE_RANK() OVER (ORDER BY series_code, year, event, session) as session_id,
     FROM event_weather_raw

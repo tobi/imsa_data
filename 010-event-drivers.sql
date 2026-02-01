@@ -23,18 +23,24 @@ WITH base_csv AS (
 
         filename,
 
-        -- Driver columns with type casting done once
-        DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR) AS DRIVER1_IMSA_DRIVERID,
+        -- Driver columns - use COALESCE to handle different ID column names across series
+        DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME,
+        COALESCE(CAST(DRIVER1_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER1_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER1_ID,
         DRIVER1_COUNTRY, DRIVER1_LICENSE,
-        DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR) AS DRIVER2_IMSA_DRIVERID,
+        DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME,
+        COALESCE(CAST(DRIVER2_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER2_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER2_ID,
         DRIVER2_COUNTRY, DRIVER2_LICENSE,
-        DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR) AS DRIVER3_IMSA_DRIVERID,
+        DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME,
+        COALESCE(CAST(DRIVER3_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER3_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER3_ID,
         DRIVER3_COUNTRY, DRIVER3_LICENSE,
-        DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR) AS DRIVER4_IMSA_DRIVERID,
+        DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME,
+        COALESCE(CAST(DRIVER4_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER4_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER4_ID,
         DRIVER4_COUNTRY, DRIVER4_LICENSE,
-        DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR) AS DRIVER5_IMSA_DRIVERID,
+        DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME,
+        COALESCE(CAST(DRIVER5_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER5_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER5_ID,
         DRIVER5_COUNTRY, DRIVER5_LICENSE,
-        DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR) AS DRIVER6_IMSA_DRIVERID,
+        DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME,
+        COALESCE(CAST(DRIVER6_IMSA_DRIVERID AS VARCHAR), CAST(DRIVER6_ECM_DRIVER_ID AS VARCHAR)) AS DRIVER6_ID,
         DRIVER6_COUNTRY, DRIVER6_LICENSE
 
     FROM read_csv(
@@ -67,12 +73,12 @@ FROM base_csv
 UNPIVOT (
     (firstname, secondname, driver_id, country, license)
     FOR driver_num IN (
-        (DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, DRIVER1_IMSA_DRIVERID, DRIVER1_COUNTRY, DRIVER1_LICENSE) AS '1',
-        (DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, DRIVER2_IMSA_DRIVERID, DRIVER2_COUNTRY, DRIVER2_LICENSE) AS '2',
-        (DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, DRIVER3_IMSA_DRIVERID, DRIVER3_COUNTRY, DRIVER3_LICENSE) AS '3',
-        (DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, DRIVER4_IMSA_DRIVERID, DRIVER4_COUNTRY, DRIVER4_LICENSE) AS '4',
-        (DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, DRIVER5_IMSA_DRIVERID, DRIVER5_COUNTRY, DRIVER5_LICENSE) AS '5',
-        (DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, DRIVER6_IMSA_DRIVERID, DRIVER6_COUNTRY, DRIVER6_LICENSE) AS '6'
+        (DRIVER1_FIRSTNAME, DRIVER1_SECONDNAME, DRIVER1_ID, DRIVER1_COUNTRY, DRIVER1_LICENSE) AS '1',
+        (DRIVER2_FIRSTNAME, DRIVER2_SECONDNAME, DRIVER2_ID, DRIVER2_COUNTRY, DRIVER2_LICENSE) AS '2',
+        (DRIVER3_FIRSTNAME, DRIVER3_SECONDNAME, DRIVER3_ID, DRIVER3_COUNTRY, DRIVER3_LICENSE) AS '3',
+        (DRIVER4_FIRSTNAME, DRIVER4_SECONDNAME, DRIVER4_ID, DRIVER4_COUNTRY, DRIVER4_LICENSE) AS '4',
+        (DRIVER5_FIRSTNAME, DRIVER5_SECONDNAME, DRIVER5_ID, DRIVER5_COUNTRY, DRIVER5_LICENSE) AS '5',
+        (DRIVER6_FIRSTNAME, DRIVER6_SECONDNAME, DRIVER6_ID, DRIVER6_COUNTRY, DRIVER6_LICENSE) AS '6'
     )
 )
 WHERE firstname IS NOT NULL AND secondname IS NOT NULL;
@@ -81,23 +87,44 @@ WHERE firstname IS NOT NULL AND secondname IS NOT NULL;
 CREATE OR REPLACE TABLE event_drivers AS
 WITH base AS (
     SELECT
-        series_code,
-        series,
-        year,
-        normalize_track_name(event) AS event,
-        session,
-        start_date,
-        car,
-        team,
-        class,
-        chassis,
-        driver_id AS raw_driver_id,
-        REGEXP_REPLACE(TRIM(name), '\\s+', ' ') AS name_clean,
-        name AS name_original,
-        license,
-        license_rank(license) AS license_rank,
-        country
-    FROM event_drivers_raw
+        edr.series_code,
+        edr.series,
+        edr.year,
+        edr.event as event_folder,
+        normalize_session(edr.session) as session_normalized,
+        -- Get event name from defined_events, add multi-race suffix if applicable
+        de.display_name ||
+        COALESCE(
+            (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
+             WHERE mrm.series_code = edr.series_code
+               AND normalize_session(edr.session) LIKE mrm.session_prefix || '%'),
+            ''
+        ) AS event,
+        -- Normalize session type
+        get_session_type(normalize_session(edr.session)) AS session,
+        edr.start_date,
+        edr.car,
+        edr.team,
+        edr.class,
+        edr.chassis,
+        edr.driver_id AS raw_driver_id,
+        REGEXP_REPLACE(TRIM(edr.name), '\\s+', ' ') AS name_clean,
+        edr.name AS name_original,
+        normalize_license(edr.license) AS license,
+        license_rank(normalize_license(edr.license)) AS license_rank,
+        edr.country
+    FROM event_drivers_raw edr
+    -- Only include events defined in events.json
+    INNER JOIN defined_events de
+        ON de.series_code = edr.series_code
+        AND de.year = edr.year
+        AND de.event_folder = edr.event
+    -- Filter out ignored sessions
+    WHERE NOT EXISTS (
+        SELECT 1 FROM ignored_sessions i
+        WHERE i.series_code = edr.series_code
+          AND normalize_session(edr.session) LIKE i.session_pattern || '%'
+    )
 ), normalized AS (
     SELECT
         series_code,
@@ -139,7 +166,7 @@ SELECT
     chassis,
     country
 FROM normalized
-WHERE is_main_class(class);
+WHERE is_main_class(series_code, class);
 
 -- fix some unfortunate data typos
 UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(license) WHERE license = 'Platinium';
