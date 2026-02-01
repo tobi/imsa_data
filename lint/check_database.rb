@@ -639,11 +639,7 @@ class DatabaseLinter
       ok "All drivers have license data"
     else
       pct = (missing.to_f / total * 100).round(1)
-      if pct > 10
-        warn "#{missing} drivers (#{pct}%) missing license data"
-      else
-        info "#{missing} drivers (#{pct}%) missing license data"
-      end
+      error "#{missing} drivers (#{pct}%) missing license data"
     end
   end
 

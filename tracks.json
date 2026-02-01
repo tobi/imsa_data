@@ -623,6 +623,45 @@
       "length_km": 4.260,
       "turns": null,
       "image_file": "mont-tremblant.png"
+    },
+    {
+      "id": "sepang",
+      "official_name": "Sepang International Circuit",
+      "short_name": "Sepang",
+      "country": "Malaysia",
+      "latitude": 2.7608,
+      "longitude": 101.7380,
+      "aliases": ["sepang", "malaysia", "01-sepang"],
+      "racingcircuits_url": "https://www.racingcircuits.info/asia/malaysia/sepang.html",
+      "length_km": 5.543,
+      "turns": 15,
+      "image_file": "sepang.png"
+    },
+    {
+      "id": "dubai-autodrome",
+      "official_name": "Dubai Autodrome",
+      "short_name": "Dubai",
+      "country": "United Arab Emirates",
+      "latitude": 25.0499,
+      "longitude": 55.2175,
+      "aliases": ["dubai", "dubai-autodrome", "01-dubai-autodrome", "02-dubai-autodrome"],
+      "racingcircuits_url": "https://www.racingcircuits.info/middle-east/united-arab-emirates/dubai-autodrome.html",
+      "length_km": 5.390,
+      "turns": 16,
+      "image_file": "dubai-autodrome.png"
+    },
+    {
+      "id": "yas-marina",
+      "official_name": "Yas Marina Circuit",
+      "short_name": "Yas Marina",
+      "country": "United Arab Emirates",
+      "latitude": 24.4672,
+      "longitude": 54.6031,
+      "aliases": ["yas-marina", "02-yas-marina", "03-yas-marina"],
+      "racingcircuits_url": "https://www.racingcircuits.info/middle-east/united-arab-emirates/yas-marina.html",
+      "length_km": 5.281,
+      "turns": 16,
+      "image_file": "yas-marina.png"
     }
   ]
 }
