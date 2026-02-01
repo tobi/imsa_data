@@ -1,90 +1,183 @@
+-- Load all lap CSV files with basic extraction
+CREATE TEMP TABLE event_laps_all_files AS
+SELECT
+    regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as series_code,
+    regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as year,
+    regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3) as event_folder,
+    regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5) as session_raw,
+    -- Normalize session: strip -hour-X suffix
+    normalize_session(session_raw) as session_normalized,
+    series_code || '-' || year as series,
 
-CREATE TEMP TABLE event_laps_raw AS
-    SELECT
-        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-laps.csv
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 1) as series_code,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 2) as year,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 3) as event,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 5) as session,
-        series_code || '-' || year as series,
+    TRIM(number) as car,
+    lap_number as lap,
+    driver_name as driver_name,
+    _class as class,
+    _group as driver_group,
+    team as team,
+    parse_time(lap_time) as lap_time,
+    parse_time(s1) as lap_time_s1,
+    parse_time(s2) as lap_time_s2,
+    parse_time(s3) as lap_time_s3,
+    parse_time(elapsed) as session_time,
+    CASE
+        WHEN parse_time(pit_time) >= 86000 THEN NULL
+        ELSE parse_time(pit_time)
+    END as pit_time,
+    parse_time(_hour) as clock_time,
+    kph::INT as kph,
+    top_speed::INT as top_speed,
+    crossing_finish_line_in_pit,
+    flag_at_fl as flags,
+    strptime(
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
+        '%Y%m%d%H%M'
+    ) as start_date,
+    filename
+FROM read_csv(
+    "data/*/*/*/*laps.csv",
+    union_by_name=true,
+    filename=true,
+    null_padding=true,
+    normalize_names=true,
+    types={
+        'number': 'VARCHAR',
+        'lap_number': 'INT',
+        'lap_time': 'STRING',
+        's1': 'STRING',
+        's2': 'STRING',
+        's3': 'STRING',
+        'elapsed': 'STRING',
+        'pit_time': 'STRING',
+        '_hour': 'STRING',
+        'kph': 'INT',
+        'top_speed': 'INT',
+        'flag_at_fl': 'STRING',
+    }
+)
+WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-laps\.csv$', 4) != '';
 
-        TRIM(number) as car,
-        lap_number as lap,
-        driver_name as driver_name,
-        _class as class,
-        _group as driver_group,  -- Contains driver category for WEC/ELMS (Silver, PRO, etc.)
-        team as team,
-        parse_time(lap_time) as lap_time,
-        parse_time(s1) as lap_time_s1,
-        parse_time(s2) as lap_time_s2,
-        parse_time(s3) as lap_time_s3,
-
-        parse_time(elapsed) as session_time,
-        parse_time(pit_time) as pit_time,
-        parse_time(_hour) as clock_time,
-
-
-        kph::INT as kph,
-        top_speed::INT as top_speed,
-        crossing_finish_line_in_pit,
-        flag_at_fl as flags,
-
-        -- Date
-        strptime(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-laps\.csv$', 4),
-            '%Y%m%d%H%M'
-        ) as start_date,
-
-
+-- For race sessions, keep only the most complete file per (event, race_number)
+-- This collapses race-hour-6, race-hour-12, etc. into one race session
+CREATE TEMP TABLE race_files_to_keep AS
+WITH race_file_info AS (
+    SELECT DISTINCT
+        series_code,
+        year,
+        event_folder,
+        session_raw,
+        session_normalized,
+        -- For race-20X sessions (multi-race), each is a separate race
+        -- For plain race sessions, group them together
+        CASE
+            WHEN session_normalized LIKE 'race-20%' THEN session_normalized
+            ELSE 'race'
+        END as race_group,
+        -- Completeness score: plain 'race' > higher hour numbers
+        CASE
+            WHEN session_raw = 'race' THEN 999
+            WHEN regexp_matches(session_raw, 'hour-[0-9]+$')
+            THEN regexp_extract(session_raw, 'hour-([0-9]+)$', 1)::INT
+            ELSE 0
+        END as completeness,
+        start_date,
         filename
+    FROM event_laps_all_files
+    WHERE session_raw LIKE 'race%'
+),
+ranked AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY series_code, year, event_folder, race_group
+            ORDER BY completeness DESC, start_date DESC
+        ) as rank
+    FROM race_file_info
+)
+SELECT filename FROM ranked WHERE rank = 1;
 
-    FROM read_csv(
-        "data/*/*/*/*laps.csv",
-        union_by_name=true,
-        filename=true,
-        null_padding=true,
-        normalize_names=true,
-        types={
-            'number': 'VARCHAR',
-            'lap_number': 'INT',
-            'lap_time': 'STRING',
-            's1': 'STRING',
-            's2': 'STRING',
-            's3': 'STRING',
-            'elapsed': 'STRING',
-            'pit_time': 'STRING',
-            '_hour': 'STRING',
-            'kph': 'INT',
-            'top_speed': 'INT',
-            'flag_at_fl': 'STRING',
-        }
-    )
-    -- Filter out files that don't match the expected timestamp pattern
-    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-laps\.csv$', 4) != '';
+-- Filter to defined events, ignore specified sessions, and keep only selected race files
+CREATE TEMP TABLE event_laps_raw AS
+SELECT
+    e.series_code,
+    e.year,
+    e.event_folder,
+    e.session_normalized as session,
+    e.series,
+    e.car,
+    e.lap,
+    e.driver_name,
+    e.class,
+    e.driver_group,
+    e.team,
+    e.lap_time,
+    e.lap_time_s1,
+    e.lap_time_s2,
+    e.lap_time_s3,
+    e.session_time,
+    e.pit_time,
+    e.clock_time,
+    e.kph,
+    e.top_speed,
+    e.crossing_finish_line_in_pit,
+    e.flags,
+    e.start_date,
+    e.filename,
+    de.display_name as event_display_name
+FROM event_laps_all_files e
+-- Only include events defined in events.json
+INNER JOIN defined_events de
+    ON de.series_code = e.series_code
+    AND de.year = e.year
+    AND de.event_folder = e.event_folder
+-- Filter out ignored sessions (e.g., race-201 in WEC/ELMS which are partial data)
+WHERE NOT EXISTS (
+    SELECT 1 FROM ignored_sessions i
+    WHERE i.series_code = e.series_code
+      AND e.session_normalized LIKE i.session_pattern || '%'
+)
+-- For race sessions, only keep the selected files
+AND (
+    e.session_raw NOT LIKE 'race%'
+    OR e.filename IN (SELECT filename FROM race_files_to_keep)
+);
 
 
 CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
-        series_code, series, start_date, year, normalize_track_name(event) as event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team, session_time, clock_time, pit_time, flags, driver_name,
+        series_code, series, start_date, year,
+        -- Get event name from defined_events, add multi-race suffix if applicable
+        event_display_name ||
+        COALESCE(
+            (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
+             WHERE mrm.series_code = event_laps_raw.series_code
+               AND event_laps_raw.session LIKE mrm.session_prefix || '%'),
+            ''
+        ) AS event,
+        -- Session type: race, qualifying, practice, warmup, test
+        get_session_type(session) AS session,
+        lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team,
+        session_time, clock_time, pit_time, flags, driver_name,
         -- Map driver_group to standard license format
-        CASE 
+        CASE
             WHEN driver_group ILIKE '%platinum%' THEN 'Platinum'
             WHEN driver_group ILIKE '%gold%' THEN 'Gold'
             WHEN driver_group ILIKE '%silver%' THEN 'Silver'
             WHEN driver_group ILIKE '%bronze%' THEN 'Bronze'
-            WHEN driver_group ILIKE '%pro%' THEN 'Gold'  -- PRO typically maps to Gold/Platinum
-            WHEN driver_group ILIKE '%am%' THEN 'Bronze'  -- Am typically Bronze
+            WHEN driver_group ILIKE '%pro%' THEN 'Gold'
+            WHEN driver_group ILIKE '%am%' THEN 'Bronze'
             ELSE NULL
         END AS group_license,
-        DENSE_RANK() OVER (ORDER BY series_code, year, event, session, start_date) as session_id,
+        -- Use event_folder + session for session_id to handle multi-race events correctly
+        DENSE_RANK() OVER (ORDER BY series_code, year, event_folder, session, start_date) as session_id,
     FROM event_laps_raw
-    WHERE is_main_class(class)  -- Filter out support series
+    WHERE is_main_class(series_code, class)
     ORDER BY session_id, car, lap
 ),
 stint_starts AS (
     SELECT
-        series_code, series, start_date, year, event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, 
+        series_code, series, start_date, year, event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
         car, class, team, session_time, clock_time, pit_time, flags, driver_name, group_license, session_id,
         CASE WHEN LAG (driver_name) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) = driver_name THEN 0 ELSE 1
         END AS stint_start
@@ -235,7 +328,6 @@ ranked_stints AS (
     LEFT JOIN drivers dv
         ON dv.driver_id = lwd.resolved_driver_id
     LEFT JOIN (
-        -- Get most recent chassis for each car in each event (handles session mismatches)
         SELECT DISTINCT ON (series_code, year, event, car)
             series_code, year, event, car, chassis, homologation, manufacturer
         FROM chassis_lookup
@@ -269,7 +361,13 @@ SELECT
     lap_time_driver_rank,
     lap_time_driver_quartile,
     NULL::INTEGER AS bpillar_quartile,
-    pit_time,
+    CASE
+        WHEN session = 'race'
+            AND pit_time > 300
+            AND lap = MAX(lap) OVER (PARTITION BY session_id, car)
+        THEN NULL
+        ELSE pit_time
+    END AS pit_time,
     flags,
     stint_start,
     stint_number,
@@ -283,14 +381,3 @@ SELECT
     cl_manufacturer AS manufacturer
 FROM laps_enriched
 ORDER BY session_id, car, lap;
-
-
--- SELECT
---     COUNT(DISTINCT driver_name) as drivers,
---     COUNT(DISTINCT class) as classes,
---     COUNT(DISTINCT car) as cars,
---     COUNT(DISTINCT year) as years,
---     COUNT(DISTINCT event) as events,
---     COUNT(DISTINCT session) as sessions,
---     COUNT(*) as total_laps
--- FROM event_laps_raw;
