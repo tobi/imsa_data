@@ -39,7 +39,8 @@ SERIES_CONFIG = {
     base_url: 'https://alms.alkamelsystems.com/Results/',
     season_page: 'https://alms.alkamelsystems.com/?season=',
     series_pattern: 'Asian Le Mans Series',
-    year_prefix: ->(year) { "#{(year - 2020)}_#{year}" },  # Adjust if needed
+    # ALMS uses winter season format: "05_2025-2026" for 2025-2026 season
+    year_prefix: ->(year) { sprintf("%02d_%d-%d", year - 2021, year - 1, year) },
     use_html_scraping: true
   },
   'lmc' => {

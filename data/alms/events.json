@@ -16,7 +16,8 @@
     {"year": "2025", "folder": "yas-marina", "name": "Yas Marina"},
 
     {"year": "2026", "folder": "sepang", "name": "Sepang"},
-    {"year": "2026", "folder": "dubai-autodrome", "name": "Dubai"}
+    {"year": "2026", "folder": "dubai-autodrome", "name": "Dubai"},
+    {"year": "2026", "folder": "yas-marina", "name": "Yas Marina"}
   ],
   "multi_race_events": [
     {"session_prefix": "race-201", "event_suffix": "Race 1"},

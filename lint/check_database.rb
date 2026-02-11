@@ -100,6 +100,7 @@ class DatabaseLinter
     check_session_type_consistency
     check_race_events_have_qualifying
     check_single_race_per_event
+    check_race_results_presence
 
     # Class normalization
     check_class_normalization
@@ -727,6 +728,50 @@ class DatabaseLinter
     else
       events_with_multiple_races.each do |row|
         error "Event has #{row['race_count']} race sessions (should be 1): #{row['series_code']}/#{row['year']}/#{row['event']} - split into separate events"
+      end
+    end
+  end
+
+  def check_race_results_presence
+    section "Checking race sessions have results files"
+
+    # For each race lap file, there should be a corresponding results file
+    # This catches cases where laps were imported but results weren't
+    race_sessions = query(<<~SQL)
+      SELECT DISTINCT
+        series_code,
+        year,
+        event,
+        session,
+        session_id,
+        COUNT(*) as lap_count
+      FROM laps
+      WHERE session = 'race'
+      GROUP BY series_code, year, event, session, session_id
+      ORDER BY series_code, year, event
+    SQL
+
+    missing_results = []
+    race_sessions.each do |row|
+      # Check if we have driver info (which comes from results files)
+      drivers = query(<<~SQL)
+        SELECT COUNT(DISTINCT driver_id) as driver_count
+        FROM event_driver_summary
+        WHERE series_code = '#{row['series_code']}'
+          AND year = '#{row['year']}'
+          AND event = '#{row['event']}'
+      SQL
+
+      if drivers.empty? || drivers.first['driver_count'].to_i == 0
+        missing_results << row
+      end
+    end
+
+    if missing_results.empty?
+      ok "All race sessions have results data"
+    else
+      missing_results.each do |row|
+        warn "Race session may be missing results: #{row['series_code']}/#{row['year']}/#{row['event']} (#{row['lap_count']} laps, no drivers)"
       end
     end
   end
