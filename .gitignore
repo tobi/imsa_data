@@ -10,3 +10,4 @@ duckdb*
 # Pages generated files
 pages/dist/
 pages/src/.observablehq/
+.duckdb-skills/

@@ -86,6 +86,9 @@ class DatabaseLinter
     check_unknown_homologation
     check_manufacturer_coverage
 
+    # Row uniqueness
+    check_duplicate_laps
+
     # Data quality checks
     check_lap_time_outliers
     check_temperature_outliers
@@ -101,6 +104,9 @@ class DatabaseLinter
     check_race_events_have_qualifying
     check_single_race_per_event
     check_race_results_presence
+
+    # Tire age estimation sanity
+    check_tire_allocation
 
     # Class normalization
     check_class_normalization
@@ -445,6 +451,31 @@ class DatabaseLinter
     end
   end
 
+  def check_duplicate_laps
+    section "Checking for duplicate rows in laps table"
+
+    # (session_id, car, lap) should be unique — each car completes each lap once
+    duplicates = query(<<~SQL)
+      SELECT series_code, year, event, session, session_id,
+        COUNT(*) as total_rows,
+        COUNT(*) - COUNT(DISTINCT car || '|' || lap::VARCHAR) as duplicate_rows
+      FROM laps
+      GROUP BY series_code, year, event, session, session_id
+      HAVING COUNT(*) > COUNT(DISTINCT car || '|' || lap::VARCHAR)
+      ORDER BY duplicate_rows DESC
+      LIMIT 10
+    SQL
+
+    if duplicates.empty?
+      ok "No duplicate rows in laps table (unique on session_id, car, lap)"
+    else
+      total_dupes = duplicates.sum { |r| r['duplicate_rows'].to_i }
+      duplicates.each do |row|
+        error "#{row['duplicate_rows']} duplicate rows: #{row['series_code']}/#{row['year']}/#{row['event']}/#{row['session']} (session_id=#{row['session_id']})"
+      end
+    end
+  end
+
   def check_lap_time_outliers
     section "Checking for lap time outliers"
     outliers = query(<<~SQL)
@@ -772,6 +803,59 @@ class DatabaseLinter
     else
       missing_results.each do |row|
         warn "Race session may be missing results: #{row['series_code']}/#{row['year']}/#{row['event']} (#{row['lap_count']} laps, no drivers)"
+      end
+    end
+  end
+
+  def check_tire_allocation
+    section "Checking est_tire_age against known tire allocations"
+
+    # Known IMSA Michelin tire allocations per car per event:
+    #   Sebring (12h): 6 sets practice, 12 sets race+qualifying
+    # Race allocation is the hard upper bound for race-only sets. Most teams
+    # reuse their qualifying tires in the race, so the 12 sets effectively
+    # cover both sessions. We check race sets against 12 (not race+qualifying
+    # combined) since qualifying tires carry over.
+    #
+    # We count new tire sets as laps where est_tire_age = 0 on a clean
+    # green-flag lap (not an outlap, not a pit lap).
+    allocation_checks = [
+      # [event, years, session_filter, max_sets, label]
+      ["Sebring", %w[2025 2026], "race",     12, "race"],
+      ["Sebring", %w[2025 2026], "practice",  6, "practice"],
+    ]
+
+    allocation_checks.each do |event, years, session_group, max_sets, label|
+      session_filter = case session_group
+                       when "race" then "session = 'race'"
+                       when "practice" then "session LIKE 'practice%'"
+                       else next
+                       end
+
+      years.each do |year|
+        violations = query(<<~SQL)
+          SELECT car, class,
+            COUNT(DISTINCT CASE
+              WHEN est_tire_age = 0 AND flags = 'GF' AND lap_time IS NOT NULL
+                   AND stint_lap >= 1 AND pit_time IS NULL
+              THEN session_id::VARCHAR || '-' || lap::VARCHAR
+            END) AS est_sets
+          FROM laps
+          WHERE event = '#{event}' AND series_code = 'imsa' AND year = '#{year}'
+            AND #{session_filter}
+          GROUP BY car, class
+          HAVING est_sets > #{max_sets}
+          ORDER BY est_sets DESC
+        SQL
+
+        if violations.empty?
+          ok "#{event} #{year} #{label}: all cars within #{max_sets}-set allocation"
+        else
+          violations.each do |v|
+            warn "#{event} #{year} #{label}: car ##{v['car']} (#{v['class']}) estimated #{v['est_sets']} tire sets, " \
+                 "allocation is #{max_sets} — est_tire_age algorithm may be over-counting"
+          end
+        end
       end
     end
   end

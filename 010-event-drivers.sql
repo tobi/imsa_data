@@ -147,7 +147,7 @@ WITH base AS (
         country
     FROM base
 )
-SELECT
+SELECT DISTINCT
     series_code,
     series,
     year,

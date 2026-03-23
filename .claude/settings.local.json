@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rake db:update:*)",
+      "Bash(duckdb:*)",
+      "Bash(git add:*)",
+      "Bash(uv run jupyter nbconvert:*)",
+      "Bash(uv run:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": false
+}
