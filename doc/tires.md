@@ -164,6 +164,20 @@ not from new rubber.
   You can tell because the car's pace will be noticeably worse in the
   third stint versus fresh-tire competitors.
 
+#### End-of-Race Strategy Shift
+
+Teams manage their tire allocation across the race. In longer endurance races
+(Sebring 12h, Daytona 24h), tires are **double-stinted in the first half**
+(same set across two fuel stints) and then **single-stinted toward the end**
+as positions are being decided and every tenth matters. For Sebring, expect
+essentially 100% single-stint tires in the last ~2 hours.
+
+This creates a predictable pattern in the data: tire change frequency
+increases as the race progresses. Early race segments between same-driver pits
+are more likely to be fuel-only stops; late race segments are almost always
+tire changes. The algorithm does not yet exploit this prior, but it could be
+used to adjust confidence or thresholds based on race progress.
+
 ### Practice
 
 Practice sessions have more varied tire usage:
