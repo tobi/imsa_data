@@ -99,7 +99,11 @@ weather_with_relative_time AS (
         (time_utc_seconds - MIN(time_utc_seconds) OVER (PARTITION BY session_id)) AS relative_seconds
     FROM named_weather
 )
-SELECT * FROM weather_with_relative_time ORDER BY session_id, time_utc_seconds;
+SELECT * FROM weather_with_relative_time
+-- Deduplicate: keep one weather reading per (session_id, relative_seconds)
+-- in case of duplicate weather CSV files
+QUALIFY ROW_NUMBER() OVER (PARTITION BY session_id, relative_seconds ORDER BY time_utc_seconds) = 1
+ORDER BY session_id, time_utc_seconds;
 
 
 -- -- Summary statistics

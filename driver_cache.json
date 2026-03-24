@@ -2047,7 +2047,8 @@
   "sven muller": {
     "canonical": "Sven Muller",
     "variants": [
-      "Sven Muller"
+      "Sven Muller",
+      "Sven Müller"
     ]
   },
   "alvaro parente": {
@@ -3180,7 +3181,8 @@
     "canonical": "Gregoire Saucy",
     "variants": [
       "Grégoire Saucy",
-      "Gregoire SAUCY"
+      "Gregoire SAUCY",
+      "Gregoire Saucy"
     ]
   },
   "eric zitza": {
@@ -3308,7 +3310,8 @@
   "jacob abel": {
     "canonical": "Jacob Abel",
     "variants": [
-      "Jacob ABEL"
+      "Jacob ABEL",
+      "Jacob Abel"
     ]
   },
   "horst felbermayr jr": {
@@ -3668,7 +3671,8 @@
   "harry king": {
     "canonical": "Harry King",
     "variants": [
-      "Harry KING"
+      "Harry KING",
+      "Harry King"
     ]
   },
   "bo yuan": {
@@ -3758,7 +3762,8 @@
   "benjamin green": {
     "canonical": "Benjamin Green",
     "variants": [
-      "Ben GREEN"
+      "Ben GREEN",
+      "Ben Green"
     ]
   },
   "francois heriau": {
@@ -3771,6 +3776,151 @@
     "canonical": "Bankcy",
     "variants": [
       "BANKCY"
+    ]
+  },
+  "louis foster": {
+    "canonical": "Louis Foster",
+    "variants": [
+      "Louis Foster"
+    ]
+  },
+  "william power": {
+    "canonical": "William Power",
+    "variants": [
+      "Will Power"
+    ]
+  },
+  "dean macdonald": {
+    "canonical": "Dean MacDonald",
+    "variants": [
+      "Dean MacDonald"
+    ]
+  },
+  "juri vips": {
+    "canonical": "Juri Vips",
+    "variants": [
+      "Juri Vips"
+    ]
+  },
+  "kaylen frederick": {
+    "canonical": "Kaylen Frederick",
+    "variants": [
+      "Kaylen Frederick"
+    ]
+  },
+  "kyffin simpson": {
+    "canonical": "Kyffin Simpson",
+    "variants": [
+      "Kyffin Simpson"
+    ]
+  },
+  "francois perrodo": {
+    "canonical": "Francois Perrodo",
+    "variants": [
+      "Francois Perrodo"
+    ]
+  },
+  "ferdinand habsburg": {
+    "canonical": "Ferdinand Habsburg",
+    "variants": [
+      "Ferdinand Habsburg"
+    ]
+  },
+  "george kolovos": {
+    "canonical": "George Kolovos",
+    "variants": [
+      "George Kolovos"
+    ]
+  },
+  "nikita johnson": {
+    "canonical": "Nikita Johnson",
+    "variants": [
+      "Nikita Johnson"
+    ]
+  },
+  "marcus ericsson": {
+    "canonical": "Marcus Ericsson",
+    "variants": [
+      "Marcus Ericsson"
+    ]
+  },
+  "carl bennett": {
+    "canonical": "Carl Bennett",
+    "variants": [
+      "Carl Bennett"
+    ]
+  },
+  "sebastien baud": {
+    "canonical": "Sebastien Baud",
+    "variants": [
+      "Sébastien Baud",
+      "Sebastien Baud"
+    ]
+  },
+  "valentin hasse clot": {
+    "canonical": "Valentin Hasse Clot",
+    "variants": [
+      "Valentin Hasse Clot"
+    ]
+  },
+  "thierry vermeulen": {
+    "canonical": "Thierry Vermeulen",
+    "variants": [
+      "Thierry Vermeulen"
+    ]
+  },
+  "yifei ye": {
+    "canonical": "Yifei Ye",
+    "variants": [
+      "Yifei Ye"
+    ]
+  },
+  "morris schuring": {
+    "canonical": "Morris Schuring",
+    "variants": [
+      "Morris Schuring"
+    ]
+  },
+  "ryan yardley": {
+    "canonical": "Ryan Yardley",
+    "variants": [
+      "Ryan Yardley"
+    ]
+  },
+  "peter ludwig": {
+    "canonical": "Peter Ludwig",
+    "variants": [
+      "Peter Ludwig"
+    ]
+  },
+  "david musial jr": {
+    "canonical": "David Musial Jr.",
+    "variants": [
+      "Dave Musial Jr."
+    ]
+  },
+  "david musial": {
+    "canonical": "David Musial",
+    "variants": [
+      "Dave Musial"
+    ]
+  },
+  "ricardo feller": {
+    "canonical": "Ricardo Feller",
+    "variants": [
+      "Ricardo Feller"
+    ]
+  },
+  "francis selldorff": {
+    "canonical": "Francis Selldorff",
+    "variants": [
+      "Francis Selldorff"
+    ]
+  },
+  "dudu barrichello": {
+    "canonical": "Dudu Barrichello",
+    "variants": [
+      "Dudu Barrichello"
     ]
   }
 }

@@ -19,6 +19,6 @@ export default {
     {name: "Events", path: "/events/"},
     {name: "Seasons", path: "/series/"},
     {name: "Compare", path: "/compare"},
-    {name: "Bronze LMP2", path: "/bronze-lmp2"}
+    {name: "Gentleman Report", path: "/gentleman"}
   ]
 };

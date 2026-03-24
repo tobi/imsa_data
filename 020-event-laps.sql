@@ -404,4 +404,6 @@ LEFT JOIN (
     )
     ORDER BY team_key, caps_penalty, freq DESC, LENGTH(team)
 ) ct ON ct.team_key = LOWER(REGEXP_REPLACE(TRIM(COALESCE(laps_enriched.ed_team, laps_enriched.stint_team, laps_enriched.dv_team)), '\s+', ' '))
+-- Deduplicate: keep one row per (session_id, car, lap) in case of duplicate source files
+QUALIFY ROW_NUMBER() OVER (PARTITION BY session_id, car, lap ORDER BY session_id) = 1
 ORDER BY session_id, car, lap;

@@ -1,33 +1,32 @@
 #!/bin/bash
-# Bronze LMP2 driver career analysis
-# Reference pace = car's pro drivers across ALL sessions of the event weekend
-# (practice, qualifying, race), using top quartile laps, weighted toward later sessions
+# Gentleman driver career analysis (Bronze + Silver)
+# Reference pace = car's Platinum/Gold drivers across ALL sessions of the event weekend
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv <<'SQL'
-WITH bronze_drivers AS (
+-- Gentleman drivers: Bronze, Silver, and Unknown license (raced 2025+)
+-- Excludes anyone who appears as Platinum or Gold (they're the pros)
+WITH gentleman_drivers AS (
     SELECT DISTINCT l.driver_id
     FROM laps l
     WHERE l.class = 'LMP2' AND l.session = 'race' AND l.year >= '2025'
-      AND l.license IN ('Bronze', 'Unknown')
+      AND l.license IN ('Bronze', 'Silver', 'Unknown')
       AND l.driver_id NOT IN (
           SELECT driver_id FROM laps WHERE license IN ('Platinum', 'Gold') AND class = 'LMP2'
       )
 ),
 
--- Car reference pace: pro drivers' Q1 laps across ALL sessions of the event weekend
--- Weight later sessions higher: practice=0.5, qualifying=0.7, warmup=0.6, race=1.0
+-- Car reference pace: Platinum/Gold drivers' Q1 laps across ALL sessions
 car_reference AS (
     SELECT
         l.year, l.event, l.car,
-        -- Weighted average of Q1 laps (top quartile per driver per session)
         SUM(l.lap_time * CASE l.session
             WHEN 'race' THEN 1.0
             WHEN 'qualifying' THEN 0.7
             WHEN 'warmup' THEN 0.6
-            ELSE 0.5  -- practice, test
+            ELSE 0.5
         END) / SUM(CASE l.session
             WHEN 'race' THEN 1.0
             WHEN 'qualifying' THEN 0.7
@@ -39,14 +38,14 @@ car_reference AS (
     FROM laps l
     WHERE l.class = 'LMP2'
       AND l.license IN ('Platinum', 'Gold')
-      AND l.lap_time_driver_quartile = 1  -- top quartile only
+      AND l.lap_time_driver_quartile = 1
       AND l.lap_time IS NOT NULL
       AND l.flags = 'GF'
     GROUP BY l.year, l.event, l.car
-    HAVING COUNT(*) >= 10
+    HAVING COUNT(*) >= 5
 ),
 
--- Bronze driver pace per event (race sessions, bpillar Q1+Q2)
+-- Gentleman driver pace per event (race sessions, bpillar Q1+Q2)
 driver_pace AS (
     SELECT
         l.driver_id, l.driver_name, l.car, l.event, l.year,
@@ -62,8 +61,8 @@ driver_pace AS (
         MIN(l.start_date) AS start_date
     FROM laps l
     WHERE l.class = 'LMP2'
-      AND l.driver_id IN (SELECT driver_id FROM bronze_drivers)
-      AND l.license IN ('Bronze', 'Unknown')
+      AND l.driver_id IN (SELECT driver_id FROM gentleman_drivers)
+      AND l.license IN ('Bronze', 'Silver', 'Unknown')
     GROUP BY l.driver_id, l.driver_name, l.car, l.event, l.year, l.series_code, l.license
     HAVING COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
         AND l.session = 'race') >= 5
@@ -80,9 +79,11 @@ with_event_num AS (
         ROUND(dp.best_lap - cr.ref_best, 3) AS gap_to_ref_best,
         ROUND((dp.median_pace - cr.ref_pace) / cr.ref_pace * 100, 2) AS gap_pct,
         ROW_NUMBER() OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS career_event_num,
-        SUM(dp.clean_laps) OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS cumulative_laps
+        SUM(dp.clean_laps) OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS cumulative_laps,
+        d.peak_license, d.license_since_year
     FROM driver_pace dp
     LEFT JOIN car_reference cr ON cr.year = dp.year AND cr.event = dp.event AND cr.car = dp.car
+    LEFT JOIN drivers d ON d.driver_id = dp.driver_id
 )
 
 SELECT
@@ -93,6 +94,9 @@ SELECT
     event,
     start_date,
     car,
+    license,
+    peak_license,
+    license_since_year,
     career_event_num,
     clean_laps,
     cumulative_laps,
