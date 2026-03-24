@@ -296,7 +296,7 @@ display(Plot.plot({
 
 ## Methodology
 
-- **Clean laps**: green-flag laps with valid lap time, stint_lap ≥ 2 (skip outlap and warmup), no pit time.
+- **Clean laps**: bpillar Q1+Q2 laps only — the fastest 50% of each driver's laps, excluding outlaps, pit laps, and slow outliers (traffic, off-track moments). This is the standard "representative pace" metric used across endurance racing.
 - **Pro teammate**: Platinum or Gold-licensed driver in the same car during the same race session. Their median pace is the reference.
 - **Gap**: Bronze median pace minus pro median pace. Lower = closer to professional speed.
 - **Gap %**: Gap as percentage of pro pace. Normalizes across different tracks and lap lengths.
