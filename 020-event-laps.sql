@@ -378,9 +378,30 @@ SELECT
     COALESCE(ed_license, group_license, dv_license, 'Unknown') AS license,
     COALESCE(ed_license_rank, license_rank(group_license), dv_license_rank, 0) AS license_rank,
     COALESCE(ed_country, dv_country) AS driver_country,
-    COALESCE(ed_team, stint_team, dv_team) AS team_name,
+    -- Resolve team name to best casing via canonical_teams lookup
+    COALESCE(
+        ct.canonical_team,
+        ed_team, stint_team, dv_team
+    ) AS team_name,
     COALESCE(cl_chassis, ed_chassis) AS chassis,
     cl_homologation AS homologation,
     cl_manufacturer AS manufacturer
 FROM laps_enriched
+-- Join canonical team names: pick best casing per normalized team key
+-- Prefers mixed case over ALL CAPS, shorter over longer, most frequent
+LEFT JOIN (
+    SELECT DISTINCT ON (team_key) team_key, team AS canonical_team
+    FROM (
+        SELECT
+            LOWER(REGEXP_REPLACE(TRIM(team), '\s+', ' ')) AS team_key,
+            REGEXP_REPLACE(TRIM(team), '\s+', ' ') AS team,
+            -- Score: penalize ALL CAPS (3+ consecutive uppercase = WEC style)
+            CASE WHEN team ~ '[A-Z]{3}' THEN 1 ELSE 0 END AS caps_penalty,
+            COUNT(*) AS freq
+        FROM event_drivers
+        WHERE team IS NOT NULL
+        GROUP BY team_key, team, caps_penalty
+    )
+    ORDER BY team_key, caps_penalty, freq DESC, LENGTH(team)
+) ct ON ct.team_key = LOWER(REGEXP_REPLACE(TRIM(COALESCE(laps_enriched.ed_team, laps_enriched.stint_team, laps_enriched.dv_team)), '\s+', ' '))
 ORDER BY session_id, car, lap;

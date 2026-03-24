@@ -89,8 +89,9 @@ class DatabaseLinter
     # Row uniqueness
     check_duplicate_laps
 
-    # Driver name consistency
+    # Name consistency
     check_driver_name_variants
+    check_team_name_variants
 
     # Data quality checks
     check_lap_time_outliers
@@ -502,6 +503,31 @@ class DatabaseLinter
       variants.each do |row|
         names = row['variants']
         error "Driver '#{row['driver_id']}' has #{row['variant_count']} display name variants: #{names}"
+      end
+    end
+  end
+
+  def check_team_name_variants
+    section "Checking for inconsistent team display names"
+
+    variants = query(<<~SQL)
+      SELECT
+        LOWER(REGEXP_REPLACE(team_name, '\\s+', ' ')) AS team_key,
+        LIST(DISTINCT team_name ORDER BY team_name) AS variants,
+        COUNT(DISTINCT team_name) AS variant_count
+      FROM laps
+      WHERE team_name IS NOT NULL
+      GROUP BY team_key
+      HAVING COUNT(DISTINCT team_name) > 1
+      ORDER BY variant_count DESC
+      LIMIT 20
+    SQL
+
+    if variants.empty?
+      ok "All teams have a single consistent display name"
+    else
+      variants.each do |row|
+        error "Team '#{row['team_key']}' has #{row['variant_count']} name variants: #{row['variants']}"
       end
     end
   end

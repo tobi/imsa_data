@@ -225,3 +225,4 @@ CREATE OR REPLACE MACRO resolve_driver_alias(name) AS (
         LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
     )
 );
+
