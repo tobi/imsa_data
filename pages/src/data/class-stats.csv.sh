@@ -12,7 +12,7 @@ SELECT
     class,
     COUNT(DISTINCT event) as events,
     COUNT(DISTINCT car) as cars,
-    COUNT(DISTINCT driver) as drivers,
+    COUNT(DISTINCT driver_name) as drivers,
     COUNT(*) as total_laps,
     ROUND(AVG(CASE WHEN bpillar_quartile IN (1,2) THEN lap_time END), 3) as avg_pace,
     ROUND(MIN(CASE WHEN bpillar_quartile = 1 THEN lap_time END), 3) as best_lap,

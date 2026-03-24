@@ -18,7 +18,7 @@ WITH team_event_drivers AS (
         e.class,
         e.chassis,
         e.manufacturer,
-        e.driver,
+        e.driver_name,
         e.license,
         e.laps,
         ev.track_id,
@@ -45,10 +45,10 @@ SELECT
     manufacturer,
     track_id,
     track,
-    STRING_AGG(DISTINCT driver, ', ' ORDER BY driver) as drivers,
+    STRING_AGG(DISTINCT driver_name, ', ' ORDER BY driver_name) as drivers,
     STRING_AGG(DISTINCT license, ', ' ORDER BY license) as licenses,
     SUM(laps) as total_laps,
-    COUNT(DISTINCT driver) as driver_count
+    COUNT(DISTINCT driver_name) as driver_count
 FROM team_event_drivers
 GROUP BY team, series_code, year, event, event_date, car, class, chassis, manufacturer, track_id, track
 ORDER BY team, event_date DESC, car;

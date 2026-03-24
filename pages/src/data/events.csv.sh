@@ -29,8 +29,8 @@ SELECT
     avg_humidity_pct,
     had_rain,
     dry,
-    is_race
+    race_count > 0
 FROM events
-WHERE is_race = true
+WHERE race_count > 0
 ORDER BY start_date DESC;
 "

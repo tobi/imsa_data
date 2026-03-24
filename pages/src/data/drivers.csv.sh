@@ -1,5 +1,5 @@
 #!/bin/bash
-# Data loader for driver directory
+# Data loader for driver_name directory
 # Outputs CSV to stdout for Observable Framework
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

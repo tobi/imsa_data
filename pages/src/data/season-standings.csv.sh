@@ -1,5 +1,5 @@
 #!/bin/bash
-# Data loader for season driver standings (by lap count as proxy for performance)
+# Data loader for season driver_name standings (by lap count as proxy for performance)
 # Outputs CSV to stdout for Observable Framework
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -9,7 +9,7 @@ duckdb "$DB_PATH" -csv -c "
 SELECT
     series_code,
     year,
-    driver,
+    driver_name,
     license,
     class_normalized as class,
     COUNT(DISTINCT event) as events,
@@ -18,6 +18,6 @@ SELECT
     STRING_AGG(DISTINCT team_name, ', ') as teams
 FROM laps
 WHERE session LIKE 'race%' OR session LIKE 'Race%'
-GROUP BY series_code, year, driver, license, class_normalized
+GROUP BY series_code, year, driver_name, license, class_normalized
 ORDER BY series_code, year DESC, total_laps DESC;
 "

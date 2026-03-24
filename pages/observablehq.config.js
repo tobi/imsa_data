@@ -18,6 +18,7 @@ export default {
     {name: "Tracks", path: "/tracks/"},
     {name: "Events", path: "/events/"},
     {name: "Seasons", path: "/series/"},
-    {name: "Compare", path: "/compare"}
+    {name: "Compare", path: "/compare"},
+    {name: "Bronze LMP2", path: "/bronze-lmp2"}
   ]
 };

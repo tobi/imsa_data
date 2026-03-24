@@ -15,7 +15,7 @@ WITH team_stats AS (
         event,
         car,
         class,
-        driver,
+        driver_name,
         laps
     FROM event_driver_summary
     WHERE team IS NOT NULL
@@ -26,7 +26,7 @@ WITH team_stats AS (
 team_aggregates AS (
     SELECT
         team,
-        COUNT(DISTINCT driver) as unique_drivers,
+        COUNT(DISTINCT driver_name) as unique_drivers,
         COUNT(DISTINCT (series_code || '-' || year || '-' || event)) as total_events,
         COUNT(DISTINCT series_code) as series_count,
         SUM(laps) as total_laps,

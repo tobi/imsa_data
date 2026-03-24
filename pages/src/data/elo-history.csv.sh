@@ -2,7 +2,7 @@
 # Data loader for Elo rating history
 # Outputs CSV to stdout for Observable Framework time-series visualization
 #
-# Columns: driver,session_date,event,series_code,class,elo,delta,laps,cumulative_laps,license
+# Columns: driver_name,session_date,event,series_code,class,elo,delta,laps,cumulative_laps,license
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR/../../.."

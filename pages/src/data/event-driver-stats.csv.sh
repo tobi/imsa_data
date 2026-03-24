@@ -1,5 +1,5 @@
 #!/bin/bash
-# Data loader for per-event driver statistics
+# Data loader for per-event driver_name statistics
 # Outputs CSV to stdout for Observable Framework
 # Includes bpillar percentile-based lap averages
 
@@ -12,21 +12,21 @@ WITH driver_bpillar_stats AS (
         series_code,
         year,
         event,
-        driver,
+        driver_name,
         car,
         AVG(CASE WHEN bpillar_quartile = 1 THEN lap_time END) as avg_q1,
         AVG(CASE WHEN bpillar_quartile IN (1, 2) THEN lap_time END) as avg_q12
     FROM laps
     WHERE session = 'race'
       AND bpillar_quartile IS NOT NULL
-    GROUP BY series_code, year, event, driver, car
+    GROUP BY series_code, year, event, driver_name, car
 )
 SELECT
     e.series_code,
     e.year,
     e.event,
     e.event_date,
-    e.driver,
+    e.driver_name,
     e.car,
     e.class,
     e.team,
@@ -53,9 +53,9 @@ LEFT JOIN driver_bpillar_stats b
     ON e.series_code = b.series_code
     AND e.year = b.year
     AND e.event = b.event
-    AND e.driver = b.driver
+    AND e.driver_name = b.driver_name
     AND e.car = b.car
 WHERE e.event NOT LIKE '%Test%'
   AND e.event NOT LIKE '%test%'
-ORDER BY e.series_code, e.event_date, e.car, e.driver;
+ORDER BY e.series_code, e.event_date, e.car, e.driver_name;
 "

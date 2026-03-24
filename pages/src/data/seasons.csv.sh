@@ -10,7 +10,7 @@ SELECT
     series_code,
     year,
     COUNT(DISTINCT event) as events,
-    COUNT(DISTINCT driver) as drivers,
+    COUNT(DISTINCT driver_name) as drivers,
     SUM(laps) as total_laps,
     MIN(event_date) as season_start,
     MAX(event_date) as season_end

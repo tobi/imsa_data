@@ -1,6 +1,6 @@
 #!/bin/bash
 # License tier performance statistics
-# Compares Platinum/Gold/Silver/Bronze driver speeds
+# Compares Platinum/Gold/Silver/Bronze driver_name speeds
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
@@ -10,7 +10,7 @@ SELECT
     series_code,
     class,
     license,
-    COUNT(DISTINCT driver) as drivers,
+    COUNT(DISTINCT driver_name) as drivers,
     COUNT(*) as total_laps,
     COUNT(CASE WHEN bpillar_quartile = 1 THEN 1 END) as q1_laps,
     COUNT(CASE WHEN bpillar_quartile = 2 THEN 1 END) as q2_laps,

@@ -15,7 +15,7 @@ SELECT
     car,
     class,
     class_normalized,
-    driver,
+    driver_name,
     license,
     team_name,
     manufacturer,

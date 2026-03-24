@@ -11,7 +11,7 @@ WITH track_laps AS (
     e.track_id,
     l.class_normalized,
     l.lap_time,
-    l.driver,
+    l.driver_name,
     l.car,
     l.series_code,
     l.year,
@@ -22,7 +22,7 @@ WITH track_laps AS (
     AND l.year = e.year
     AND LOWER(l.event) = LOWER(e.track)
     AND l.session IN ('race', 'qualify-race')
-  WHERE e.is_race = true
+  WHERE e.race_count > 0
     AND e.track_id IS NOT NULL
     AND l.lap_time > 30
     AND l.bpillar_quartile IN (1, 2)
@@ -32,7 +32,7 @@ ranked_laps AS (
     track_id,
     class_normalized,
     lap_time,
-    driver,
+    driver_name,
     car,
     series_code,
     year,
@@ -44,7 +44,7 @@ SELECT
   track_id,
   class_normalized as class,
   lap_time,
-  driver,
+  driver_name,
   car,
   series_code,
   year,

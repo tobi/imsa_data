@@ -1,6 +1,6 @@
 #!/bin/bash
-# Data loader for driver track-by-track performance
-# Aggregates driver performance per track across all events
+# Data loader for driver_name track-by-track performance
+# Aggregates driver_name performance per track across all events
 # NOTE: Only uses relative metrics (Q1%) - never averages raw lap times across events
 # Outputs CSV to stdout for Observable Framework
 
@@ -10,7 +10,7 @@ DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 duckdb "$DB_PATH" -csv -c "
 WITH driver_track_events AS (
     SELECT
-        e.driver,
+        e.driver_name,
         ev.track_id,
         ev.track_official_name as track,
         ev.track_country,
@@ -30,7 +30,7 @@ WITH driver_track_events AS (
       AND ev.track_id IS NOT NULL
 )
 SELECT
-    driver,
+    driver_name,
     track_id,
     track,
     track_country,
@@ -41,6 +41,6 @@ SELECT
     MIN(year) as first_year,
     MAX(year) as last_year
 FROM driver_track_events
-GROUP BY driver, track_id, track, track_country
-ORDER BY driver, events DESC;
+GROUP BY driver_name, track_id, track, track_country
+ORDER BY driver_name, events DESC;
 "

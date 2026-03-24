@@ -1,16 +1,16 @@
 #!/bin/bash
-# Data loader for driver best results (wins, podiums, poles)
-# Joins event_results with event_drivers to get driver-level position data
+# Data loader for driver_name best results (wins, podiums, poles)
+# Joins event_results with event_drivers to get driver_name-level position data
 # Outputs CSV to stdout for Observable Framework
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv -c "
--- Get position results per driver per event
+-- Get position results per driver_name per event
 WITH driver_results AS (
     SELECT DISTINCT
-        LOWER(ed.canonical_name) as driver,
+        LOWER(ed.canonical_name) as driver_name,
         er.series_code,
         er.year,
         er.event,
@@ -44,7 +44,7 @@ WITH driver_results AS (
       AND er.position > 0
 )
 SELECT
-    driver,
+    driver_name,
     series_code,
     year,
     event,

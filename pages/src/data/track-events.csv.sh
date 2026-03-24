@@ -21,6 +21,6 @@ SELECT
   had_rain,
   dry
 FROM events
-WHERE is_race = true AND track_id IS NOT NULL
+WHERE race_count > 0 AND track_id IS NOT NULL
 ORDER BY track_id, start_date DESC;
 "

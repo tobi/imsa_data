@@ -1,6 +1,6 @@
 #!/bin/bash
 # Data loader for teammate relationships
-# Shows all driver pairings who shared a car in the same event
+# Shows all driver_name pairings who shared a car in the same event
 # Outputs CSV to stdout for Observable Framework
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -18,7 +18,7 @@ WITH car_drivers AS (
         team,
         chassis,
         manufacturer,
-        driver,
+        driver_name,
         license,
         laps,
         best_lap,
@@ -37,13 +37,13 @@ teammate_pairs AS (
         a.team,
         a.chassis,
         a.manufacturer,
-        a.driver as driver_a,
+        a.driver_name as driver_a,
         a.license as license_a,
         a.laps as laps_a,
         a.best_lap as best_lap_a,
         a.avg_lap as avg_lap_a,
         a.q1_pct as q1_pct_a,
-        b.driver as driver_b,
+        b.driver_name as driver_b,
         b.license as license_b,
         b.laps as laps_b,
         b.best_lap as best_lap_b,
@@ -55,7 +55,7 @@ teammate_pairs AS (
         AND a.year = b.year
         AND a.event = b.event
         AND a.car = b.car
-        AND a.driver < b.driver  -- avoid duplicates
+        AND a.driver_name < b.driver_name  -- avoid duplicates
 )
 SELECT *
 FROM teammate_pairs

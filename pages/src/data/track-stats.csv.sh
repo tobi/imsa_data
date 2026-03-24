@@ -26,7 +26,7 @@ WITH track_events AS (
     had_rain,
     dry
   FROM events
-  WHERE is_race = true AND track_id IS NOT NULL
+  WHERE race_count > 0 AND track_id IS NOT NULL
 ),
 track_laps AS (
   SELECT
@@ -36,7 +36,7 @@ track_laps AS (
     l.lap_time,
     l.bpillar_quartile,
     l.car,
-    l.driver,
+    l.driver_name,
     l.series_code,
     l.year,
     l.event
@@ -60,7 +60,7 @@ lap_records AS (
     track_id,
     class_normalized,
     MIN(lap_time) as best_lap,
-    FIRST(driver) as record_driver,
+    FIRST(driver_name) as record_driver,
     FIRST(car) as record_car,
     FIRST(series_code) as record_series,
     FIRST(year) as record_year
@@ -69,7 +69,7 @@ lap_records AS (
       track_id,
       class_normalized,
       lap_time,
-      driver,
+      driver_name,
       car,
       series_code,
       year,

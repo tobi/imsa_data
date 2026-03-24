@@ -13,7 +13,7 @@ WITH event_laps AS (
         event,
         COUNT(*) as total_laps,
         COUNT(DISTINCT car) as cars,
-        COUNT(DISTINCT driver) as drivers,
+        COUNT(DISTINCT driver_name) as drivers,
         COUNT(DISTINCT class) as classes,
         AVG(CASE WHEN bpillar_quartile IN (1,2) THEN lap_time END) as avg_race_pace,
         MIN(CASE WHEN bpillar_quartile = 1 THEN lap_time END) as fastest_lap,
@@ -65,6 +65,6 @@ LEFT JOIN class_counts cc
     AND e.year = cc.year
     AND e.track = cc.event
 WHERE el.total_laps > 0
-  AND e.is_race = true
+  AND e.race_count > 0
 ORDER BY e.start_date DESC;
 "
