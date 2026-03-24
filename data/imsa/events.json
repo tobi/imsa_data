@@ -1,68 +1,296 @@
 {
   "description": "IMSA WeatherTech SportsCar Championship - headline events only",
   "events": [
-    {"year": "2021", "folder": "daytona-international-speedway", "name": "Daytona"},
-    {"year": "2021", "folder": "sebring-international-raceway", "name": "Sebring"},
-    {"year": "2021", "folder": "mid-ohio-sports-car-course", "name": "Mid-Ohio"},
-    {"year": "2021", "folder": "6h---watkins-glen-international", "name": "Watkins Glen 6 Hours"},
-    {"year": "2021", "folder": "weathertech-240---wgi", "name": "Watkins Glen 240"},
-    {"year": "2021", "folder": "lime-rock-park", "name": "Lime Rock"},
-    {"year": "2021", "folder": "road-america", "name": "Road America"},
-    {"year": "2021", "folder": "virginia-international-raceway", "name": "VIR"},
-    {"year": "2021", "folder": "weathertech-raceway-laguna-seca", "name": "Laguna Seca"},
-    {"year": "2021", "folder": "long-beach-street-circuit", "name": "Long Beach"},
-    {"year": "2021", "folder": "road-atlanta", "name": "Road Atlanta"},
-
-    {"year": "2022", "folder": "daytona-international-speedway", "name": "Daytona"},
-    {"year": "2022", "folder": "sebring-international-raceway", "name": "Sebring"},
-    {"year": "2022", "folder": "long-beach-street-circuit", "name": "Long Beach"},
-    {"year": "2022", "folder": "weathertech-raceway-laguna-seca", "name": "Laguna Seca"},
-    {"year": "2022", "folder": "mid-ohio-sports-car-course", "name": "Mid-Ohio"},
-    {"year": "2022", "folder": "belle-isle-street-course", "name": "Belle Isle"},
-    {"year": "2022", "folder": "watkins-glen-international", "name": "Watkins Glen"},
-    {"year": "2022", "folder": "canadian-tire-motorsport-park", "name": "Mosport"},
-    {"year": "2022", "folder": "lime-rock-park", "name": "Lime Rock"},
-    {"year": "2022", "folder": "road-america", "name": "Road America"},
-    {"year": "2022", "folder": "virginia-international-raceway", "name": "VIR"},
-    {"year": "2022", "folder": "road-atlanta", "name": "Road Atlanta"},
-
-    {"year": "2023", "folder": "daytona-international-speedway", "name": "Daytona"},
-    {"year": "2023", "folder": "sebring-international-raceway", "name": "Sebring"},
-    {"year": "2023", "folder": "long-beach-street-circuit", "name": "Long Beach"},
-    {"year": "2023", "folder": "weathertech-raceway-laguna-seca", "name": "Laguna Seca"},
-    {"year": "2023", "folder": "watkins-glen-international", "name": "Watkins Glen"},
-    {"year": "2023", "folder": "canadian-tire-motorsport-park", "name": "Mosport"},
-    {"year": "2023", "folder": "lime-rock-park", "name": "Lime Rock"},
-    {"year": "2023", "folder": "road-america", "name": "Road America"},
-    {"year": "2023", "folder": "virginia-international-raceway", "name": "VIR"},
-    {"year": "2023", "folder": "indianapolis-motor-speedway-rc", "name": "Indianapolis"},
-    {"year": "2023", "folder": "road-atlanta", "name": "Road Atlanta"},
-
-    {"year": "2024", "folder": "daytona-international-speedway", "name": "Daytona"},
-    {"year": "2024", "folder": "sebring-international-raceway", "name": "Sebring"},
-    {"year": "2024", "folder": "long-beach-street-circuit", "name": "Long Beach"},
-    {"year": "2024", "folder": "weathertech-raceway-laguna-seca", "name": "Laguna Seca"},
-    {"year": "2024", "folder": "detroit-street-course", "name": "Detroit"},
-    {"year": "2024", "folder": "watkins-glen-international", "name": "Watkins Glen"},
-    {"year": "2024", "folder": "canadian-tire-motorsport-park", "name": "Mosport"},
-    {"year": "2024", "folder": "road-america", "name": "Road America"},
-    {"year": "2024", "folder": "virginia-international-raceway", "name": "VIR"},
-    {"year": "2024", "folder": "tire-rack.com-battle-on-the-bricks", "name": "Indianapolis"},
-    {"year": "2024", "folder": "road-atlanta", "name": "Road Atlanta"},
-
-    {"year": "2025", "folder": "daytona-international-speedway", "name": "Daytona"},
-    {"year": "2025", "folder": "sebring-international-raceway", "name": "Sebring"},
-    {"year": "2025", "folder": "long-beach-street-circuit", "name": "Long Beach"},
-    {"year": "2025", "folder": "weathertech-raceway-laguna-seca", "name": "Laguna Seca"},
-    {"year": "2025", "folder": "detroit-street-course", "name": "Detroit"},
-    {"year": "2025", "folder": "watkins-glen-international", "name": "Watkins Glen"},
-    {"year": "2025", "folder": "canadian-tire-motorsport-park", "name": "Mosport"},
-    {"year": "2025", "folder": "road-america", "name": "Road America"},
-    {"year": "2025", "folder": "virginia-international-raceway", "name": "VIR"},
-    {"year": "2025", "folder": "indianapolis-motor-speedway-rc", "name": "Indianapolis"},
-    {"year": "2025", "folder": "road-atlanta", "name": "Road Atlanta"},
-
-    {"year": "2026", "folder": "daytona-international-speedway", "name": "Daytona"}
+    {
+      "year": "2021",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2021",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2021",
+      "folder": "lime-rock-park",
+      "name": "Lime Rock"
+    },
+    {
+      "year": "2021",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2021",
+      "folder": "mid-ohio-sports-car-course",
+      "name": "Mid-Ohio"
+    },
+    {
+      "year": "2021",
+      "folder": "road-america",
+      "name": "Road America"
+    },
+    {
+      "year": "2021",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
+    },
+    {
+      "year": "2021",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    },
+    {
+      "year": "2021",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2021",
+      "folder": "weathertech-240---wgi",
+      "name": "Watkins Glen 240"
+    },
+    {
+      "year": "2021",
+      "folder": "6h---watkins-glen-international",
+      "name": "Watkins Glen 6 Hours"
+    },
+    {
+      "year": "2022",
+      "folder": "belle-isle-street-course",
+      "name": "Belle Isle"
+    },
+    {
+      "year": "2022",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2022",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2022",
+      "folder": "lime-rock-park",
+      "name": "Lime Rock"
+    },
+    {
+      "year": "2022",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2022",
+      "folder": "mid-ohio-sports-car-course",
+      "name": "Mid-Ohio"
+    },
+    {
+      "year": "2022",
+      "folder": "canadian-tire-motorsport-park",
+      "name": "Mosport"
+    },
+    {
+      "year": "2022",
+      "folder": "road-america",
+      "name": "Road America"
+    },
+    {
+      "year": "2022",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
+    },
+    {
+      "year": "2022",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    },
+    {
+      "year": "2022",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2022",
+      "folder": "watkins-glen-international",
+      "name": "Watkins Glen"
+    },
+    {
+      "year": "2023",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2023",
+      "folder": "indianapolis-motor-speedway-rc",
+      "name": "Indianapolis"
+    },
+    {
+      "year": "2023",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2023",
+      "folder": "lime-rock-park",
+      "name": "Lime Rock"
+    },
+    {
+      "year": "2023",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2023",
+      "folder": "canadian-tire-motorsport-park",
+      "name": "Mosport"
+    },
+    {
+      "year": "2023",
+      "folder": "road-america",
+      "name": "Road America"
+    },
+    {
+      "year": "2023",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
+    },
+    {
+      "year": "2023",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    },
+    {
+      "year": "2023",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2023",
+      "folder": "watkins-glen-international",
+      "name": "Watkins Glen"
+    },
+    {
+      "year": "2024",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2024",
+      "folder": "detroit-street-course",
+      "name": "Detroit"
+    },
+    {
+      "year": "2024",
+      "folder": "tire-rack.com-battle-on-the-bricks",
+      "name": "Indianapolis"
+    },
+    {
+      "year": "2024",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2024",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2024",
+      "folder": "canadian-tire-motorsport-park",
+      "name": "Mosport"
+    },
+    {
+      "year": "2024",
+      "folder": "road-america",
+      "name": "Road America"
+    },
+    {
+      "year": "2024",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
+    },
+    {
+      "year": "2024",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    },
+    {
+      "year": "2024",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2024",
+      "folder": "watkins-glen-international",
+      "name": "Watkins Glen"
+    },
+    {
+      "year": "2025",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2025",
+      "folder": "detroit-street-course",
+      "name": "Detroit"
+    },
+    {
+      "year": "2025",
+      "folder": "indianapolis-motor-speedway-rc",
+      "name": "Indianapolis"
+    },
+    {
+      "year": "2025",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2025",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2025",
+      "folder": "canadian-tire-motorsport-park",
+      "name": "Mosport"
+    },
+    {
+      "year": "2025",
+      "folder": "road-america",
+      "name": "Road America"
+    },
+    {
+      "year": "2025",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
+    },
+    {
+      "year": "2025",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    },
+    {
+      "year": "2025",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2025",
+      "folder": "watkins-glen-international",
+      "name": "Watkins Glen"
+    },
+    {
+      "year": "2026",
+      "folder": "daytona-international-speedway",
+      "name": "Daytona"
+    },
+    {
+      "year": "2026",
+      "folder": "sebring-international-raceway",
+      "name": "Sebring"
+    }
   ],
   "notes": [
     "Only headline IMSA WeatherTech events are included",

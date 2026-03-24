@@ -359,6 +359,8 @@ class EnduranceSeriesImporter
   end
 
   def import_hourly_data(race_url, year, output_path, event_name, race_folder)
+    # Allow re-fetching this URL since find_csv_files already visited it
+    @visited.delete(race_url.gsub(/\?.*$/, ''))
     links = fetch_links(race_url)
     # Match hourly folders: "01_Hour 1/", "01_Hour%201/", "24_Hour 24/", etc.
     hourly_folders = links.select { |f| f.match?(/^\d+_Hour(%20|\s)*\d+\//i) }
