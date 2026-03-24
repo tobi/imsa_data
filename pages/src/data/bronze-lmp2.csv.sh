@@ -1,71 +1,88 @@
 #!/bin/bash
 # Bronze LMP2 driver career analysis
-# Uses bpillar-quality laps (Q1+Q2 = fastest 50%) for clean pace comparison
+# Reference pace = car's pro drivers across ALL sessions of the event weekend
+# (practice, qualifying, race), using top quartile laps, weighted toward later sessions
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv <<'SQL'
--- Current Bronze / amateur LMP2 drivers (raced in 2025+)
--- Includes 'Unknown' license: IMSA results files often omit the license grade,
--- but if a driver races LMP2 and isn't Platinum/Gold/Silver, they're effectively Bronze.
 WITH bronze_drivers AS (
     SELECT DISTINCT l.driver_id
     FROM laps l
     WHERE l.class = 'LMP2' AND l.session = 'race' AND l.year >= '2025'
       AND l.license IN ('Bronze', 'Unknown')
       AND l.driver_id NOT IN (
-          SELECT driver_id FROM laps
-          WHERE license IN ('Platinum', 'Gold') AND class = 'LMP2'
+          SELECT driver_id FROM laps WHERE license IN ('Platinum', 'Gold') AND class = 'LMP2'
       )
 ),
 
--- Per-driver, per-session pace using bpillar-quality laps only (Q1+Q2 = fastest 50%)
--- This automatically filters out traffic laps, outlaps, pit laps, and slow outliers
+-- Car reference pace: pro drivers' Q1 laps across ALL sessions of the event weekend
+-- Weight later sessions higher: practice=0.5, qualifying=0.7, warmup=0.6, race=1.0
+car_reference AS (
+    SELECT
+        l.year, l.event, l.car,
+        -- Weighted average of Q1 laps (top quartile per driver per session)
+        SUM(l.lap_time * CASE l.session
+            WHEN 'race' THEN 1.0
+            WHEN 'qualifying' THEN 0.7
+            WHEN 'warmup' THEN 0.6
+            ELSE 0.5  -- practice, test
+        END) / SUM(CASE l.session
+            WHEN 'race' THEN 1.0
+            WHEN 'qualifying' THEN 0.7
+            WHEN 'warmup' THEN 0.6
+            ELSE 0.5
+        END) AS ref_pace,
+        MIN(l.lap_time) AS ref_best,
+        COUNT(*) AS ref_laps
+    FROM laps l
+    WHERE l.class = 'LMP2'
+      AND l.license IN ('Platinum', 'Gold')
+      AND l.lap_time_driver_quartile = 1  -- top quartile only
+      AND l.lap_time IS NOT NULL
+      AND l.flags = 'GF'
+    GROUP BY l.year, l.event, l.car
+    HAVING COUNT(*) >= 10
+),
+
+-- Bronze driver pace per event (race sessions, bpillar Q1+Q2)
 driver_pace AS (
     SELECT
-        l.session_id, l.driver_id, l.driver_name, l.car, l.event, l.year,
-        l.series_code, l.class, l.license,
-        COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)) AS clean_laps,
-        MEDIAN(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)) AS median_pace,
-        QUANTILE_CONT(l.lap_time, 0.25) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)) AS p25_pace,
-        MIN(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)) AS best_lap,
-        l.start_date
+        l.driver_id, l.driver_name, l.car, l.event, l.year,
+        l.series_code, l.license,
+        COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
+            AND l.session = 'race') AS clean_laps,
+        MEDIAN(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
+            AND l.session = 'race') AS median_pace,
+        QUANTILE_CONT(l.lap_time, 0.25) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
+            AND l.session = 'race') AS p25_pace,
+        MIN(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
+            AND l.session = 'race') AS best_lap,
+        MIN(l.start_date) AS start_date
     FROM laps l
-    WHERE l.session = 'race' AND l.class = 'LMP2'
-    GROUP BY l.session_id, l.driver_id, l.driver_name, l.car, l.event, l.year,
-             l.series_code, l.class, l.license, l.start_date
-    HAVING COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)) >= 5
+    WHERE l.class = 'LMP2'
+      AND l.driver_id IN (SELECT driver_id FROM bronze_drivers)
+      AND l.license IN ('Bronze', 'Unknown')
+    GROUP BY l.driver_id, l.driver_name, l.car, l.event, l.year, l.series_code, l.license
+    HAVING COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
+        AND l.session = 'race') >= 5
 ),
 
--- Pro teammate pace for each car+session (Platinum or Gold in same car)
--- Also using bpillar Q1+Q2 laps only for apples-to-apples comparison
-pro_pace AS (
-    SELECT session_id, car,
-        MEDIAN(lap_time) FILTER (WHERE lap_time_driver_quartile IN (1, 2)) AS pro_median,
-        MIN(lap_time) FILTER (WHERE lap_time_driver_quartile IN (1, 2)) AS pro_best,
-        COUNT(*) FILTER (WHERE lap_time_driver_quartile IN (1, 2)) AS pro_laps
-    FROM laps
-    WHERE session = 'race' AND class = 'LMP2'
-      AND license IN ('Platinum', 'Gold')
-    GROUP BY session_id, car
-    HAVING COUNT(*) FILTER (WHERE lap_time_driver_quartile IN (1, 2)) >= 5
-),
-
--- Running event counter per driver (chronological order)
+-- Join and compute gaps
 with_event_num AS (
     SELECT
         dp.*,
-        pp.pro_median, pp.pro_best, pp.pro_laps,
-        ROUND(dp.median_pace - pp.pro_median, 3) AS gap_to_pro_median,
-        ROUND(dp.best_lap - pp.pro_best, 3) AS gap_to_pro_best,
-        ROUND((dp.median_pace - pp.pro_median) / pp.pro_median * 100, 2) AS gap_pct,
+        ROUND(cr.ref_pace, 3) AS ref_pace,
+        ROUND(cr.ref_best, 3) AS ref_best,
+        cr.ref_laps,
+        ROUND(dp.median_pace - cr.ref_pace, 3) AS gap_to_ref,
+        ROUND(dp.best_lap - cr.ref_best, 3) AS gap_to_ref_best,
+        ROUND((dp.median_pace - cr.ref_pace) / cr.ref_pace * 100, 2) AS gap_pct,
         ROW_NUMBER() OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS career_event_num,
         SUM(dp.clean_laps) OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS cumulative_laps
     FROM driver_pace dp
-    LEFT JOIN pro_pace pp ON pp.session_id = dp.session_id AND pp.car = dp.car
-    WHERE dp.driver_id IN (SELECT driver_id FROM bronze_drivers)
-      AND dp.license IN ('Bronze', 'Unknown')
+    LEFT JOIN car_reference cr ON cr.year = dp.year AND cr.event = dp.event AND cr.car = dp.car
 )
 
 SELECT
@@ -82,11 +99,11 @@ SELECT
     ROUND(median_pace, 3) AS median_pace,
     ROUND(p25_pace, 3) AS p25_pace,
     ROUND(best_lap, 3) AS best_lap,
-    ROUND(pro_median, 3) AS pro_median,
-    ROUND(pro_best, 3) AS pro_best,
-    pro_laps,
-    gap_to_pro_median,
-    gap_to_pro_best,
+    ref_pace AS pro_median,
+    ref_best AS pro_best,
+    ref_laps AS pro_laps,
+    gap_to_ref AS gap_to_pro_median,
+    gap_to_ref_best AS gap_to_pro_best,
     gap_pct
 FROM with_event_num
 ORDER BY driver_id, start_date;
