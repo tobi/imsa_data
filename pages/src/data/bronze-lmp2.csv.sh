@@ -75,12 +75,18 @@ with_event_num AS (
         ROUND(dp.mean_pace - cr.ref_pace, 3) AS gap_to_ref,
         ROUND(dp.best_lap - cr.ref_best, 3) AS gap_to_ref_best,
         ROUND((dp.mean_pace - cr.ref_pace) / cr.ref_pace * 100, 2) AS gap_pct,
+        -- Gap normalized per 1km of track length (seconds per km)
+        ROUND((dp.mean_pace - cr.ref_pace) / t.length_km, 3) AS gap_per_km,
+        t.length_km AS track_length_km,
         ROW_NUMBER() OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS career_event_num,
         SUM(dp.clean_laps) OVER (PARTITION BY dp.driver_id ORDER BY dp.start_date) AS cumulative_laps,
         d.peak_license, d.license_since_year
     FROM driver_pace dp
     LEFT JOIN car_reference cr ON cr.year = dp.year AND cr.event = dp.event AND cr.car = dp.car
     LEFT JOIN drivers d ON d.driver_id = dp.driver_id
+    -- Join track length via track_aliases (normalize hyphens/spaces for matching)
+    LEFT JOIN track_aliases ta ON LOWER(REPLACE(dp.event, ' ', '-')) ILIKE '%' || ta.alias || '%'
+    LEFT JOIN tracks t ON t.track_id = ta.track_id
 )
 
 SELECT
@@ -94,7 +100,9 @@ SELECT
     ref_laps AS pro_laps,
     gap_to_ref AS gap_to_pro_median,
     gap_to_ref_best AS gap_to_pro_best,
-    gap_pct
+    gap_pct,
+    gap_per_km,
+    track_length_km
 FROM with_event_num
 ORDER BY driver_id, start_date;
 SQL

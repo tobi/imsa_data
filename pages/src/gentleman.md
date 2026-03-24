@@ -133,38 +133,50 @@ const seriesSet = new Set(driverData.map(d => d.series_code));
 
 ## Gap to Pro Over Career
 
-${selectedDriver}'s gap to the car's pro pace (Platinum/Gold drivers' weighted Q1 laps across the whole event weekend) vs the field.
+${selectedDriver}'s gap to the car's pro pace (Platinum/Gold drivers' mean of top 2 quartiles across the whole event weekend) vs the field.
 
 ```js
-// Compute rolling averages for the field
+const gapMetric = view(Inputs.radio(["Gap (seconds)", "Gap/km (normalized)"], {label: "Metric", value: "Gap/km (normalized)"}));
+const usePerKm = gapMetric === "Gap/km (normalized)";
+const gapField = usePerKm ? "gap_per_km" : "gap_to_pro_median";
+```
+
+```js
+const driverWithMetric = driverWithRef.filter(d => d[gapField] != null);
+const otherWithMetric = allOtherData.filter(d => d[gapField] != null);
+const seasonWithMetric = seasonData.filter(d => d[gapField] != null);
+
 const fieldByLaps = Array.from(
-  d3.group(allOtherData, d => Math.floor(d.cumulative_laps / 50) * 50),
-  ([bucket, rows]) => ({cumulative_laps: bucket, gap: d3.median(rows, d => d.gap_to_pro_median)})
+  d3.group(otherWithMetric, d => Math.floor(d.cumulative_laps / 50) * 50),
+  ([bucket, rows]) => ({cumulative_laps: bucket, gap: d3.median(rows, d => +d[gapField])})
 ).sort((a, b) => a.cumulative_laps - b.cumulative_laps);
 
 const seasonByLaps = Array.from(
-  d3.group(seasonData, d => Math.floor(d.cumulative_laps / 50) * 50),
-  ([bucket, rows]) => ({cumulative_laps: bucket, gap: d3.median(rows, d => d.gap_to_pro_median)})
+  d3.group(seasonWithMetric, d => Math.floor(d.cumulative_laps / 50) * 50),
+  ([bucket, rows]) => ({cumulative_laps: bucket, gap: d3.median(rows, d => +d[gapField])})
 ).sort((a, b) => a.cumulative_laps - b.cumulative_laps);
+
+const yLabel = usePerKm ? "← Gap to pro (s/km)" : "← Gap to pro (seconds)";
+const maxY = usePerKm ? 3 : 8;
 
 display(Plot.plot({
   width: 960, height: 420, marginLeft: 50, marginBottom: 40,
   x: {label: "Cumulative clean race laps →"},
-  y: {label: "← Gap to pro (seconds)", grid: true, domain: [
-    Math.min(-0.5, d3.min(driverWithRef, d => +d.gap_to_pro_median) - 0.5),
-    Math.max(8, d3.max(driverWithRef, d => +d.gap_to_pro_median) + 0.5)
+  y: {label: yLabel, grid: true, domain: [
+    Math.min(-0.2, d3.min(driverWithMetric, d => +d[gapField]) - 0.2),
+    Math.max(maxY, d3.max(driverWithMetric, d => +d[gapField]) + 0.2)
   ]},
   marks: [
     Plot.ruleY([0], {stroke: "#888", strokeDasharray: "4 2"}),
     Plot.line(fieldByLaps, {x: "cumulative_laps", y: "gap", stroke: "#555", strokeWidth: 1.5, strokeDasharray: "6 3"}),
     Plot.line(seasonByLaps, {x: "cumulative_laps", y: "gap", stroke: "#888", strokeWidth: 1.5, strokeDasharray: "2 2"}),
-    Plot.dot(driverWithRef, {
-      x: "cumulative_laps", y: "gap_to_pro_median",
+    Plot.dot(driverWithMetric, {
+      x: "cumulative_laps", y: gapField,
       fill: d => licenseColors[d.license] || "#e63946", r: 6, opacity: 0.8,
-      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${f2(d.gap_to_pro_median)}s`, "Gap %": d => `${f1(d.gap_pct)}%`, Series: "series_code"}}
+      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${f2(d.gap_to_pro_median)}s`, "Gap/km": d => `+${f2(d.gap_per_km)}s/km`, Series: "series_code"}}
     }),
-    ...(driverWithRef.length >= 3 ? [Plot.linearRegressionY(driverWithRef, {
-      x: "cumulative_laps", y: "gap_to_pro_median",
+    ...(driverWithMetric.length >= 3 ? [Plot.linearRegressionY(driverWithMetric, {
+      x: "cumulative_laps", y: gapField,
       stroke: licenseColors[driver?.license] || "#e63946", strokeWidth: 2
     })] : []),
   ]
@@ -187,10 +199,11 @@ const eventTable = driverData.map(d => ({
   "Best": f2(d.best_lap) ? formatLapTime(+d.best_lap) : "—",
   "Pro Ref": f2(d.pro_median) ? formatLapTime(+d.pro_median) : "—",
   "Gap": f2(d.gap_to_pro_median) ? `+${f2(d.gap_to_pro_median)}s` : "—",
+  "Gap/km": f2(d.gap_per_km) ? `+${f2(d.gap_per_km)}s` : "—",
   "Gap %": f1(d.gap_pct) ? `${f1(d.gap_pct)}%` : "—",
 }));
 display(Inputs.table(eventTable, {
-  columns: ["Event", "Series", "Car", "Laps", "Median", "Best", "Pro Ref", "Gap", "Gap %"]
+  columns: ["Event", "Series", "Car", "Laps", "Median", "Best", "Pro Ref", "Gap", "Gap/km", "Gap %"]
 }));
 ```
 

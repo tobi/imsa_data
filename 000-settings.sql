@@ -20,7 +20,8 @@ SELECT
     unnest.country,
     unnest.latitude,
     unnest.longitude,
-    unnest.aliases
+    unnest.aliases,
+    unnest.length_km
 FROM read_json_auto('tracks.json') j,
      UNNEST(j.tracks);
 
