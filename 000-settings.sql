@@ -218,10 +218,32 @@ CREATE TEMP TABLE IF NOT EXISTS driver_aliases_tbl AS
 SELECT alias, canonical_id
 FROM read_json_auto('driver_aliases.json');
 
--- Macro to resolve a driver name to a canonical driver_id via aliases
+-- Macro to canonicalize a name: first 4 chars of first name + full surname(s)
+-- This naturally merges Nick/Nicholas, Alex/Alexander, Phil/Philip, etc.
+-- Falls back to plain lowercased name for single-word names.
+CREATE OR REPLACE MACRO fuzzy_driver_key(name) AS (
+    CASE
+        WHEN REGEXP_REPLACE(TRIM(name), '\s+', ' ') NOT LIKE '% %'
+        THEN LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
+        ELSE LOWER(
+            LEFT(SPLIT_PART(REGEXP_REPLACE(TRIM(name), '\s+', ' '), ' ', 1), 4)
+            || ' ' ||
+            ARRAY_TO_STRING(LIST_SLICE(STRING_SPLIT(REGEXP_REPLACE(TRIM(name), '\s+', ' '), ' '), 2, 100), ' ')
+        )
+    END
+);
+
+-- Macro to resolve a driver name to a canonical driver_id:
+-- 1. Check explicit aliases by exact lowercased name
+-- 2. Check explicit aliases by fuzzy key (first4+rest) — catches nickname variants
+-- 3. Final fallback: plain lowercased name (NOT fuzzy key — keep readable IDs)
 CREATE OR REPLACE MACRO resolve_driver_alias(name) AS (
     COALESCE(
-        (SELECT canonical_id FROM driver_aliases_tbl WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
+        (SELECT canonical_id FROM driver_aliases_tbl
+         WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
+        (SELECT canonical_id FROM driver_aliases_tbl
+         WHERE alias = fuzzy_driver_key(name)
+         LIMIT 1),
         LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
     )
 );

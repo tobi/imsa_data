@@ -183,8 +183,7 @@ best_name AS (
     FROM event_drivers
     ORDER BY driver_id,
         -- Penalize ALL CAPS surnames (WEC/ELMS style: "George KURTZ")
-        -- If any word after the first is all uppercase and > 2 chars, it's WEC-style
-        CASE WHEN canonical_name ~ '[A-Z]{3}' THEN 1 ELSE 0 END,
+        CASE WHEN regexp_matches(canonical_name, '[A-Z]{3}') THEN 1 ELSE 0 END,
         -- Prefer names with accented characters (François > Francois)
         CASE WHEN canonical_name ~ '[àáâãäåèéêëìíîïòóôõöùúûüýÿñçÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝŸÑÇ]' THEN 0 ELSE 1 END,
         -- Prefer shorter names (Nick > Nicholas) — common usage
@@ -215,20 +214,45 @@ ranked AS (
     JOIN best_name bn ON bn.driver_id = ed.driver_id
 )
 SELECT
-    driver_id,
-    canonical_name,
-    name AS preferred_name,
-    imsa_driver_id,
-    license,
-    license_rank,
-    country,
-    team,
-    class AS last_class,
-    year AS last_year,
-    car AS last_car,
-    start_date AS last_seen
-FROM ranked
-WHERE row_num = 1;
+    r.driver_id,
+    r.canonical_name,
+    r.name AS preferred_name,
+    r.imsa_driver_id,
+    r.license,
+    r.license_rank,
+    r.country,
+    r.team,
+    r.class AS last_class,
+    r.year AS last_year,
+    r.car AS last_car,
+    r.start_date AS last_seen,
+    -- Peak license ever achieved
+    peak.peak_license,
+    peak.peak_license_rank,
+    -- Year current license was first seen
+    cur_year.license_since_year
+FROM ranked r
+LEFT JOIN (
+    SELECT driver_id,
+        FIRST(license ORDER BY license_rank DESC) AS peak_license,
+        MAX(license_rank) AS peak_license_rank
+    FROM event_drivers
+    WHERE license IS NOT NULL AND license != 'Unknown'
+    GROUP BY driver_id
+) peak ON peak.driver_id = r.driver_id
+LEFT JOIN (
+    SELECT driver_id, MIN(year) AS license_since_year
+    FROM event_drivers
+    WHERE license IS NOT NULL AND license != 'Unknown'
+    GROUP BY driver_id, license
+    HAVING license = (
+        SELECT ed2.license FROM event_drivers ed2
+        WHERE ed2.driver_id = event_drivers.driver_id
+          AND ed2.license IS NOT NULL AND ed2.license != 'Unknown'
+        ORDER BY ed2.start_date DESC LIMIT 1
+    )
+) cur_year ON cur_year.driver_id = r.driver_id
+WHERE r.row_num = 1;
 
 CREATE OR REPLACE TABLE drivers (
     driver_id VARCHAR PRIMARY KEY,
@@ -242,7 +266,10 @@ CREATE OR REPLACE TABLE drivers (
     last_class VARCHAR,
     last_year VARCHAR,
     last_car VARCHAR,
-    last_seen TIMESTAMP
+    last_seen TIMESTAMP,
+    peak_license VARCHAR,
+    peak_license_rank INTEGER,
+    license_since_year VARCHAR
 );
 
 INSERT OR REPLACE INTO drivers
@@ -258,7 +285,10 @@ SELECT
     last_class,
     last_year,
     last_car,
-    last_seen
+    last_seen,
+    peak_license,
+    CAST(peak_license_rank AS INTEGER),
+    license_since_year
 FROM drivers_snapshot;
 
 -- SELECT COUNT(DISTINCT name) as drivers, COUNT(DISTINCT license) as licenses, COUNT(DISTINCT class) as classes, COUNT(DISTINCT team) as teams, COUNT(DISTINCT country) as countries, COUNT(DISTINCT year) as years FROM event_drivers;

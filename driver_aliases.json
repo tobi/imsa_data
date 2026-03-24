@@ -8,10 +8,6 @@
     "canonical_id": "alex riberas"
   },
   {
-    "alias": "alex quinn",
-    "canonical_id": "alexander quinn"
-  },
-  {
     "alias": "ashton harrison-henry",
     "canonical_id": "ashton harrison"
   },
@@ -62,10 +58,6 @@
   {
     "alias": "jean-\u00e9ric vergne",
     "canonical_id": "jean-eric vergne"
-  },
-  {
-    "alias": "josh pierson",
-    "canonical_id": "joshua pierson"
   },
   {
     "alias": "k\u00e9vin estre",
@@ -140,10 +132,6 @@
     "canonical_id": "paul loup chatin"
   },
   {
-    "alias": "phil hanson",
-    "canonical_id": "philip hanson"
-  },
-  {
     "alias": "ren\u00e9 binder",
     "canonical_id": "rene binder"
   },
@@ -170,14 +158,6 @@
   {
     "alias": "valentin hasse-clot",
     "canonical_id": "valentin hasse clot"
-  },
-  {
-    "alias": "will owen",
-    "canonical_id": "william owen"
-  },
-  {
-    "alias": "will stevens",
-    "canonical_id": "william stevens"
   },
   {
     "alias": "benjamin hanley",
@@ -210,5 +190,81 @@
   {
     "alias": "william stevens",
     "canonical_id": "will stevens"
+  },
+  {
+    "alias": "aleksei nesov",
+    "canonical_id": "aleksi nesov"
+  },
+  {
+    "alias": "alexander fontana",
+    "canonical_id": "alex fontana"
+  },
+  {
+    "alias": "alexander lynn",
+    "canonical_id": "alex lynn"
+  },
+  {
+    "alias": "andrew gilbert",
+    "canonical_id": "andreu gilbert"
+  },
+  {
+    "alias": "benjimin goethe",
+    "canonical_id": "benji goethe"
+  },
+  {
+    "alias": "charlie eastwood",
+    "canonical_id": "charles eastwood"
+  },
+  {
+    "alias": "charly samani",
+    "canonical_id": "charles-henri samani"
+  },
+  {
+    "alias": "frankie bird",
+    "canonical_id": "frank bird"
+  },
+  {
+    "alias": "gabriele rindone",
+    "canonical_id": "gabriel rindone"
+  },
+  {
+    "alias": "georgios kolovos",
+    "canonical_id": "george kolovos"
+  },
+  {
+    "alias": "gillion henrion",
+    "canonical_id": "gillian henrion"
+  },
+  {
+    "alias": "guilheme oliveira",
+    "canonical_id": "guilherme de oliveira"
+  },
+  {
+    "alias": "joshua burdon",
+    "canonical_id": "josh burdon"
+  },
+  {
+    "alias": "matt\u00e9o quintarelli",
+    "canonical_id": "matteo quintarelli"
+  },
+  {
+    "alias": "michel broniszewski",
+    "canonical_id": "michael broniszewski"
+  },
+  {
+    "alias": "miroslav konopka",
+    "canonical_id": "miro konopka"
+  },
+  {
+    "alias": "philip fayer",
+    "canonical_id": "phil fayer"
+  },
+  {
+    "alias": "rick taylor",
+    "canonical_id": "ricky taylor"
+  },
+  {
+    "alias": "tatiana calderon",
+    "canonical_id": "tati calderon"
   }
 ]
