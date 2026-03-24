@@ -294,6 +294,79 @@ display(Plot.plot({
 }));
 ```
 
+## Gap vs Tire Age
+
+How does the gap to the pro teammate change as tires wear? Compares Bronze and Pro median lap times at the same tire age (est_tire_age, bucketed in groups of 3 laps) within the same car and race session. Only bpillar Q1+Q2 laps.
+
+```js
+const tireGapData = await FileAttachment("data/bronze-tire-gap.csv").csv({typed: true});
+```
+
+```js
+const tireDriverSelect = view(Inputs.select(
+  ["All (averaged)", ...driverSummaries.filter(d => d.events >= 3).map(d => d.name)],
+  {label: "Driver", value: "All (averaged)"}
+));
+```
+
+```js
+const filteredTireGap = tireGapData
+  .filter(d => d.gap != null && d.tire_age != null && d.tire_age <= 30)
+  .filter(d => tireDriverSelect === "All (averaged)" || d.driver_name === tireDriverSelect);
+
+// For "All" mode, average across all drivers at each tire_age
+const tireGapPlotData = tireDriverSelect === "All (averaged)"
+  ? Array.from(
+      d3.group(filteredTireGap, d => d.tire_age),
+      ([age, rows]) => ({
+        tire_age: age,
+        gap: d3.mean(rows, d => d.gap),
+        gap_pct: d3.mean(rows, d => d.gap_pct),
+        n: rows.length,
+        driver_name: "All Bronze avg"
+      })
+    ).filter(d => d.n >= 5)
+  : filteredTireGap;
+```
+
+```js
+display(Plot.plot({
+  width: 960,
+  height: 400,
+  marginLeft: 50,
+  marginBottom: 40,
+  x: {label: "Tire age (green-flag laps) →", grid: true},
+  y: {label: "← Gap to pro (seconds)", grid: true},
+  color: tireDriverSelect === "All (averaged)" ? undefined : {legend: true},
+  marks: [
+    Plot.ruleY([0], {stroke: "#888", strokeDasharray: "4 2"}),
+    // Individual session dots (faded)
+    ...(tireDriverSelect !== "All (averaged)" ? [
+      Plot.dot(filteredTireGap, {
+        x: "tire_age", y: "gap",
+        fill: "event", r: 3, opacity: 0.4,
+        tip: {channels: {Event: "event", Year: "year", "Bronze": d => `${d.bronze_pace.toFixed(2)}s`, "Pro": d => `${d.pro_pace.toFixed(2)}s`}}
+      })
+    ] : []),
+    // Average line
+    Plot.line(
+      tireDriverSelect === "All (averaged)"
+        ? tireGapPlotData.sort((a, b) => a.tire_age - b.tire_age)
+        : Array.from(
+            d3.group(filteredTireGap, d => d.tire_age),
+            ([age, rows]) => ({tire_age: age, gap: d3.median(rows, d => d.gap), n: rows.length})
+          ).filter(d => d.n >= 2).sort((a, b) => a.tire_age - b.tire_age),
+      {x: "tire_age", y: "gap", stroke: "#e63946", strokeWidth: 2.5, curve: "catmull-rom"}
+    ),
+    // Annotations
+    Plot.text([{x: 2, y: -0.3, text: "← fresh tires"}], {x: "x", y: "y", text: "text", fontSize: 11, fill: "#888"}),
+    Plot.text([{x: 25, y: -0.3, text: "worn tires →"}], {x: "x", y: "y", text: "text", fontSize: 11, fill: "#888"})
+  ]
+}));
+```
+
+<small>Each dot is one tire-age bucket from one race session. The red line shows the median gap across all sessions. Rising line = Bronze driver loses more time as tires degrade; flat line = consistent tire management.</small>
+
 ## Methodology
 
 - **Clean laps**: bpillar Q1+Q2 laps only — the fastest 50% of each driver's laps, excluding outlaps, pit laps, and slow outliers (traffic, off-track moments). This is the standard "representative pace" metric used across endurance racing.
