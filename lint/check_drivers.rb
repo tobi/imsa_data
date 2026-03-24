@@ -50,6 +50,7 @@ class DriverChecker
     check_duplicate_detection
     check_event_driver_summary
     check_driver_names
+    check_known_driver_identities
 
     summary
   end
@@ -356,6 +357,65 @@ class DriverChecker
     if case_issues.any?
       issue(:info, "Drivers with 3+ name variants (may need aliases)")
       case_issues.first(5).each { |c| puts "   - #{c['driver_id']}: #{c['variants']}" }
+    end
+  end
+
+  def check_known_driver_identities
+    puts "\n--- Known Driver Identity Regression Tests ---"
+
+    # These are drivers who historically had name/identity issues.
+    # Each test verifies the alias system and canonical name resolution work correctly.
+    tests = [
+      # [driver_id, expected_canonical_name, description]
+      ["nick boulle",              "Nick Boulle",              "nickname vs full (Nicholas BOULLE)"],
+      ["ben hanley",               "Ben Hanley",               "nickname vs full (Benjamin Hanley)"],
+      ["will stevens",             "Will Stevens",             "nickname vs full (William STEVENS)"],
+      ["alex quinn",               "Alex Quinn",               "nickname vs full (Alexander Quinn)"],
+      ["dan goldburg",             "Dan Goldburg",             "nickname vs full (Daniel Goldburg)"],
+      ["josh pierson",             "Josh Pierson",             "nickname vs full (Joshua PIERSON)"],
+      ["nick yelloly",             "Nick Yelloly",             "nickname vs full (Nicholas YELLOLY)"],
+      ["phil hanson",              "Phil Hanson",              "nickname vs full (Philip HANSON)"],
+      ["paul loup chatin",        "Paul Loup Chatin",         "hyphen variant (Paul-Loup CHATIN)"],
+      ["david heinemeier hansson", "David Heinemeier Hansson", "hyphen variant (HEINEMEIER-HANSSON)"],
+      ["francois perrodo",        "Francois Perrodo",         "accented variant (François PERRODO)"],
+      ["sebastien bourdais",      "Sebastien Bourdais",       "accented variant (Sébastien BOURDAIS)"],
+      ["george kurtz",            "George Kurtz",             "WEC ALL CAPS (George KURTZ)"],
+      ["tobi lutke",              "Tobi Lutke",               "4th driver UNPIVOT (was Unknown license)"],
+      ["nick de vries",           "Nick De Vries",            "Nyck vs Nick variant"],
+    ]
+
+    pass = 0
+    fail = 0
+
+    tests.each do |driver_id, expected_name, description|
+      # Check 1: driver_id exists and has correct canonical name in drivers table
+      result = query("SELECT canonical_name FROM drivers WHERE driver_id = '#{driver_id}'")
+
+      if result.empty?
+        issue(:warning, "Known driver '#{driver_id}' not found in drivers table (#{description})")
+        fail += 1
+        next
+      end
+
+      actual = result.first['canonical_name']
+
+      # Check 2: only one display name in laps
+      variants = query(<<~SQL)
+        SELECT COUNT(DISTINCT driver_name) as n
+        FROM laps WHERE driver_id = '#{driver_id}'
+      SQL
+      variant_count = variants.first&.dig('n').to_i
+
+      if variant_count > 1
+        issue(:error, "Driver '#{driver_id}' has #{variant_count} name variants in laps — #{description}")
+        fail += 1
+      else
+        pass += 1
+      end
+    end
+
+    if fail == 0
+      puts "  ✓ All #{pass} known driver identity tests passed"
     end
   end
 

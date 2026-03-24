@@ -2,18 +2,7 @@
 -- This file starts with '040-' to ensure it runs after all tables are created
 -- The series and series_code fields appear early for easy filtering
 
--- Load driver aliases early so we can resolve them
-CREATE TEMP TABLE IF NOT EXISTS driver_aliases_early AS
-SELECT alias, canonical_id
-FROM read_json_auto('driver_aliases.json');
-
--- Macro to resolve driver ID via aliases
-CREATE OR REPLACE MACRO resolve_driver_id_early(name) AS (
-    COALESCE(
-        (SELECT canonical_id FROM driver_aliases_early WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
-        LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
-    )
-);
+-- Driver alias resolution is loaded in 000-settings.sql (resolve_driver_alias macro)
 
 CREATE OR REPLACE TABLE laps AS
 SELECT
@@ -31,7 +20,7 @@ SELECT
     laps.class,
     laps.driver_name,
     -- Apply alias resolution to driver_id
-    resolve_driver_id_early(laps.driver_name) AS driver_id,
+    resolve_driver_alias(laps.driver_name) AS driver_id,
     laps.lap,
     laps.lap_time,
     laps.lap_time_s1,

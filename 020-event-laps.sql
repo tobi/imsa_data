@@ -241,10 +241,8 @@ ranked_stints AS (
         ranked_stints.class,
         ranked_stints.driver_name AS driver_name_raw,
         COALESCE(ed.canonical_name, ranked_stints.driver_name) AS driver_name_entry,
-        CASE
-            WHEN ed.driver_id IS NOT NULL THEN ed.driver_id
-            ELSE LOWER(REGEXP_REPLACE(TRIM(ranked_stints.driver_name), '\\s+', ' '))
-        END AS resolved_driver_id,
+        -- Resolve driver_id through alias table for consistent cross-series identity
+        resolve_driver_alias(COALESCE(ed.canonical_name, ranked_stints.driver_name)) AS resolved_driver_id,
         ranked_stints.lap,
         ranked_stints.lap_time,
         ranked_stints.lap_time_s1,

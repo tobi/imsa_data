@@ -1,45 +1,214 @@
-[{"alias":"albert costa balboa","canonical_id":"albert costa"},
-{"alias":"alex riberas bou","canonical_id":"alex riberas"},
-{"alias":"alex quinn","canonical_id":"alexander quinn"},
-{"alias":"ashton harrison-henry","canonical_id":"ashton harrison"},
-{"alias":"ben barker","canonical_id":"benjamin barker"},
-{"alias":"ben hanley","canonical_id":"benjamin hanley"},
-{"alias":"célia martin","canonical_id":"celia martin"},
-{"alias":"dan goldburg","canonical_id":"daniel goldburg"},
-{"alias":"david heinemeier-hansson","canonical_id":"david heinemeier hansson"},
-{"alias":"françois heriau","canonical_id":"francois heriau"},
-{"alias":"françois perrodo","canonical_id":"francois perrodo"},
-{"alias":"giacomo altoè","canonical_id":"giacomo altoe"},
-{"alias":"gianmaria bruni","canonical_id":"giammaria bruni"},
-{"alias":"guilherme oliveira","canonical_id":"guilherme de oliveira"},
-{"alias":"horst felbermayr jr","canonical_id":"horst felbermayr"},
-{"alias":"jean-éric vergne","canonical_id":"jean-eric vergne"},
-{"alias":"josh pierson","canonical_id":"joshua pierson"},
-{"alias":"kévin estre","canonical_id":"kevin estre"},
-{"alias":"larry voorde","canonical_id":"larry ten voorde"},
-{"alias":"laurents hörr","canonical_id":"laurents horr"},
-{"alias":"loïc duval","canonical_id":"loic duval"},
-{"alias":"louis delétraz","canonical_id":"louis deletraz"},
-{"alias":"marco sørensen","canonical_id":"marco sorensen"},
-{"alias":"marvin kirchhöfer","canonical_id":"marvin kirchhofer"},
-{"alias":"matthieu jaminet","canonical_id":"mathieu jaminet"},
-{"alias":"matt bell","canonical_id":"matthew bell"},
-{"alias":"maxi buhk","canonical_id":"maximilian buhk"},
-{"alias":"miguel cristóvão","canonical_id":"miguel cristovao"},
-{"alias":"nathanaël berthon","canonical_id":"nathanael berthon"},
-{"alias":"nicholas boulle","canonical_id":"nick boulle"},
-{"alias":"nick yelloly","canonical_id":"nicholas yelloly"},
-{"alias":"nyck de vries","canonical_id":"nick de vries"},
-{"alias":"nico pino","canonical_id":"nicolas pino"},
-{"alias":"nico varrone","canonical_id":"nicolas varrone"},
-{"alias":"paul-loup chatin","canonical_id":"paul loup chatin"},
-{"alias":"phil hanson","canonical_id":"philip hanson"},
-{"alias":"rené binder","canonical_id":"rene binder"},
-{"alias":"rené rast","canonical_id":"rene rast"},
-{"alias":"reshad de gérus","canonical_id":"reshad de gerus"},
-{"alias":"sébastien bourdais","canonical_id":"sebastien bourdais"},
-{"alias":"sophia flörsch","canonical_id":"sophia floersch"},
-{"alias":"stoffel vandorne","canonical_id":"stoffel vandoorne"},
-{"alias":"valentin hasse-clot","canonical_id":"valentin hasse clot"},
-{"alias":"will owen","canonical_id":"william owen"},
-{"alias":"will stevens","canonical_id":"william stevens"}]
+[
+  {
+    "alias": "albert costa balboa",
+    "canonical_id": "albert costa"
+  },
+  {
+    "alias": "alex riberas bou",
+    "canonical_id": "alex riberas"
+  },
+  {
+    "alias": "alex quinn",
+    "canonical_id": "alexander quinn"
+  },
+  {
+    "alias": "ashton harrison-henry",
+    "canonical_id": "ashton harrison"
+  },
+  {
+    "alias": "ben barker",
+    "canonical_id": "benjamin barker"
+  },
+  {
+    "alias": "ben hanley",
+    "canonical_id": "benjamin hanley"
+  },
+  {
+    "alias": "c\u00e9lia martin",
+    "canonical_id": "celia martin"
+  },
+  {
+    "alias": "dan goldburg",
+    "canonical_id": "daniel goldburg"
+  },
+  {
+    "alias": "david heinemeier-hansson",
+    "canonical_id": "david heinemeier hansson"
+  },
+  {
+    "alias": "fran\u00e7ois heriau",
+    "canonical_id": "francois heriau"
+  },
+  {
+    "alias": "fran\u00e7ois perrodo",
+    "canonical_id": "francois perrodo"
+  },
+  {
+    "alias": "giacomo alto\u00e8",
+    "canonical_id": "giacomo altoe"
+  },
+  {
+    "alias": "gianmaria bruni",
+    "canonical_id": "giammaria bruni"
+  },
+  {
+    "alias": "guilherme oliveira",
+    "canonical_id": "guilherme de oliveira"
+  },
+  {
+    "alias": "horst felbermayr jr",
+    "canonical_id": "horst felbermayr"
+  },
+  {
+    "alias": "jean-\u00e9ric vergne",
+    "canonical_id": "jean-eric vergne"
+  },
+  {
+    "alias": "josh pierson",
+    "canonical_id": "joshua pierson"
+  },
+  {
+    "alias": "k\u00e9vin estre",
+    "canonical_id": "kevin estre"
+  },
+  {
+    "alias": "larry voorde",
+    "canonical_id": "larry ten voorde"
+  },
+  {
+    "alias": "laurents h\u00f6rr",
+    "canonical_id": "laurents horr"
+  },
+  {
+    "alias": "lo\u00efc duval",
+    "canonical_id": "loic duval"
+  },
+  {
+    "alias": "louis del\u00e9traz",
+    "canonical_id": "louis deletraz"
+  },
+  {
+    "alias": "marco s\u00f8rensen",
+    "canonical_id": "marco sorensen"
+  },
+  {
+    "alias": "marvin kirchh\u00f6fer",
+    "canonical_id": "marvin kirchhofer"
+  },
+  {
+    "alias": "matthieu jaminet",
+    "canonical_id": "mathieu jaminet"
+  },
+  {
+    "alias": "matt bell",
+    "canonical_id": "matthew bell"
+  },
+  {
+    "alias": "maxi buhk",
+    "canonical_id": "maximilian buhk"
+  },
+  {
+    "alias": "miguel crist\u00f3v\u00e3o",
+    "canonical_id": "miguel cristovao"
+  },
+  {
+    "alias": "nathana\u00ebl berthon",
+    "canonical_id": "nathanael berthon"
+  },
+  {
+    "alias": "nicholas boulle",
+    "canonical_id": "nick boulle"
+  },
+  {
+    "alias": "nick yelloly",
+    "canonical_id": "nicholas yelloly"
+  },
+  {
+    "alias": "nyck de vries",
+    "canonical_id": "nick de vries"
+  },
+  {
+    "alias": "nico pino",
+    "canonical_id": "nicolas pino"
+  },
+  {
+    "alias": "nico varrone",
+    "canonical_id": "nicolas varrone"
+  },
+  {
+    "alias": "paul-loup chatin",
+    "canonical_id": "paul loup chatin"
+  },
+  {
+    "alias": "phil hanson",
+    "canonical_id": "philip hanson"
+  },
+  {
+    "alias": "ren\u00e9 binder",
+    "canonical_id": "rene binder"
+  },
+  {
+    "alias": "ren\u00e9 rast",
+    "canonical_id": "rene rast"
+  },
+  {
+    "alias": "reshad de g\u00e9rus",
+    "canonical_id": "reshad de gerus"
+  },
+  {
+    "alias": "s\u00e9bastien bourdais",
+    "canonical_id": "sebastien bourdais"
+  },
+  {
+    "alias": "sophia fl\u00f6rsch",
+    "canonical_id": "sophia floersch"
+  },
+  {
+    "alias": "stoffel vandorne",
+    "canonical_id": "stoffel vandoorne"
+  },
+  {
+    "alias": "valentin hasse-clot",
+    "canonical_id": "valentin hasse clot"
+  },
+  {
+    "alias": "will owen",
+    "canonical_id": "william owen"
+  },
+  {
+    "alias": "will stevens",
+    "canonical_id": "william stevens"
+  },
+  {
+    "alias": "benjamin hanley",
+    "canonical_id": "ben hanley"
+  },
+  {
+    "alias": "alexander quinn",
+    "canonical_id": "alex quinn"
+  },
+  {
+    "alias": "daniel goldburg",
+    "canonical_id": "dan goldburg"
+  },
+  {
+    "alias": "joshua pierson",
+    "canonical_id": "josh pierson"
+  },
+  {
+    "alias": "nicholas yelloly",
+    "canonical_id": "nick yelloly"
+  },
+  {
+    "alias": "philip hanson",
+    "canonical_id": "phil hanson"
+  },
+  {
+    "alias": "william owen",
+    "canonical_id": "will owen"
+  },
+  {
+    "alias": "william stevens",
+    "canonical_id": "will stevens"
+  }
+]

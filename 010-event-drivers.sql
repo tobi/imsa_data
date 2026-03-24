@@ -141,7 +141,7 @@ WITH base AS (
         name_clean,
         name_original,
         name_clean AS canonical_name,
-        LOWER(name_clean) AS name_key,
+        resolve_driver_alias(name_clean) AS name_key,
         license,
         license_rank,
         country
@@ -174,25 +174,45 @@ UPDATE event_drivers SET license = 'Platinum', license_rank = license_rank(licen
 
 
 CREATE TEMP TABLE drivers_snapshot AS
-WITH ranked AS (
-    SELECT
-        driver_id,
-        canonical_name,
-        name,
-        imsa_driver_id,
-        license,
-        license_rank,
-        team,
-        country,
-        class,
-        year,
-        car,
-        start_date,
-        ROW_NUMBER() OVER (
-            PARTITION BY driver_id
-            ORDER BY start_date DESC
-        ) AS row_num
+WITH
+-- Pick the best canonical name: prefer proper casing over ALL CAPS surnames
+-- WEC/ELMS use "Firstname SURNAME" format; IMSA uses "Firstname Surname"
+-- Score: proper casing > ALL CAPS, accented > ascii, recent > old
+best_name AS (
+    SELECT DISTINCT ON (driver_id) driver_id, canonical_name
     FROM event_drivers
+    ORDER BY driver_id,
+        -- Penalize ALL CAPS surnames (WEC/ELMS style: "George KURTZ")
+        -- If any word after the first is all uppercase and > 2 chars, it's WEC-style
+        CASE WHEN canonical_name ~ '[A-Z]{3}' THEN 1 ELSE 0 END,
+        -- Prefer names with accented characters (François > Francois)
+        CASE WHEN canonical_name ~ '[àáâãäåèéêëìíîïòóôõöùúûüýÿñçÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝŸÑÇ]' THEN 0 ELSE 1 END,
+        -- Prefer shorter names (Nick > Nicholas) — common usage
+        LENGTH(canonical_name),
+        -- Tiebreak: most recent
+        start_date DESC
+),
+-- Use best name for display, but latest entry for all other fields
+ranked AS (
+    SELECT
+        ed.driver_id,
+        bn.canonical_name,
+        ed.name,
+        ed.imsa_driver_id,
+        ed.license,
+        ed.license_rank,
+        ed.team,
+        ed.country,
+        ed.class,
+        ed.year,
+        ed.car,
+        ed.start_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY ed.driver_id
+            ORDER BY ed.start_date DESC
+        ) AS row_num
+    FROM event_drivers ed
+    JOIN best_name bn ON bn.driver_id = ed.driver_id
 )
 SELECT
     driver_id,

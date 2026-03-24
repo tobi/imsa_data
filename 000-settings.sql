@@ -213,3 +213,15 @@ CREATE OR REPLACE MACRO get_session_type(session_name) AS (
         ELSE session_name
     END
 );
+-- Load driver aliases for name resolution across all pipeline stages
+CREATE TEMP TABLE IF NOT EXISTS driver_aliases_tbl AS
+SELECT alias, canonical_id
+FROM read_json_auto('driver_aliases.json');
+
+-- Macro to resolve a driver name to a canonical driver_id via aliases
+CREATE OR REPLACE MACRO resolve_driver_alias(name) AS (
+    COALESCE(
+        (SELECT canonical_id FROM driver_aliases_tbl WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
+        LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
+    )
+);

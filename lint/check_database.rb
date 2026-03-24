@@ -89,6 +89,9 @@ class DatabaseLinter
     # Row uniqueness
     check_duplicate_laps
 
+    # Driver name consistency
+    check_driver_name_variants
+
     # Data quality checks
     check_lap_time_outliers
     check_temperature_outliers
@@ -472,6 +475,33 @@ class DatabaseLinter
       total_dupes = duplicates.sum { |r| r['duplicate_rows'].to_i }
       duplicates.each do |row|
         error "#{row['duplicate_rows']} duplicate rows: #{row['series_code']}/#{row['year']}/#{row['event']}/#{row['session']} (session_id=#{row['session_id']})"
+      end
+    end
+  end
+
+  def check_driver_name_variants
+    section "Checking for inconsistent driver display names"
+
+    # Each driver_id should map to exactly one driver_name across all laps.
+    # Multiple variants (e.g. "Nick Boulle" vs "Nicholas BOULLE") indicate
+    # the canonical name resolution or alias system has gaps.
+    variants = query(<<~SQL)
+      SELECT driver_id,
+        LIST(DISTINCT driver_name ORDER BY driver_name) AS variants,
+        COUNT(DISTINCT driver_name) AS variant_count
+      FROM laps
+      GROUP BY driver_id
+      HAVING COUNT(DISTINCT driver_name) > 1
+      ORDER BY variant_count DESC, driver_id
+      LIMIT 20
+    SQL
+
+    if variants.empty?
+      ok "All drivers have a single consistent display name"
+    else
+      variants.each do |row|
+        names = row['variants']
+        error "Driver '#{row['driver_id']}' has #{row['variant_count']} display name variants: #{names}"
       end
     end
   end
