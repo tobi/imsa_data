@@ -44,6 +44,8 @@ const driverSummaries = Array.from(
 ).sort((a, b) => (a.recent_gap ?? 99) - (b.recent_gap ?? 99));
 
 const fmt = (v, decimals = 2) => v != null && isFinite(+v) ? (+v).toFixed(decimals) : null;
+const f2 = v => fmt(v, 2);
+const f1 = v => fmt(v, 1);
 ```
 
 # Bronze Driver Report — LMP2
@@ -122,7 +124,7 @@ display(Plot.plot({
     Plot.dot(driverWithRef, {
       x: "cumulative_laps", y: "gap_to_pro_median",
       fill: "#e63946", r: 6, opacity: 0.8,
-      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${d.gap_to_pro_median.toFixed(2)}s`, "Gap %": d => `${d.gap_pct.toFixed(1)}%`}}
+      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${f2(d.gap_to_pro_median)}s`, "Gap %": d => `${f1(d.gap_pct)}%`}}
     }),
     // Driver trend line
     ...(driverWithRef.length >= 3 ? [Plot.linearRegressionY(driverWithRef, {
@@ -197,7 +199,7 @@ display(Plot.plot({
     Plot.dot(driverTireGap, {
       x: "tire_age", y: "gap",
       fill: "event", r: 4, opacity: 0.5,
-      tip: {channels: {Event: "event", Year: "year", "Bronze": d => `${d.bronze_pace?.toFixed(2)}s`, "Pro ref": d => `${d.pro_pace?.toFixed(2)}s`}}
+      tip: {channels: {Event: "event", Year: "year", "Bronze": d => `${f2(d.bronze_pace)}s`, "Pro ref": d => `${f2(d.pro_pace)}s`}}
     }),
     // Driver median line
     Plot.line(driverAvgByAge, {x: "tire_age", y: "gap", stroke: "#e63946", strokeWidth: 2.5, curve: "catmull-rom"}),
@@ -237,11 +239,11 @@ display(Plot.plot({
       x: "avg_gap_pct", y: "name",
       fill: d => d.highlight ? "#e63946" : "#457b9d",
       sort: {y: "x"},
-      tip: {format: {x: d => `${d.toFixed(2)}%`}, channels: {Events: "events", "Recent gap": d => `+${d.recent_gap?.toFixed(2)}s`}}
+      tip: {format: {x: d => `${f2(d)}%`}, channels: {Events: "events", "Recent gap": d => `+${f2(d.recent_gap)}s`}}
     }),
     Plot.text(h2hDrivers, {
       x: "avg_gap_pct", y: "name",
-      text: d => `${d.avg_gap_pct.toFixed(1)}%`,
+      text: d => `${f1(d.avg_gap_pct)}%`,
       dx: 5, textAnchor: "start", fontSize: 11,
       fontWeight: d => d.highlight ? "bold" : "normal"
     })
@@ -276,7 +278,7 @@ display(Plot.plot({
       r: d => d.highlight ? 5 : 3,
       fill: d => d.highlight ? "#e63946" : "#457b9d",
       opacity: d => d.highlight ? 0.9 : 0.4,
-      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${d.gap_to_pro_median.toFixed(2)}s`}}
+      tip: {channels: {Event: "event", Year: "year", Gap: d => `+${f2(d.gap_to_pro_median)}s`}}
     })),
     Plot.tickX(
       sortedDriverNames.map(name => ({
