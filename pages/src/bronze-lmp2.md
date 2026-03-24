@@ -79,17 +79,18 @@ const avgGap = d3.mean(driverSummaries.filter(d => d.avg_gap != null), d => d.av
 ## Career Summary
 
 ```js
+const fmt = (v, decimals = 2) => v != null && isFinite(+v) ? (+v).toFixed(decimals) : null;
 const summaryTable = driverSummaries.map(d => ({
   Driver: d.name,
   Events: d.events,
   Laps: d.total_laps,
   "Years": d.years_active,
   Series: d.series,
-  "Avg Gap": d.avg_gap != null ? `+${d.avg_gap.toFixed(2)}s` : "—",
-  "Recent Gap": d.recent_gap != null ? `+${d.recent_gap.toFixed(2)}s` : "—",
-  "Best Gap": d.best_gap != null ? `+${d.best_gap.toFixed(2)}s` : "—",
-  "Improvement": d.gap_improvement != null ? `${d.gap_improvement > 0 ? "↓" : "↑"}${Math.abs(d.gap_improvement).toFixed(2)}s` : "—",
-  "Gap %": d.avg_gap_pct != null ? `${d.avg_gap_pct.toFixed(1)}%` : "—"
+  "Avg Gap": fmt(d.avg_gap) ? `+${fmt(d.avg_gap)}s` : "—",
+  "Recent Gap": fmt(d.recent_gap) ? `+${fmt(d.recent_gap)}s` : "—",
+  "Best Gap": fmt(d.best_gap) ? `+${fmt(d.best_gap)}s` : "—",
+  "Improvement": fmt(d.gap_improvement) ? `${+d.gap_improvement > 0 ? "↓" : "↑"}${fmt(Math.abs(d.gap_improvement))}s` : "—",
+  "Gap %": fmt(d.avg_gap_pct, 1) ? `${fmt(d.avg_gap_pct, 1)}%` : "—"
 }));
 ```
 

@@ -6,11 +6,19 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"
 
 duckdb "$DB_PATH" -csv <<'SQL'
--- Current Bronze LMP2 drivers (raced in 2025+)
+-- Current Bronze / amateur LMP2 drivers (raced in 2025+)
+-- Includes 'Unknown' license: IMSA results files often omit the license grade,
+-- but if a driver races LMP2 and isn't Platinum/Gold/Silver, they're effectively Bronze.
 WITH bronze_drivers AS (
-    SELECT DISTINCT driver_id
-    FROM drivers
-    WHERE license = 'Bronze' AND last_class = 'LMP2' AND last_year >= '2025'
+    SELECT DISTINCT l.driver_id
+    FROM laps l
+    WHERE l.class = 'LMP2' AND l.session = 'race' AND l.year >= '2025'
+      AND l.license IN ('Bronze', 'Unknown')
+      -- Exclude drivers who also appear as Platinum/Gold (they're pros)
+      AND l.driver_id NOT IN (
+          SELECT driver_id FROM laps
+          WHERE license IN ('Platinum', 'Gold') AND class = 'LMP2'
+      )
 ),
 
 -- Per-driver_name, per-session median pace on clean green-flag laps (stint_lap >= 2)

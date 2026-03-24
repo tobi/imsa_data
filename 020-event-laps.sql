@@ -354,7 +354,9 @@ SELECT
         WHEN series_code = 'elms' AND class = 'LMP3' AND cl_homologation = 'GT3' THEN 'LMGT3'
         ELSE class
     END AS class,
-    COALESCE(driver_name_entry, dv_canonical_name, driver_name_raw) AS driver_name,
+    -- Prefer drivers table canonical name (cross-series consistent casing)
+    -- over per-session event_drivers name (WEC uses ALL CAPS surnames)
+    COALESCE(dv_canonical_name, driver_name_entry, driver_name_raw) AS driver_name,
     resolved_driver_id AS driver_id,
     lap,
     lap_time,
