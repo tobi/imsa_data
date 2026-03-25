@@ -244,34 +244,98 @@ display(Plot.plot({
 ## Ranking vs Peers
 
 ```js
-const h2hDrivers = driverSummaries
-  .filter(d => d.avg_gap_pct != null && d.events >= 3)
-  .map(d => ({
-    name: d.name, avg_gap_pct: d.avg_gap_pct, recent_gap: d.recent_gap,
-    events: d.events, license: d.license, highlight: d.name === selectedDriver
-  }))
-  .sort((a, b) => a.avg_gap_pct - b.avg_gap_pct);
+// Compute avg gap_per_km per driver from raw data
+const driverGapPerKm = new Map();
+for (const [id, rows] of d3.group(data, d => d.driver_id)) {
+  const valid = rows.filter(d => d.gap_per_km != null);
+  if (valid.length >= 2) driverGapPerKm.set(id, d3.mean(valid, d => +d.gap_per_km));
+}
+// Enrich summaries
+for (const d of driverSummaries) d.avg_gap_per_km = driverGapPerKm.get(d.driver_id) ?? null;
 
+// Separate Bronze and Silver rankings with percentiles
+const bronzeDrivers = driverSummaries.filter(d => d.license === "Bronze" && d.avg_gap_per_km != null && d.events >= 3);
+const silverDrivers = driverSummaries.filter(d => d.license === "Silver" && d.avg_gap_per_km != null && d.events >= 3);
+
+function withPercentile(drivers) {
+  const sorted = [...drivers].sort((a, b) => a.avg_gap_per_km - b.avg_gap_per_km);
+  return sorted.map((d, i) => ({
+    ...d,
+    rank: i + 1,
+    total: sorted.length,
+    percentile: Math.round((1 - i / (sorted.length - 1 || 1)) * 100),
+    highlight: d.name === selectedDriver
+  }));
+}
+
+const bronzeRanked = withPercentile(bronzeDrivers);
+const silverRanked = withPercentile(silverDrivers);
+const driverLicense = driver?.license;
+const relevantRanking = driverLicense === "Silver" ? silverRanked : bronzeRanked;
+const otherRanking = driverLicense === "Silver" ? bronzeRanked : silverRanked;
+const driverEntry = relevantRanking.find(d => d.highlight);
+```
+
+${driverEntry ? htl.html`<div style="margin-bottom: 0.5rem; color: #ccc;">
+  <strong>${selectedDriver}</strong> ranks 
+  <strong style="color: ${licenseColors[driverLicense]}">#${driverEntry.rank} of ${driverEntry.total} ${driverLicense}</strong> drivers
+  (${driverEntry.percentile}th percentile)
+</div>` : ''}
+
+**${driverLicense || "Bronze"} Drivers**
+
+```js
 display(Plot.plot({
-  width: 960, height: Math.max(300, h2hDrivers.length * 26 + 60),
+  width: 960, height: Math.max(250, relevantRanking.length * 26 + 40),
   marginLeft: 180,
-  x: {label: "Average % off pro pace →", grid: true, domain: [0, Math.min(8, d3.max(h2hDrivers, d => d.avg_gap_pct) * 1.1)]},
+  x: {label: "Avg gap to pro (s/km) →", grid: true},
   y: {label: null},
   marks: [
-    Plot.barX(h2hDrivers, {
-      x: "avg_gap_pct", y: "name",
-      fill: d => d.highlight ? (licenseColors[d.license] || "#e63946") : "#457b9d",
+    Plot.barX(relevantRanking, {
+      x: "avg_gap_per_km", y: "name",
+      fill: d => d.highlight ? licenseColors[driverLicense] : "#457b9d",
       sort: {y: "x"},
-      tip: {format: {x: d => `${f2(d)}%`}, channels: {Events: "events", License: "license", "Recent": d => `+${f2(d.recent_gap)}s`}}
+      tip: {channels: {
+        Rank: d => `#${d.rank}/${d.total}`,
+        Percentile: d => `${d.percentile}th`,
+        Events: "events",
+        "Recent gap": d => `+${f2(d.recent_gap)}s`
+      }}
     }),
-    Plot.text(h2hDrivers, {
-      x: "avg_gap_pct", y: "name",
-      text: d => `${f1(d.avg_gap_pct)}%  ${d.license}`,
+    Plot.text(relevantRanking, {
+      x: "avg_gap_per_km", y: "name",
+      text: d => `#${d.rank}  P${d.percentile}`,
       dx: 5, textAnchor: "start", fontSize: 10,
       fontWeight: d => d.highlight ? "bold" : "normal"
     })
   ]
 }));
+```
+
+${otherRanking.length > 0 ? htl.html`<details><summary><strong>${driverLicense === "Silver" ? "Bronze" : "Silver"} Drivers</strong> (${otherRanking.length})</summary></details>` : ''}
+
+```js
+if (otherRanking.length > 0) {
+  display(Plot.plot({
+    width: 960, height: Math.max(200, otherRanking.length * 26 + 40),
+    marginLeft: 180,
+    x: {label: "Avg gap to pro (s/km) →", grid: true},
+    y: {label: null},
+    marks: [
+      Plot.barX(otherRanking, {
+        x: "avg_gap_per_km", y: "name",
+        fill: d => licenseColors[d.license] || "#888",
+        sort: {y: "x"},
+        tip: {channels: {Rank: d => `#${d.rank}/${d.total}`, Percentile: d => `${d.percentile}th`, Events: "events"}}
+      }),
+      Plot.text(otherRanking, {
+        x: "avg_gap_per_km", y: "name",
+        text: d => `#${d.rank}  P${d.percentile}`,
+        dx: 5, textAnchor: "start", fontSize: 10
+      })
+    ]
+  }));
+}
 ```
 
 ## Gap Consistency
