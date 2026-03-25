@@ -10,6 +10,7 @@ import {formatLapTime} from "./components/lap-chart.js";
 ```js
 const data = await FileAttachment("data/bronze-lmp2.csv").csv({typed: true});
 const tireGapData = await FileAttachment("data/bronze-tire-gap.csv").csv({typed: true});
+const eloData = await FileAttachment("data/gentleman-elo.csv").csv({typed: true});
 ```
 
 ```js
@@ -49,6 +50,11 @@ const fmt = (v, decimals = 2) => v != null && isFinite(+v) ? (+v).toFixed(decima
 const f2 = v => fmt(v, 2);
 const f1 = v => fmt(v, 1);
 const licenseColors = {Platinum: "#e63946", Gold: "#d4a017", Silver: "#8a8d91", Bronze: "#cd7f32"};
+const ordinal = n => {
+  const s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+};
+
 ```
 
 # Gentleman Driver Report — LMP2
@@ -70,6 +76,9 @@ const driverWithRef = driverData.filter(d => d.gap_to_pro_median != null);
 
 const firstEvent = driverData[0];
 const lastEvent = driverData[driverData.length - 1];
+const driverElo = eloData.filter(d => d.driver_name === selectedDriver).sort((a, b) => new Date(a.session_date) - new Date(b.session_date));
+const currentElo = driverElo.length ? +driverElo[driverElo.length - 1].elo_after : null;
+const peakElo = driverElo.length ? Math.max(...driverElo.map(d => +d.elo_after)) : null;
 const bestEvent = driverWithRef.length ? driverWithRef.reduce((a, b) => +a.gap_to_pro_median < +b.gap_to_pro_median ? a : b) : null;
 const worstEvent = driverWithRef.length ? driverWithRef.reduce((a, b) => +a.gap_to_pro_median > +b.gap_to_pro_median ? a : b) : null;
 const trackCounts = d3.rollup(driverData, v => v.length, d => d.event);
@@ -84,7 +93,7 @@ const seriesSet = new Set(driverData.map(d => d.series_code));
   ${driver?.peak_license && driver.peak_license !== driver.license ? htl.html`<span style="color: #888; font-size: 0.85rem;">Peak: ${driver.peak_license}</span>` : ''}
 </div>
 
-<div class="grid grid-cols-4" style="gap: 1rem;">
+<div class="grid grid-cols-5" style="gap: 1rem;">
   <div>
     <div style="color: #888; font-size: 0.75rem; text-transform: uppercase;">Career Races</div>
     <div style="font-size: 1.6rem; font-weight: 700;">${driver?.events ?? "—"}</div>
@@ -104,6 +113,11 @@ const seriesSet = new Set(driverData.map(d => d.series_code));
     <div style="color: #888; font-size: 0.75rem; text-transform: uppercase;">Improvement</div>
     <div style="font-size: 1.6rem; font-weight: 700; color: ${+driver?.gap_improvement > 0 ? '#2a9d8f' : '#e63946'};">${fmt(driver?.gap_improvement) ? `${+driver.gap_improvement > 0 ? "↓" : "↑"}${fmt(Math.abs(driver.gap_improvement))}s` : "—"}</div>
     <div style="color: #888; font-size: 0.8rem;">first 5 → last 5</div>
+  </div>
+  <div>
+    <div style="color: #888; font-size: 0.75rem; text-transform: uppercase;">Elo Rating</div>
+    <div style="font-size: 1.6rem; font-weight: 700;">${currentElo ?? "—"}</div>
+    <div style="color: #888; font-size: 0.8rem;">${peakElo ? `peak ${peakElo}` : ""}</div>
   </div>
 </div>
 
@@ -187,6 +201,39 @@ display(Plot.plot({
 Dots colored by license. Solid line = trend. Dark dashed = all gentleman median. Light dashed = ${currentYear} season median.
 </div>
 
+## Elo Progression
+
+```js
+const allElo = eloData.filter(d => d.driver_name !== selectedDriver);
+const eloByLaps = Array.from(
+  d3.group(allElo, d => Math.floor(+d.cumulative_laps / 50) * 50),
+  ([bucket, rows]) => ({cumulative_laps: bucket, elo: d3.median(rows, d => +d.elo_after)})
+).sort((a, b) => a.cumulative_laps - b.cumulative_laps);
+
+display(Plot.plot({
+  width: 960, height: 350, marginLeft: 50,
+  x: {label: "Cumulative laps →"},
+  y: {label: "Elo Rating", grid: true},
+  marks: [
+    Plot.ruleY([1500], {stroke: "#888", strokeDasharray: "4 2"}),
+    Plot.line(eloByLaps, {x: "cumulative_laps", y: "elo", stroke: "#555", strokeWidth: 1.5, strokeDasharray: "6 3"}),
+    Plot.dot(driverElo, {
+      x: "cumulative_laps", y: "elo_after",
+      fill: d => +d.delta >= 0 ? "#2a9d8f" : "#e63946", r: 6,
+      tip: {channels: {Event: "event", Year: "year", "Δ": d => `${+d.delta >= 0 ? "+" : ""}${d.delta}`, Elo: "elo_after"}}
+    }),
+    Plot.line(driverElo, {x: "cumulative_laps", y: "elo_after",
+      stroke: licenseColors[driver?.license] || "#e63946", strokeWidth: 2}),
+    Plot.text([{x: eloByLaps[eloByLaps.length-1]?.cumulative_laps, y: eloByLaps[eloByLaps.length-1]?.elo, text: "Field median"}],
+      {x: "x", y: "y", text: "text", dx: 5, textAnchor: "start", fill: "#888", fontSize: 10}),
+  ]
+}));
+```
+
+<div style="color: #888; font-size: 0.8rem; margin-top: -0.5rem;">
+Green dots = Elo gained. Red = lost. 1500 = starting rating. Dashed = gentleman field median.
+</div>
+
 ## Event History
 
 ```js
@@ -244,14 +291,21 @@ display(Plot.plot({
 ## Ranking vs Peers
 
 ```js
-// Compute avg gap_per_km per driver from raw data
+// Compute avg gap_per_km and current Elo per driver
 const driverGapPerKm = new Map();
 for (const [id, rows] of d3.group(data, d => d.driver_id)) {
   const valid = rows.filter(d => d.gap_per_km != null);
   if (valid.length >= 2) driverGapPerKm.set(id, d3.mean(valid, d => +d.gap_per_km));
 }
-// Enrich summaries
-for (const d of driverSummaries) d.avg_gap_per_km = driverGapPerKm.get(d.driver_id) ?? null;
+const driverEloMap = new Map();
+for (const [id, rows] of d3.group(eloData, d => d.driver_id)) {
+  const sorted = rows.sort((a, b) => new Date(a.session_date) - new Date(b.session_date));
+  driverEloMap.set(id, +sorted[sorted.length - 1].elo_after);
+}
+for (const d of driverSummaries) {
+  d.avg_gap_per_km = driverGapPerKm.get(d.driver_id) ?? null;
+  d.elo = driverEloMap.get(d.driver_id) ?? null;
+}
 
 // Separate Bronze and Silver rankings with percentiles
 const bronzeDrivers = driverSummaries.filter(d => d.license === "Bronze" && d.avg_gap_per_km != null && d.events >= 3);
@@ -279,7 +333,7 @@ const driverEntry = relevantRanking.find(d => d.highlight);
 ${driverEntry ? htl.html`<div style="margin-bottom: 0.5rem; color: #ccc;">
   <strong>${selectedDriver}</strong> ranks 
   <strong style="color: ${licenseColors[driverLicense]}">#${driverEntry.rank} of ${driverEntry.total} ${driverLicense}</strong> drivers
-  (${driverEntry.percentile}th percentile)
+  by pace (${ordinal(driverEntry.percentile)} percentile)${driverEntry.elo ? htl.html` · Elo <strong>${driverEntry.elo}</strong>` : ''}
 </div>` : ''}
 
 **${driverLicense || "Bronze"} Drivers**
@@ -297,8 +351,9 @@ display(Plot.plot({
       sort: {y: "x"},
       tip: {channels: {
         Rank: d => `#${d.rank}/${d.total}`,
-        Percentile: d => `${d.percentile}th`,
+        Percentile: d => `${ordinal(d.percentile)}`,
         Events: "events",
+        Elo: d => d.elo ?? "—",
         "Recent gap": d => `+${f2(d.recent_gap)}s`
       }}
     }),
@@ -326,7 +381,7 @@ if (otherRanking.length > 0) {
         x: "avg_gap_per_km", y: "name",
         fill: d => licenseColors[d.license] || "#888",
         sort: {y: "x"},
-        tip: {channels: {Rank: d => `#${d.rank}/${d.total}`, Percentile: d => `${d.percentile}th`, Events: "events"}}
+        tip: {channels: {Rank: d => `#${d.rank}/${d.total}`, Percentile: d => `${ordinal(d.percentile)}`, Events: "events"}}
       }),
       Plot.text(otherRanking, {
         x: "avg_gap_per_km", y: "name",
