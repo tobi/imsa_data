@@ -14,13 +14,16 @@ CREATE TEMP TABLE event_weather_raw AS
             TRY_STRPTIME(time_utc_str, '%d-%b-%y %H:%M:%S')
         ) as time_utc,
         -- Raw temperature values
-        air_temp::DECIMAL(6, 2) as air_temp_raw,
-        track_temp::DECIMAL(6, 2) as track_temp_raw,
+        -- Sanitize temps: values outside -40 to 250°F are sensor errors
+        CASE WHEN air_temp BETWEEN -40 AND 250 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
+        CASE WHEN track_temp BETWEEN -40 AND 300 THEN track_temp::DECIMAL(6, 2) END as track_temp_raw,
         humidity::DECIMAL(6, 2) as humidity_percent,
         pressure::DECIMAL(6, 2) as pressure_inhg,
         wind_speed::DECIMAL(6, 2) as wind_speed_mph,
         wind_direction::INT as wind_direction_degrees,
-        (rain::INT = 0) as raining,
+        -- Rain encoding varies: IMSA uses -1=dry, WEC uses 0=dry, ELMS uses -999=nodata
+        -- Positive values indicate rain (amount in mm or flag)
+        (TRY_CAST(rain AS DECIMAL) > 0) as raining,
 
         -- Date
         strptime(

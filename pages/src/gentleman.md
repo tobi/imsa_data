@@ -330,11 +330,16 @@ const otherRanking = driverLicense === "Silver" ? bronzeRanked : silverRanked;
 const driverEntry = relevantRanking.find(d => d.highlight);
 ```
 
-${driverEntry ? htl.html`<div style="margin-bottom: 0.5rem; color: #ccc;">
-  <strong>${selectedDriver}</strong> ranks 
-  <strong style="color: ${licenseColors[driverLicense]}">#${driverEntry.rank} of ${driverEntry.total} ${driverLicense}</strong> drivers
-  by pace (${ordinal(driverEntry.percentile)} percentile)${driverEntry.elo ? htl.html` · Elo <strong>${driverEntry.elo}</strong>` : ''}
-</div>` : ''}
+```js
+if (driverEntry) {
+  const eloText = driverEntry.elo ? ` · Elo ${driverEntry.elo}` : '';
+  display(htl.html`<div style="margin-bottom: 0.5rem; color: #ccc; font-size: 1.1rem;">
+    <strong>${selectedDriver}</strong> ranks 
+    <strong style="color: ${licenseColors[driverLicense]}">#${driverEntry.rank} of ${driverEntry.total} ${driverLicense}</strong> drivers
+    by pace (${ordinal(driverEntry.percentile)} percentile)${eloText}
+  </div>`);
+}
+```
 
 **${driverLicense || "Bronze"} Drivers**
 

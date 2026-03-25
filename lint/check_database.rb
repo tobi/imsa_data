@@ -94,6 +94,7 @@ class DatabaseLinter
     check_team_name_variants
 
     # Data quality checks
+    check_rain_plausibility
     check_lap_time_outliers
     check_temperature_outliers
     check_pit_time_outliers
@@ -553,6 +554,31 @@ class DatabaseLinter
         warn "Lap time outliers: #{row['series_code']}/#{row['year']}/#{row['event']}/#{row['session']} (#{row['outlier_count']} laps)"
       end
     end
+  end
+
+  def check_rain_plausibility
+    section "Checking rain data plausibility"
+    # If >90% of a series' readings are "raining", the rain column is likely inverted
+    rain_stats = query(<<~SQL)
+      SELECT series_code,
+        COUNT(*) as total,
+        COUNT(CASE WHEN raining THEN 1 END) as rain_count,
+        ROUND(100.0 * COUNT(CASE WHEN raining THEN 1 END) / COUNT(*), 1) as rain_pct
+      FROM event_weather
+      GROUP BY series_code
+      HAVING COUNT(*) > 100
+    SQL
+
+    rain_stats.each do |row|
+      pct = row['rain_pct'].to_f
+      if pct > 80
+        error "#{row['series_code']}: #{pct}% of weather readings show rain (#{row['rain_count']}/#{row['total']}) — rain column likely inverted or miscoded"
+      elsif pct > 50
+        warn "#{row['series_code']}: #{pct}% of weather readings show rain — suspiciously high"
+      end
+    end
+
+    ok "Rain data looks plausible" if rain_stats.none? { |r| r['rain_pct'].to_f > 50 }
   end
 
   def check_temperature_outliers
