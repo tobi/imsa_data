@@ -52,16 +52,13 @@ driver_pace AS (
         l.series_code, l.license,
         COUNT(*) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
             AND l.session = 'race' AND l.flags = 'GF'
-            AND l.stint_lap >= 3 AND l.pit_time IS NULL
-            AND (l.est_tire_age IS NULL OR l.est_tire_age >= 3)) AS clean_laps,
+            AND l.stint_lap >= 1 AND l.pit_time IS NULL) AS clean_laps,
         AVG(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
             AND l.session = 'race' AND l.flags = 'GF'
-            AND l.stint_lap >= 3 AND l.pit_time IS NULL
-            AND (l.est_tire_age IS NULL OR l.est_tire_age >= 3)) AS mean_pace,
+            AND l.stint_lap >= 1 AND l.pit_time IS NULL) AS mean_pace,
         MIN(l.lap_time) FILTER (WHERE l.lap_time_driver_quartile IN (1, 2)
             AND l.session = 'race' AND l.flags = 'GF'
-            AND l.stint_lap >= 3 AND l.pit_time IS NULL
-            AND (l.est_tire_age IS NULL OR l.est_tire_age >= 3)) AS best_lap,
+            AND l.stint_lap >= 1 AND l.pit_time IS NULL) AS best_lap,
         MIN(l.start_date) AS start_date
     FROM laps l
     WHERE l.class = 'LMP2'
