@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: true  
 
@@ -35,7 +35,9 @@ jobs:
         run: ruby import.rb
 
       - name: Install Hugging Face CLI
-        run: pip install huggingface_hub[cli]
+        run: |
+          pip install huggingface_hub
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Publish to Hugging Face
         env:
