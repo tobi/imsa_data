@@ -48,5 +48,10 @@
     "event_number": "06",
     "event_name": "Sebring International Raceway",
     "event_folder": "06-sebring-international-raceway"
+  },
+  {
+    "event_number": "07",
+    "event_name": "Long Beach Street Circuit",
+    "event_folder": "07-long-beach-street-circuit"
   }
 ]
