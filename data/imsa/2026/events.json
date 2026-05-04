@@ -53,5 +53,15 @@
     "event_number": "07",
     "event_name": "Long Beach Street Circuit",
     "event_folder": "07-long-beach-street-circuit"
+  },
+  {
+    "event_number": "08",
+    "event_name": "Miami Grand Prix",
+    "event_folder": "08-miami-grand-prix"
+  },
+  {
+    "event_number": "09",
+    "event_name": "Weathertech Raceway Laguna Seca",
+    "event_folder": "09-weathertech-raceway-laguna-seca"
   }
 ]
