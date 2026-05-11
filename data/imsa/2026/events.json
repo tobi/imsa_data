@@ -63,5 +63,10 @@
     "event_number": "09",
     "event_name": "Weathertech Raceway Laguna Seca",
     "event_folder": "09-weathertech-raceway-laguna-seca"
+  },
+  {
+    "event_number": "10",
+    "event_name": "Circuit of the Americas (AEC)",
+    "event_folder": "10-circuit-of-the-americas-aec-"
   }
 ]
