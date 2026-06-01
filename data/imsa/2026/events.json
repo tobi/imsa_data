@@ -68,5 +68,10 @@
     "event_number": "10",
     "event_name": "Circuit of the Americas (AEC)",
     "event_folder": "10-circuit-of-the-americas-aec-"
+  },
+  {
+    "event_number": "11",
+    "event_name": "Detroit Street Course",
+    "event_folder": "11-detroit-street-course"
   }
 ]
