@@ -73,5 +73,10 @@
     "event_number": "11",
     "event_name": "Detroit Street Course",
     "event_folder": "11-detroit-street-course"
+  },
+  {
+    "event_number": "12",
+    "event_name": "Mid-Ohio Sports Car Course",
+    "event_folder": "12-mid-ohio-sports-car-course"
   }
 ]
