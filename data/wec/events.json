@@ -1,49 +1,205 @@
 {
   "description": "FIA World Endurance Championship - headline events only",
   "events": [
-    {"year": "2021", "folder": "spa-francorchamps", "name": "Spa"},
-    {"year": "2021", "folder": "autodromo-do-algarve", "name": "Portimao"},
-    {"year": "2021", "folder": "autodromo-nazionale-di-monza", "name": "Monza"},
-    {"year": "2021", "folder": "le-mans", "name": "Le Mans"},
-    {"year": "2021", "folder": "bahrain-international-circuit-6-hours", "name": "Bahrain 6 Hours"},
-    {"year": "2021", "folder": "bahrain-international-circuit-8-hours", "name": "Bahrain 8 Hours"},
-
-    {"year": "2022", "folder": "sebring", "name": "Sebring"},
-    {"year": "2022", "folder": "spa-francorchamps", "name": "Spa"},
-    {"year": "2022", "folder": "le-mans", "name": "Le Mans"},
-    {"year": "2022", "folder": "autodromo-nazionale-di-monza", "name": "Monza"},
-    {"year": "2022", "folder": "fuji-speedway", "name": "Fuji"},
-    {"year": "2022", "folder": "bahrain-international-circuit", "name": "Bahrain"},
-
-    {"year": "2023", "folder": "sebring", "name": "Sebring"},
-    {"year": "2023", "folder": "autodromo-do-algarve", "name": "Portimao"},
-    {"year": "2023", "folder": "spa-francorchamps", "name": "Spa"},
-    {"year": "2023", "folder": "le-mans", "name": "Le Mans"},
-    {"year": "2023", "folder": "autodromo-nazionale-di-monza", "name": "Monza"},
-    {"year": "2023", "folder": "fuji-speedway", "name": "Fuji"},
-    {"year": "2023", "folder": "bahrain-international-circuit", "name": "Bahrain"},
-
-    {"year": "2024", "folder": "losail", "name": "Losail"},
-    {"year": "2024", "folder": "imola", "name": "Imola"},
-    {"year": "2024", "folder": "spa-francorchamps", "name": "Spa"},
-    {"year": "2024", "folder": "le-mans", "name": "Le Mans"},
-    {"year": "2024", "folder": "sao-paulo", "name": "Interlagos"},
-    {"year": "2024", "folder": "circuit-of-the-americas", "name": "COTA"},
-    {"year": "2024", "folder": "fuji-speedway", "name": "Fuji"},
-    {"year": "2024", "folder": "bahrain-international-circuit", "name": "Bahrain"},
-
-    {"year": "2025", "folder": "losail", "name": "Losail"},
-    {"year": "2025", "folder": "imola", "name": "Imola"},
-    {"year": "2025", "folder": "spa-francorchamps", "name": "Spa"},
-    {"year": "2025", "folder": "le-mans", "name": "Le Mans"},
-    {"year": "2025", "folder": "sao-paulo", "name": "Interlagos"},
-    {"year": "2025", "folder": "circuit-of-the-americas", "name": "COTA"},
-    {"year": "2025", "folder": "fuji-speedway", "name": "Fuji"},
-    {"year": "2025", "folder": "bahrain-international-circuit", "name": "Bahrain"}
+    {
+      "year": "2021",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2021",
+      "folder": "autodromo-do-algarve",
+      "name": "Portimao"
+    },
+    {
+      "year": "2021",
+      "folder": "autodromo-nazionale-di-monza",
+      "name": "Monza"
+    },
+    {
+      "year": "2021",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    },
+    {
+      "year": "2021",
+      "folder": "bahrain-international-circuit-6-hours",
+      "name": "Bahrain 6 Hours"
+    },
+    {
+      "year": "2021",
+      "folder": "bahrain-international-circuit-8-hours",
+      "name": "Bahrain 8 Hours"
+    },
+    {
+      "year": "2022",
+      "folder": "sebring",
+      "name": "Sebring"
+    },
+    {
+      "year": "2022",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2022",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    },
+    {
+      "year": "2022",
+      "folder": "autodromo-nazionale-di-monza",
+      "name": "Monza"
+    },
+    {
+      "year": "2022",
+      "folder": "fuji-speedway",
+      "name": "Fuji"
+    },
+    {
+      "year": "2022",
+      "folder": "bahrain-international-circuit",
+      "name": "Bahrain"
+    },
+    {
+      "year": "2023",
+      "folder": "sebring",
+      "name": "Sebring"
+    },
+    {
+      "year": "2023",
+      "folder": "autodromo-do-algarve",
+      "name": "Portimao"
+    },
+    {
+      "year": "2023",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2023",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    },
+    {
+      "year": "2023",
+      "folder": "autodromo-nazionale-di-monza",
+      "name": "Monza"
+    },
+    {
+      "year": "2023",
+      "folder": "fuji-speedway",
+      "name": "Fuji"
+    },
+    {
+      "year": "2023",
+      "folder": "bahrain-international-circuit",
+      "name": "Bahrain"
+    },
+    {
+      "year": "2024",
+      "folder": "losail",
+      "name": "Losail"
+    },
+    {
+      "year": "2024",
+      "folder": "imola",
+      "name": "Imola"
+    },
+    {
+      "year": "2024",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2024",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    },
+    {
+      "year": "2024",
+      "folder": "sao-paulo",
+      "name": "Interlagos"
+    },
+    {
+      "year": "2024",
+      "folder": "circuit-of-the-americas",
+      "name": "COTA"
+    },
+    {
+      "year": "2024",
+      "folder": "fuji-speedway",
+      "name": "Fuji"
+    },
+    {
+      "year": "2024",
+      "folder": "bahrain-international-circuit",
+      "name": "Bahrain"
+    },
+    {
+      "year": "2025",
+      "folder": "losail",
+      "name": "Losail"
+    },
+    {
+      "year": "2025",
+      "folder": "imola",
+      "name": "Imola"
+    },
+    {
+      "year": "2025",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2025",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    },
+    {
+      "year": "2025",
+      "folder": "sao-paulo",
+      "name": "Interlagos"
+    },
+    {
+      "year": "2025",
+      "folder": "circuit-of-the-americas",
+      "name": "COTA"
+    },
+    {
+      "year": "2025",
+      "folder": "fuji-speedway",
+      "name": "Fuji"
+    },
+    {
+      "year": "2025",
+      "folder": "bahrain-international-circuit",
+      "name": "Bahrain"
+    },
+    {
+      "year": "2026",
+      "folder": "imola",
+      "name": "Imola"
+    },
+    {
+      "year": "2026",
+      "folder": "spa-francorchamps",
+      "name": "Spa"
+    },
+    {
+      "year": "2026",
+      "folder": "le-mans",
+      "name": "Le Mans"
+    }
   ],
   "ignore_sessions": {
     "description": "race-20X sessions without hour suffix are partial class data, not separate races",
-    "patterns": ["race-201", "race-202", "race-203", "race-204"]
+    "patterns": [
+      "race-201",
+      "race-202",
+      "race-203",
+      "race-204"
+    ]
   },
   "notes": [
     "Only FIA WEC headline events included",

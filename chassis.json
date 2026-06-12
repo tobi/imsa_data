@@ -504,6 +504,72 @@
       "homologation": "GT3",
       "manufacturer": "Porsche",
       "canonical": "Porsche 911 GT3 R"
+    },
+    {
+      "pattern": "Toyota TR010",
+      "homologation": "LMH",
+      "manufacturer": "Toyota",
+      "canonical": "Toyota TR010 Hybrid"
+    },
+    {
+      "pattern": "Genesis GMR-001",
+      "homologation": "LMDh",
+      "manufacturer": "Genesis",
+      "canonical": "Genesis GMR-001"
+    },
+    {
+      "pattern": "Ligier  JS P2 2014",
+      "homologation": "LMP2-2014",
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P2"
+    },
+    {
+      "pattern": "Ligier JS P2",
+      "homologation": "LMP2-2014",
+      "manufacturer": "Ligier",
+      "canonical": "Ligier JS P2"
+    },
+    {
+      "pattern": "Oreca 05",
+      "homologation": "LMP2-2015",
+      "manufacturer": "ORECA",
+      "canonical": "ORECA 05"
+    },
+    {
+      "pattern": "Oreca  05 2015",
+      "homologation": "LMP2-2015",
+      "manufacturer": "ORECA",
+      "canonical": "ORECA 05"
+    },
+    {
+      "pattern": "HPD ARX-04",
+      "homologation": "LMP2-2015",
+      "manufacturer": "HPD",
+      "canonical": "HPD ARX-04"
+    },
+    {
+      "pattern": "Honda HPD ARX 04 2015",
+      "homologation": "LMP2-2015",
+      "manufacturer": "HPD",
+      "canonical": "HPD ARX-04"
+    },
+    {
+      "pattern": "Morgan  Nissan  2012",
+      "homologation": "LMP2-2012",
+      "manufacturer": "Morgan",
+      "canonical": "Morgan-Nissan LMP2"
+    },
+    {
+      "pattern": "Gibson 015 S 2015",
+      "homologation": "LMP2-2015",
+      "manufacturer": "Gibson",
+      "canonical": "Gibson 015S"
+    },
+    {
+      "pattern": "Pescarolo 01 Morgan",
+      "homologation": "LMP1-2011",
+      "manufacturer": "Pescarolo",
+      "canonical": "Pescarolo 01"
     }
   ]
 }

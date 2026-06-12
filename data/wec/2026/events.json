@@ -1,3 +1,17 @@
 [
-
+  {
+    "event_number": "01",
+    "event_name": "IMOLA",
+    "event_folder": "01-imola"
+  },
+  {
+    "event_number": "02",
+    "event_name": "SPA FRANCORCHAMPS",
+    "event_folder": "02-spa-francorchamps"
+  },
+  {
+    "event_number": "03",
+    "event_name": "LE MANS",
+    "event_folder": "03-le-mans"
+  }
 ]
