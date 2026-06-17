@@ -123,8 +123,28 @@ High-level overview of all sessions.
 #### `drivers` - Driver Directory
 Aggregated driver info with latest license and team.
 
-#### `driver_elo` - Elo Rating History
-Lap-by-lap Elo ratings computed independently per class. Every driver starts at 1500.
+#### `driver_elo` - Skill Rating History (OpenSkill, two-pool)
+Lap-by-lap skill ratings computed independently per class by `compute_skill.py`
+using **OpenSkill** (Plackett-Luce — multiplayer, MIT-licensed, patent-free).
+
+**Model.** Each green-flag (`flags='GF'`), non-pit lap is bucketed into a
+10-minute wall-clock window by its mid-point `session_time`, so a driver is only
+ranked against same-class cars actually circulating alongside them. Each driver
+contributes one representative lap per window (median of their green laps); the
+window's pace ranking is a single multiplayer OpenSkill match. Two pools are
+emitted:
+
+* **Overall** (license-seeded, full field): `skill_mu` / `skill_sigma` /
+  `ordinal`, plus the readable `elo_*` mapping. Starting `mu` is seeded by FIA
+  license (Bronze 22 < Silver 25 < Gold 28 < Platinum 31) so the pool starts
+  near tier equilibrium instead of deflating Ams for dozens of races.
+* **Peer** (within-license tier): `peer_mu` / `peer_sigma` / `peer_ordinal` —
+  "how good are you *for* your license class". A Bronze who beats other Bronzes
+  climbs here even while the overall pool docks them against pro traffic.
+
+Confidence: `ordinal = mu - 3*sigma` (conservative rating; small-sample drivers
+sit lower until sigma tightens). Events with no flag data fall back to all valid
+racing laps.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -135,31 +155,39 @@ Lap-by-lap Elo ratings computed independently per class. Every driver starts at 
 | `year` | VARCHAR | Season year |
 | `event` | VARCHAR | Event name |
 | `session_date` | TIMESTAMP | Event date |
-| `elo_before` | INTEGER | Elo before event (0 for first event) |
-| `elo_after` | INTEGER | Elo after event |
-| `delta` | INTEGER | Change (first event includes +1500 base) |
-| `laps` | INTEGER | Laps driven in event |
-| `cumulative_laps` | INTEGER | Career laps in class |
+| `elo_before` | INTEGER | Readable elo before event (0 for first event) |
+| `elo_after` | INTEGER | Readable elo after event (= 1500 + 40*(mu-25)) |
+| `delta` | INTEGER | Change (first event includes full base) |
+| `laps` | INTEGER | Green laps driven in event |
+| `cumulative_laps` | INTEGER | Career green laps in class |
+| `license` | VARCHAR | FIA license tier |
+| `skill_mu` / `skill_sigma` / `ordinal` | DOUBLE | Overall pool skill / uncertainty / conservative rating |
+| `peer_mu` / `peer_sigma` / `peer_ordinal` | DOUBLE | Within-tier pool equivalents |
 
-**Key design**: First event's `delta` includes +1500 base, so `SUM(delta)` always equals current Elo.
+The legacy pairwise Ruby implementation (`compute_elo.rb`) is retained as a
+fallback when the Python toolchain is unavailable.
 
 ```sql
--- Current Elo for a driver
-SELECT SUM(delta) as elo FROM driver_elo 
-WHERE driver_id = 'laurens vanthoor' AND class = 'GTP';
+-- Current overall + peer rating for a driver
+SELECT driver_name, elo, ordinal, peer_ordinal, cumulative_laps
+FROM driver_elo_current
+WHERE driver_id = 'tobi lutke' AND class = 'LMP2';
 
--- Elo leaderboard
-SELECT driver_name, elo, total_laps FROM driver_elo_current 
-WHERE class = 'GTP' ORDER BY elo DESC LIMIT 10;
+-- Overall leaderboard (conservative rating)
+SELECT driver_name, ordinal, cumulative_laps FROM driver_elo_current
+WHERE class = 'GTP' ORDER BY ordinal DESC LIMIT 10;
 
--- Elo at a point in time
-SELECT SUM(delta) as elo FROM driver_elo 
-WHERE driver_id = 'laurens vanthoor' AND class = 'GTP'
-  AND session_date <= '2024-06-01';
+-- Within-license (peer) leaderboard
+SELECT peer_rank, driver_name, peer_ordinal FROM driver_peer_current
+WHERE class = 'LMP2' AND license = 'Bronze' ORDER BY peer_rank LIMIT 10;
 ```
 
-#### `driver_elo_current` - Current Elo View
-Pre-aggregated leaderboard with current Elo, total laps, and event counts per driver/class.
+#### `driver_elo_current` - Current Rating View
+Pre-aggregated leaderboard: latest overall + peer ratings (with sigma), readable
+elo, total laps, and event counts per driver/class.
+
+#### `driver_peer_current` - Within-License Leaderboard
+Ranks drivers against same-license peers per class (`peer_rank`).
 
 #### `tracks` - Circuit Database
 Track coordinates and metadata from `tracks.json`.

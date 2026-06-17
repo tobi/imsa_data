@@ -57,9 +57,29 @@ namespace :db do
       duckdb.write(script)
     end
 
-    # Phase 2: Compute Elo ratings
-    puts "Computing Elo ratings..."
-    system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+    # Phase 2: Compute skill ratings (OpenSkill: multiplayer + confidence,
+    # two pools = overall license-seeded + within-tier peer). Bootstraps a
+    # local venv with openskill/duckdb on first run. Falls back to the legacy
+    # pairwise Ruby Elo if the Python toolchain is unavailable.
+    venv = ".venv"
+    venv_py = "#{venv}/bin/python"
+    unless File.exist?(venv_py)
+      puts "Creating Python venv for skill ratings..."
+      system("python3 -m venv #{venv}") &&
+        system("#{venv}/bin/pip install -q -r requirements-skill.txt")
+    end
+
+    if File.exist?(venv_py)
+      puts "Computing skill ratings (OpenSkill, two-pool)..."
+      ok = system("#{venv_py} compute_skill.py > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+      unless ok
+        puts "  OpenSkill failed; falling back to legacy Ruby Elo..."
+        system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+      end
+    else
+      puts "Python venv unavailable; using legacy Ruby Elo..."
+      system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+    end
 
     # Phase 3: Load Elo data
     elo_sql_files = Dir["*.sql"].sort.select { |f| f.include?("elo") }
