@@ -78,5 +78,15 @@
     "event_number": "12",
     "event_name": "Mid-Ohio Sports Car Course",
     "event_folder": "12-mid-ohio-sports-car-course"
+  },
+  {
+    "event_number": "10",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "10-virginia-international-raceway"
+  },
+  {
+    "event_number": "13",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "13-virginia-international-raceway"
   }
 ]
