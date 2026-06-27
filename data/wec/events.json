@@ -201,6 +201,15 @@
       "race-204"
     ]
   },
+  "excluded_event_patterns": [
+    "*-test",
+    "*-test-*",
+    "roar-before*",
+    "*prologue*",
+    "official-test-*",
+    "*sanctioned-test*",
+    "*collective-test*"
+  ],
   "notes": [
     "Only FIA WEC headline events included",
     "Prologue/test sessions are excluded",

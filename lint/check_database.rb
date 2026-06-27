@@ -4,6 +4,7 @@
 
 require 'open3'
 require 'json'
+require 'set'
 
 DB_PATH = "output/imsa.duckdb"
 
@@ -76,6 +77,7 @@ class DatabaseLinter
 
     # Event checks
     check_missing_events_json
+    check_undefined_event_folders
     check_orphan_events
     check_missing_weather
     check_missing_race_data
@@ -292,6 +294,55 @@ class DatabaseLinter
     else
       missing.each do |row|
         error "Missing coordinates: #{row['track_id']} (#{row['official_name']})"
+      end
+    end
+  end
+
+  def check_undefined_event_folders
+    section "Checking for event folders with data but no events.json entry"
+    # Any folder under data/<series>/<year>/NN-<slug>/ that contains lap or
+    # results CSVs MUST be registered in defined_events (sourced from the
+    # curated data/<series>/events.json). Otherwise the build SILENTLY drops
+    # every lap in that folder — exactly the Watkins Glen 2026 failure mode.
+    # This is a HARD error so `rake` fails loudly instead of ignoring new data.
+    defined = query(<<~SQL)
+      SELECT series_code, year, event_folder FROM defined_events
+    SQL
+    defined_set = defined.map { |r| [r['series_code'], r['year'].to_s, r['event_folder']] }.to_set
+
+    # Per-series "intentionally excluded" fnmatch globs (tests, ROAR, prologues)
+    # read from data/<series>/events.json -> excluded_event_patterns.
+    excluded_patterns = {}
+    Dir.glob("data/*/events.json").each do |f|
+      series = f[%r{^data/([^/]+)/events\.json$}, 1]
+      begin
+        j = JSON.parse(File.read(f))
+        excluded_patterns[series] = j['excluded_event_patterns'] || []
+      rescue
+        excluded_patterns[series] = []
+      end
+    end
+
+    undefined = []
+    Dir.glob("data/*/*/*").select { |d| File.directory?(d) }.each do |dir|
+      m = dir.match(%r{^data/([^/]+)/(\d{4})/\d\d-(.+)$})
+      next unless m
+      series, year, slug = m[1], m[2], m[3]
+      # only care about folders that actually carry timing data
+      has_data = !Dir.glob(File.join(dir, "*-laps.csv")).empty? ||
+                 !Dir.glob(File.join(dir, "*-results.csv")).empty?
+      next unless has_data
+      next if defined_set.include?([series, year, slug])
+      # skip folders intentionally excluded via known patterns
+      next if (excluded_patterns[series] || []).any? { |p| File.fnmatch(p, slug) }
+      undefined << [series, year, slug, dir]
+    end
+
+    if undefined.empty?
+      ok "Every event folder with lap/results data is registered in events.json"
+    else
+      undefined.sort.each do |series, year, slug, dir|
+        error "Undefined event with data: #{dir} — add {\"year\":\"#{year}\",\"folder\":\"#{slug}\",\"name\":\"...\"} to data/#{series}/events.json (its laps are being DROPPED)"
       end
     end
   end

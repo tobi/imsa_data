@@ -88,5 +88,15 @@
     "event_number": "13",
     "event_name": "VIRginia International Raceway",
     "event_folder": "13-virginia-international-raceway"
+  },
+  {
+    "event_number": "13",
+    "event_name": "VIRginia International Raceway (AEC)",
+    "event_folder": "13-virginia-international-raceway-aec-"
+  },
+  {
+    "event_number": "14",
+    "event_name": "Watkins Glen International",
+    "event_folder": "14-watkins-glen-international"
   }
 ]

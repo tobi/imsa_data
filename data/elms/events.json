@@ -39,6 +39,10 @@
     "description": "race-20X sessions are partial class/driver data, not separate races",
     "patterns": ["race-201", "race-202", "race-203", "race-204"]
   },
+  "excluded_event_patterns": [
+    "*-test", "*-test-*", "roar-before*", "*prologue*",
+    "official-test-*", "*sanctioned-test*", "*collective-test*"
+  ],
   "notes": [
     "Only ELMS headline events included",
     "Official test sessions are excluded",

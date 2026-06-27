@@ -290,11 +290,40 @@
       "year": "2026",
       "folder": "sebring-international-raceway",
       "name": "Sebring"
+    },
+    {
+      "year": "2026",
+      "folder": "watkins-glen-international",
+      "name": "Watkins Glen"
+    },
+    {
+      "year": "2026",
+      "folder": "long-beach-street-circuit",
+      "name": "Long Beach"
+    },
+    {
+      "year": "2026",
+      "folder": "weathertech-raceway-laguna-seca",
+      "name": "Laguna Seca"
+    },
+    {
+      "year": "2026",
+      "folder": "detroit-street-course",
+      "name": "Detroit"
     }
+  ],
+  "excluded_event_patterns": [
+    "*-test",
+    "*-test-*",
+    "roar-before*",
+    "*prologue*",
+    "official-test-*",
+    "*sanctioned-test*"
   ],
   "notes": [
     "Only headline IMSA WeatherTech events are included",
     "Test sessions (Sebring February test, etc.) are excluded",
-    "Support series run separate championships and are not included"
+    "Support series run separate championships and are not included",
+    "excluded_event_patterns: folders matching these fnmatch globs are KNOWN non-championship sessions (tests, ROAR, prologues) and are intentionally dropped. Any data folder that is NEITHER defined above NOR matched here will HARD-FAIL the lint (rake) so forgotten real rounds can never be silently ignored."
   ]
 }

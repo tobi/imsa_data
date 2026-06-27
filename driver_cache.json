@@ -3740,7 +3740,8 @@
   "loek hartog": {
     "canonical": "Loek Hartog",
     "variants": [
-      "Loek HARTOG"
+      "Loek HARTOG",
+      "Loek Hartog"
     ]
   },
   "huub van eijndhoven": {
@@ -4312,7 +4313,8 @@
   "marius fossard": {
     "canonical": "Marius Fossard",
     "variants": [
-      "Marius FOSSARD"
+      "Marius FOSSARD",
+      "Marius Fossard"
     ]
   },
   "hadrien david": {
@@ -4559,6 +4561,18 @@
     "canonical": "Rouman Ziemkiewicz",
     "variants": [
       "Rouman ZIEMKIEWICZ"
+    ]
+  },
+  "fran rueda": {
+    "canonical": "Fran Rueda",
+    "variants": [
+      "Fran Rueda"
+    ]
+  },
+  "jaxon evans": {
+    "canonical": "Jaxon Evans",
+    "variants": [
+      "Jaxon Evans"
     ]
   }
 }
