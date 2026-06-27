@@ -100,6 +100,7 @@ class DatabaseLinter
     check_lap_time_outliers
     check_temperature_outliers
     check_pit_time_outliers
+    check_bpillar_populated
     check_race_coverage_plausibility
 
     # Driver checks
@@ -679,6 +680,78 @@ class DatabaseLinter
     else
       outliers.each do |row|
         warn "High pit times: #{row['series_code']}/#{row['year']}/#{row['event']} (avg: #{row['avg_pit'].to_i}s)"
+      end
+    end
+  end
+
+  def check_bpillar_populated
+    section "Checking bpillar_quartile is populated for race sessions"
+
+    # bpillar_quartile (060-bpillar.sql) ranks each driver on the fastest 50%
+    # of their green-flag race laps. It is *expected* NULL for non-race sessions
+    # and for off-pace / pit / lap-1 laps, but a race session with a healthy
+    # field MUST yield some quartiles. An all-NULL column means the eligibility
+    # filter or the UPDATE join silently matched nothing (the classic failure:
+    # `pit_time > 600` excludes the NULL-pit_time green laps we want, and the
+    # car/lap UPDATE join collides multi-driver cars). Catch that here so a
+    # broken bpillar pass can never ship green again.
+
+    # 1) Global guard: race laps exist but ZERO carry a quartile -> hard error.
+    totals = query(<<~SQL).first || {}
+      SELECT
+        COUNT(*) FILTER (WHERE session = 'race') AS race_laps,
+        COUNT(*) FILTER (WHERE session = 'race' AND bpillar_quartile IS NOT NULL) AS filled
+      FROM laps
+    SQL
+    race_laps = totals['race_laps'].to_i
+    filled = totals['filled'].to_i
+
+    if race_laps.zero?
+      info "No race-session laps present; skipping bpillar check"
+      return
+    end
+
+    if filled.zero?
+      error "bpillar_quartile is NULL for ALL #{race_laps} race laps - 060-bpillar.sql matched nothing (check the pit_time/stint_lap filter and the UPDATE join keys)"
+      return
+    end
+
+    # 2) Quartiles must span 1..4 (NTILE(4) over eligible laps). A degenerate
+    # spread means the eligibility set is too thin to be trustworthy.
+    distinct_q = query(<<~SQL).map { |r| r['bpillar_quartile'] }.compact
+      SELECT DISTINCT bpillar_quartile
+      FROM laps
+      WHERE session = 'race' AND bpillar_quartile IS NOT NULL
+    SQL
+    unless (1..4).to_a.all? { |q| distinct_q.include?(q) }
+      warn "bpillar_quartile only spans #{distinct_q.sort.inspect} (expected 1..4) - eligibility set may be too small"
+    end
+
+    # 3) Per-session guard: a substantial race session (>=20 cars, lots of clean
+    # laps) with ZERO quartiles is a localized failure worth flagging.
+    empty_sessions = query(<<~SQL)
+      WITH race AS (
+        SELECT
+          series_code, year, event, session, session_id,
+          COUNT(*) AS laps,
+          COUNT(DISTINCT car) AS cars,
+          COUNT(*) FILTER (WHERE bpillar_quartile IS NOT NULL) AS filled
+        FROM laps
+        WHERE session = 'race'
+        GROUP BY series_code, year, event, session, session_id
+      )
+      SELECT series_code, year, event, session, laps, cars
+      FROM race
+      WHERE filled = 0 AND laps > 500 AND cars >= 10
+      ORDER BY year DESC, event
+      LIMIT 20
+    SQL
+
+    if empty_sessions.empty?
+      ok "bpillar_quartile populated across race sessions (#{filled} of #{race_laps} race laps)"
+    else
+      empty_sessions.each do |row|
+        error "bpillar_quartile all-NULL for race session #{row['series_code']}/#{row['year']}/#{row['event']} (#{row['laps']} laps, #{row['cars']} cars)"
       end
     end
   end

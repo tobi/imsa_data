@@ -39,6 +39,7 @@ eligible_laps AS (
         l.session_id,
         l.car,
         l.lap,
+        l.driver_id,
         NTILE(4) OVER (
             PARTITION BY l.session_id, l.class, l.driver_id
             ORDER BY l.lap_time ASC
@@ -55,7 +56,7 @@ eligible_laps AS (
         AND l.lap_time IS NOT NULL
         AND l.lap != 1                          -- Exclude first lap of race
         AND l.stint_lap != 0                    -- Exclude pit out laps
-        AND l.pit_time > 600                    -- Exclude pit in laps (>10 min indicates no pit stop)
+        AND l.pit_time IS NULL                  -- Exclude pit in laps: a pit_time value IS the pit-stop marker; green laps have NULL pit_time
         AND l.lap_time <= df.driver_fastest_lap * 1.05   -- Within 105% of driver's best
         AND l.lap_time <= cf.class_fastest_lap * 1.10    -- Within 110% of class best
 )
@@ -64,7 +65,8 @@ SET bpillar_quartile = eligible_laps.quartile
 FROM eligible_laps
 WHERE laps.session_id = eligible_laps.session_id
     AND laps.car = eligible_laps.car
-    AND laps.lap = eligible_laps.lap;
+    AND laps.lap = eligible_laps.lap
+    AND laps.driver_id = eligible_laps.driver_id;   -- key on driver_id too: multi-driver cars share (session_id, car, lap) and would otherwise mismatch
 
 -- Summary: Show how many laps are in each bpillar quartile
 SELECT
