@@ -79,6 +79,7 @@ class DataQualityChecker
     check_car_coverage(session_id, event_key)
     check_flag_distribution(session_id, event_key)
     check_pit_stops(session_id, event_key)
+    check_bpillar(session_id, event_key)
   end
 
   def check_lap_coverage(session_id, event_key, duration_hours)
@@ -315,6 +316,64 @@ class DataQualityChecker
 
     if avg_pit && (avg_pit < 30 || avg_pit > 120)
       issue(:warning, event_key, "Unusual average pit time: #{avg_pit.round(1)}s")
+    end
+  end
+
+  # bpillar_quartile sanity (see 060-bpillar.sql). It is legitimately NULL for
+  # non-race sessions and for laps that fail the eligibility window, so a blanket
+  # "no nulls" check is wrong. The real failure mode is a race session+class that
+  # ends up with ZERO classified (non-null) laps — that signals the bpillar UPDATE
+  # silently matched nothing (e.g. the multi-driver-car join key regression noted
+  # in 060-bpillar.sql), which would quietly break the Pace Hub's race ladder.
+  def check_bpillar(session_id, event_key)
+    rows = query(<<~SQL)
+      SELECT
+        class,
+        COUNT(*)                                                   AS race_laps,
+        COUNT(bpillar_quartile)                                    AS classified_laps,
+        COUNT(*) FILTER (WHERE bpillar_quartile NOT IN (1,2,3,4)
+                            AND bpillar_quartile IS NOT NULL)      AS out_of_range
+      FROM laps
+      WHERE session = 'race'
+        AND session_id = '#{session_id}'
+        AND lap_time IS NOT NULL
+      GROUP BY class
+      ORDER BY class
+    SQL
+
+    return if rows.empty?
+
+    rows.each do |r|
+      cls = r['class']
+      race_laps = r['race_laps'].to_i
+      classified = r['classified_laps'].to_i
+      out_of_range = r['out_of_range'].to_i
+      next if race_laps.zero?
+
+      # Hard error: a class ran a race but NOTHING got a bpillar quartile.
+      if classified.zero?
+        issue(:error, event_key,
+              "bpillar: class #{cls} has #{race_laps} race laps but 0 classified " \
+              "(bpillar_quartile all NULL — the UPDATE in 060-bpillar.sql matched no rows)")
+        next
+      end
+
+      # Hard error: a quartile column should only ever hold NULL or 1..4.
+      if out_of_range.positive?
+        issue(:error, event_key,
+              "bpillar: class #{cls} has #{out_of_range} laps with an out-of-range " \
+              "bpillar_quartile (expected NULL or 1-4)")
+      end
+
+      # Warning: implausibly thin classification (a healthy class classifies a
+      # large share of its green laps; <10% usually means the eligibility window
+      # or a join is off rather than a genuinely scrappy race).
+      pct = (classified.to_f / race_laps * 100).round(1)
+      if pct < 10
+        issue(:warning, event_key,
+              "bpillar: class #{cls} only #{pct}% of race laps classified " \
+              "(#{classified}/#{race_laps})")
+      end
     end
   end
 
