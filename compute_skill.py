@@ -1,26 +1,41 @@
 #!/usr/bin/env python3
 """Compute driver skill ratings using OpenSkill (Plackett-Luce).
 
-Replaces the old pairwise Elo (compute_elo.rb). Two reasons that mattered:
-  * MULTIPLAYER: each green-flag window is ONE match with the full field ranked
-    by pace, updated in a single Plackett-Luce step -- not O(n^2) pairwise duels
-    averaged together (the old hack that drove a lot of deflation noise).
-  * CONFIDENCE: every driver carries mu (skill) and sigma (uncertainty). The
-    conservative rating `ordinal = mu - 3*sigma` keeps small-sample drivers
-    honest until they've proven the pace, then the band tightens. (TrueSkill-like,
-    but MIT-licensed and patent-free -- matters for commercial-adjacent data.)
+Each green-flag wall-clock window is ONE multiplayer match: the full field is
+ranked by pace and updated in a single Plackett-Luce step (not O(n^2) pairwise
+duels). Every driver carries mu (skill) and sigma (uncertainty); the
+conservative rating `ordinal = mu - 3*sigma` keeps small-sample drivers honest
+until they've proven the pace, then the band tightens. (TrueSkill-like, but
+MIT-licensed and patent-free.)
 
 TWO POOLS are computed and emitted in the SAME csv:
   1. FULL-FIELD ("overall"): license-seeded priors (Bronze < Silver < Gold <
-     Platinum). Every same-class car on track in a window is ranked together.
-     This is raw pace vs the whole field -- the headline rating, columns
-     elo_before/elo_after/delta/skill_mu/skill_sigma/ordinal.
+     Platinum). Every same-class car on track in a window is ranked together --
+     raw pace vs the whole field. Columns skill_mu/skill_sigma/ordinal/elo.
   2. WITHIN-TIER ("peer"): same green windows, but a driver is ONLY ranked
      against same-license drivers circulating at that moment. Seeded flat (all
-     start equal within their tier). Answers "how good am I FOR a Bronze?" --
-     columns peer_mu/peer_sigma/peer_ordinal. A Bronze who consistently beats
-     other Bronzes climbs here even while the overall pool deflates them against
-     pro traffic.
+     start equal within their tier). Answers "how good am I FOR a Bronze?".
+     Columns peer_mu/peer_sigma/peer_ordinal/peer_elo.
+
+TIME-AWARE CONFIDENCE (sigma widening):
+  Skill doesn't decay with a layoff, but our CERTAINTY does. Before an event,
+  a returning driver's sigma is widened by the elapsed time since they last
+  raced -- sigma' = min(sqrt(sigma^2 + (TAU_PER_YEAR*years)^2), prior). Because
+  ordinal = mu - 3*sigma, a long gap drops the conservative rating until the
+  next race re-confirms pace, then it tightens again. mu (the skill estimate)
+  is left untouched -- we don't assume a returning driver got slower, only that
+  we're less sure. Capped at the seed sigma, so a returnee is never treated as
+  MORE unknown than a brand-new driver.
+
+NORMALIZATION (relatable elo):
+  `elo` and `peer_elo` are readable, 1500-centered transforms of the
+  conservative ordinal, anchored on the ACTUAL field:
+    elo      = 1500 + ELO_SCALE * (ordinal      - class_median_ordinal)
+    peer_elo = 1500 + ELO_SCALE * (peer_ordinal - tier_median_peer_ordinal)
+  So 1500 = a literal median driver in your class (overall) / median driver of
+  your license (peer), computed from established drivers (>= MEDIAN_MIN_LAPS
+  green laps). The same fixed class/tier anchor maps every historical event row,
+  so an elo trajectory is comparable over time.
 
 MATCH DEFINITION (both pools):
   Within each event keep green-flag (flags='GF'), non-pit, valid laps. Bucket
@@ -30,15 +45,11 @@ MATCH DEFINITION (both pools):
   the median of their green laps in that window. The window's pace ranking is
   one OpenSkill match.
 
-OUTPUT CSV (superset of the old driver_elo.csv -- SUM(delta)=elo still holds):
+OUTPUT CSV:
   driver_id, driver_name, class, series_code, year, event, session_date,
-  elo_before, elo_after, delta, laps, cumulative_laps, license,
-  skill_mu, skill_sigma, ordinal,             # overall (full-field) pool
-  peer_mu, peer_sigma, peer_ordinal            # within-tier (same license) pool
-
-  `elo_*` is an affine, readable mapping of the overall mu
-  (1500 + ELO_SCALE*(mu-25)) so the existing dashboard and SUM(delta) invariant
-  keep working.
+  laps, cumulative_laps, license,
+  skill_mu, skill_sigma, ordinal, elo,          # overall (full-field) pool
+  peer_mu, peer_sigma, peer_ordinal, peer_elo   # within-tier (same license) pool
 
 Usage:
   python compute_skill.py                 # CSV to stdout
@@ -48,9 +59,11 @@ Usage:
 """
 
 import argparse
+import math
 import os
 import statistics
 import sys
+from datetime import datetime
 from collections import defaultdict
 
 import duckdb
@@ -70,16 +83,47 @@ LICENSE_MU = {
 DEFAULT_MU = 25.0
 DEFAULT_SIGMA = 25.0 / 3.0    # OpenSkill default
 
-# Affine map from overall mu -> readable, 1500-centered "elo" for dashboard.
-ELO_SCALE = 40.0
-ELO_CENTER_MU = 25.0
+# Time-aware confidence: sigma drift per YEAR of inactivity (mu-units). Added in
+# quadrature to the standing sigma, capped at the seed prior. ~3.0 means a
+# ~3-year layoff fully resets a driver's certainty to "brand new".
+TAU_PER_YEAR = 3.0
+
+# Normalization: readable elo = ELO_CENTER + ELO_SCALE*(ordinal - field_median).
+ELO_SCALE = 25.0
 ELO_CENTER = 1500.0
+# Drivers need this many green laps to count toward the median anchor (keeps
+# one-off entries from dragging the center). Falls back to all if too few.
+MEDIAN_MIN_LAPS = 100
+MEDIAN_MIN_DRIVERS = 5
 
 MODEL = PlackettLuce(mu=DEFAULT_MU, sigma=DEFAULT_SIGMA)
 
 
-def mu_to_elo(mu: float) -> float:
-    return ELO_CENTER + ELO_SCALE * (mu - ELO_CENTER_MU)
+def parse_date(s):
+    """Best-effort parse of a session_date string to a datetime; None on failure."""
+    if not s:
+        return None
+    s = str(s)
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s[:len(fmt) + 2].strip(), fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def widen_sigma(rating, years):
+    """Return a rating with sigma widened for `years` of inactivity (mu kept)."""
+    if years is None or years <= 0:
+        return rating
+    extra = TAU_PER_YEAR * years
+    new_sigma = min(math.sqrt(rating.sigma ** 2 + extra ** 2), DEFAULT_SIGMA)
+    if new_sigma <= rating.sigma:
+        return rating
+    return MODEL.rating(mu=rating.mu, sigma=new_sigma, name=rating.name)
 
 
 def load_laps(db_path: str):
@@ -170,9 +214,13 @@ def compute_pool(class_laps, bucket, seed_mu_fn, peer=False, licenses=None):
 
     seed_mu_fn(driver_id) -> starting mu for a new driver.
     peer=True runs SEPARATE matches per license tier (within-tier pool).
+
+    Before each event a returning driver's sigma is widened for the elapsed
+    time since they last raced (time-aware confidence; mu untouched).
     """
     ratings = {}
     green_laps = defaultdict(int)
+    last_seen = {}                # driver_id -> datetime of last event raced
     history = defaultdict(dict)   # driver_id -> {event_key: (mu, sigma, ord)}
 
     events = defaultdict(list)
@@ -186,10 +234,15 @@ def compute_pool(class_laps, bucket, seed_mu_fn, peer=False, licenses=None):
         if not green:
             continue
 
-        for l in green:
-            did = l["driver_id"]
+        event_date = parse_date(event_laps[0]["session_date"])
+        participants = {l["driver_id"] for l in green}
+
+        for did in participants:
             if did not in ratings:
                 ratings[did] = MODEL.rating(mu=seed_mu_fn(did), sigma=DEFAULT_SIGMA, name=did)
+            elif event_date is not None and last_seen.get(did) is not None:
+                years = (event_date - last_seen[did]).days / 365.25
+                ratings[did] = widen_sigma(ratings[did], years)
 
         windows = build_windows(green, bucket)
         for w in sorted(windows):
@@ -210,8 +263,23 @@ def compute_pool(class_laps, bucket, seed_mu_fn, peer=False, licenses=None):
             green_laps[did] += cnt
             r = ratings[did]
             history[did][ekey] = (r.mu, r.sigma, r.ordinal())
+            if event_date is not None:
+                last_seen[did] = event_date
 
     return history, ratings, green_laps
+
+
+def field_median(final_ratings, green_laps, key=lambda r: r.ordinal()):
+    """Median conservative rating over ESTABLISHED drivers (>= MEDIAN_MIN_LAPS
+    green laps), falling back to all when too few qualify. Anchors the elo
+    scale on a real, representative driver rather than the abstract seed."""
+    established = [key(r) for did, r in final_ratings.items()
+                  if green_laps.get(did, 0) >= MEDIAN_MIN_LAPS]
+    if len(established) < MEDIAN_MIN_DRIVERS:
+        established = [key(r) for r in final_ratings.values()]
+    if not established:
+        return 0.0
+    return statistics.median(established)
 
 
 def main():
@@ -254,15 +322,28 @@ def main():
             peer=True, licenses=licenses,
         )
 
-        # Re-walk events to emit ordered history with cumulative laps + deltas
+        # Normalization anchors (computed from final, established drivers).
+        # Overall: one class-wide median. Peer: per-license-tier median so
+        # peer_elo 1500 = median driver OF THAT LICENSE.
+        overall_median = field_median(overall_final, green_laps)
+        tier_members = defaultdict(dict)
+        for did, r in peer_final.items():
+            tier_members[licenses.get(did, "")][did] = r
+        peer_median = {
+            tier: field_median(members, green_laps)
+            for tier, members in tier_members.items()
+        }
+
+        def to_elo(ordinal, median):
+            return ELO_CENTER + ELO_SCALE * (ordinal - median)
+
+        # Re-walk events to emit ordered history with cumulative laps.
         events = defaultdict(list)
         for l in class_laps:
             events[(l["series_code"], l["year"], l["event"])].append(l)
         sorted_events = sorted(events.items(),
                                key=lambda kv: kv[1][0]["session_date"] or "1970-01-01")
 
-        first_seen = set()
-        prev_elo = {}
         cum = defaultdict(int)
         for ekey, event_laps in sorted_events:
             series, year, event = ekey
@@ -277,18 +358,11 @@ def main():
                 if ekey not in overall_hist.get(did, {}):
                     continue
                 mu, sigma, ordn = overall_hist[did][ekey]
-                pmu, psig, pord = peer_hist.get(did, {}).get(ekey, (DEFAULT_MU, DEFAULT_SIGMA, MODEL.rating().ordinal()))
+                default_ord = MODEL.rating().ordinal()
+                pmu, psig, pord = peer_hist.get(did, {}).get(
+                    ekey, (DEFAULT_MU, DEFAULT_SIGMA, default_ord))
                 cum[did] += event_green[did]
-                elo_after = mu_to_elo(mu)
-                is_first = did not in first_seen
-                first_seen.add(did)
-                if is_first:
-                    delta = elo_after
-                    elo_before = 0.0
-                else:
-                    elo_before = prev_elo.get(did, ELO_CENTER)
-                    delta = elo_after - elo_before
-                prev_elo[did] = elo_after
+                lic = licenses.get(did, "")
                 out_rows.append({
                     "driver_id": did,
                     "driver_name": names[did],
@@ -297,18 +371,17 @@ def main():
                     "year": year,
                     "event": event,
                     "session_date": session_date,
-                    "elo_before": round(elo_before),
-                    "elo_after": round(elo_after),
-                    "delta": round(delta),
                     "laps": event_green[did],
                     "cumulative_laps": cum[did],
-                    "license": licenses.get(did, ""),
+                    "license": lic,
                     "skill_mu": round(mu, 4),
                     "skill_sigma": round(sigma, 4),
                     "ordinal": round(ordn, 4),
+                    "elo": round(to_elo(ordn, overall_median)),
                     "peer_mu": round(pmu, 4),
                     "peer_sigma": round(psig, 4),
                     "peer_ordinal": round(pord, 4),
+                    "peer_elo": round(to_elo(pord, peer_median.get(lic, 0.0))),
                 })
 
         if args.summary:
@@ -316,27 +389,30 @@ def main():
                          if green_laps.get(did, 0) >= args.min_laps]
             if not qualified:
                 continue
-            print(f"\n{klass} OVERALL ({len(qualified)} drivers, {args.min_laps}+ green laps):",
-                  file=sys.stderr)
-            print("-" * 72, file=sys.stderr)
+            print(f"\n{klass} OVERALL ({len(qualified)} drivers, {args.min_laps}+ green laps, "
+                  f"median ord={overall_median:.2f} -> elo 1500):", file=sys.stderr)
+            print("-" * 76, file=sys.stderr)
             for i, (did, r) in enumerate(sorted(qualified, key=lambda kv: kv[1].ordinal(), reverse=True)[:15], 1):
                 print(f"{i:3d}. {names.get(did, did):<25} ord={r.ordinal():6.2f}  "
-                      f"sig={r.sigma:4.2f}  elo={round(mu_to_elo(r.mu)):4d}  "
+                      f"sig={r.sigma:4.2f}  elo={round(to_elo(r.ordinal(), overall_median)):4d}  "
                       f"{green_laps.get(did,0):4d} laps  [{licenses.get(did,'-')}]", file=sys.stderr)
             # within-tier leaderboard for Bronze
             br = [(did, peer_final[did]) for did in peer_final
                   if licenses.get(did) == "Bronze" and green_laps.get(did, 0) >= args.min_laps]
             if br:
-                print(f"\n{klass} WITHIN-BRONZE peer pool ({len(br)} drivers):", file=sys.stderr)
-                print("-" * 72, file=sys.stderr)
+                bm = peer_median.get("Bronze", 0.0)
+                print(f"\n{klass} WITHIN-BRONZE peer pool ({len(br)} drivers, "
+                      f"median ord={bm:.2f} -> peer_elo 1500):", file=sys.stderr)
+                print("-" * 76, file=sys.stderr)
                 for i, (did, r) in enumerate(sorted(br, key=lambda kv: kv[1].ordinal(), reverse=True)[:15], 1):
                     print(f"{i:3d}. {names.get(did, did):<25} peer_ord={r.ordinal():6.2f}  "
-                          f"sig={r.sigma:4.2f}  {green_laps.get(did,0):4d} laps", file=sys.stderr)
+                          f"sig={r.sigma:4.2f}  peer_elo={round(to_elo(r.ordinal(), bm)):4d}  "
+                          f"{green_laps.get(did,0):4d} laps", file=sys.stderr)
 
     header = ["driver_id", "driver_name", "class", "series_code", "year", "event",
-              "session_date", "elo_before", "elo_after", "delta", "laps",
-              "cumulative_laps", "license", "skill_mu", "skill_sigma", "ordinal",
-              "peer_mu", "peer_sigma", "peer_ordinal"]
+              "session_date", "laps", "cumulative_laps", "license",
+              "skill_mu", "skill_sigma", "ordinal", "elo",
+              "peer_mu", "peer_sigma", "peer_ordinal", "peer_elo"]
     print(",".join(header))
     out_rows.sort(key=lambda r: (str(r["session_date"] or ""), r["class"], r["driver_id"]))
     for r in out_rows:

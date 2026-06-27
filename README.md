@@ -135,16 +135,31 @@ window's pace ranking is a single multiplayer OpenSkill match. Two pools are
 emitted:
 
 * **Overall** (license-seeded, full field): `skill_mu` / `skill_sigma` /
-  `ordinal`, plus the readable `elo_*` mapping. Starting `mu` is seeded by FIA
-  license (Bronze 22 < Silver 25 < Gold 28 < Platinum 31) so the pool starts
-  near tier equilibrium instead of deflating Ams for dozens of races.
-* **Peer** (within-license tier): `peer_mu` / `peer_sigma` / `peer_ordinal` —
-  "how good are you *for* your license class". A Bronze who beats other Bronzes
-  climbs here even while the overall pool docks them against pro traffic.
+  `ordinal`, plus the readable `elo`. Starting `mu` is seeded by FIA license
+  (Bronze 22 < Silver 25 < Gold 28 < Platinum 31) so the pool starts near tier
+  equilibrium instead of deflating Ams for dozens of races.
+* **Peer** (within-license tier): `peer_mu` / `peer_sigma` / `peer_ordinal`,
+  plus the readable `peer_elo` — "how good are you *for* your license class". A
+  Bronze who beats other Bronzes climbs here even while the overall pool docks
+  them against pro traffic.
 
 Confidence: `ordinal = mu - 3*sigma` (conservative rating; small-sample drivers
 sit lower until sigma tightens). Events with no flag data fall back to all valid
 racing laps.
+
+**Time-aware confidence.** Before each event a returning driver's `sigma` is
+widened for the time since they last raced — `sigma' = min(sqrt(sigma² +
+(3.0·years)²), prior)` — so a long layoff lowers the conservative `ordinal`
+(and `elo`) until the next race re-confirms pace. `mu` is left untouched: we
+don't assume a returnee got slower, only that we're less certain.
+
+**Relatable elo.** `elo` and `peer_elo` are 1500-centered transforms of the
+conservative `ordinal`, anchored on the **actual field median** (established
+drivers with ≥100 green laps): `elo = 1500 + 25·(ordinal − class_median)` and
+`peer_elo = 1500 + 25·(peer_ordinal − license_median)`. So **1500 = a median
+driver in your class** (overall) / **a median driver of your license** (peer).
+The fixed per-class/tier anchor maps every historical row, so trajectories are
+comparable over time.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -155,17 +170,16 @@ racing laps.
 | `year` | VARCHAR | Season year |
 | `event` | VARCHAR | Event name |
 | `session_date` | TIMESTAMP | Event date |
-| `elo_before` | INTEGER | Readable elo before event (0 for first event) |
-| `elo_after` | INTEGER | Readable elo after event (= 1500 + 40*(mu-25)) |
-| `delta` | INTEGER | Change (first event includes full base) |
 | `laps` | INTEGER | Green laps driven in event |
 | `cumulative_laps` | INTEGER | Career green laps in class |
 | `license` | VARCHAR | FIA license tier |
 | `skill_mu` / `skill_sigma` / `ordinal` | DOUBLE | Overall pool skill / uncertainty / conservative rating |
+| `elo` | INTEGER | Relatable overall rating (1500 = class median) |
 | `peer_mu` / `peer_sigma` / `peer_ordinal` | DOUBLE | Within-tier pool equivalents |
+| `peer_elo` | INTEGER | Relatable peer rating (1500 = license-tier median) |
 
-The legacy pairwise Ruby implementation (`compute_elo.rb`) is retained as a
-fallback when the Python toolchain is unavailable.
+Ratings are computed in a local Python venv (`compute_skill.py`, OpenSkill +
+DuckDB); the Rake task bootstraps it on first run.
 
 ```sql
 -- Current overall + peer rating for a driver

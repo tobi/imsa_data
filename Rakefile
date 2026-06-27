@@ -58,9 +58,9 @@ namespace :db do
     end
 
     # Phase 2: Compute skill ratings (OpenSkill: multiplayer + confidence,
-    # two pools = overall license-seeded + within-tier peer). Bootstraps a
-    # local venv with openskill/duckdb on first run. Falls back to the legacy
-    # pairwise Ruby Elo if the Python toolchain is unavailable.
+    # two pools = overall license-seeded + within-tier peer; time-aware sigma
+    # widening + field-median-anchored elo). Bootstraps a local venv with
+    # openskill/duckdb on first run.
     venv = ".venv"
     venv_py = "#{venv}/bin/python"
     unless File.exist?(venv_py)
@@ -68,17 +68,11 @@ namespace :db do
       system("python3 -m venv #{venv}") &&
         system("#{venv}/bin/pip install -q -r requirements-skill.txt")
     end
+    abort("❌ Python venv unavailable; cannot compute skill ratings.") unless File.exist?(venv_py)
 
-    if File.exist?(venv_py)
-      puts "Computing skill ratings (OpenSkill, two-pool)..."
-      ok = system("#{venv_py} compute_skill.py > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
-      unless ok
-        puts "  OpenSkill failed; falling back to legacy Ruby Elo..."
-        system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
-      end
-    else
-      puts "Python venv unavailable; using legacy Ruby Elo..."
-      system("ruby compute_elo.rb > #{OUTPUT_DIR}/driver_elo.csv 2>/dev/null")
+    puts "Computing skill ratings (OpenSkill, two-pool)..."
+    unless system("#{venv_py} compute_skill.py > #{OUTPUT_DIR}/driver_elo.csv")
+      abort("❌ compute_skill.py failed.")
     end
 
     # Phase 3: Load Elo data

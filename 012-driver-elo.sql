@@ -1,11 +1,14 @@
 -- Driver skill ratings computed lap-by-lap with OpenSkill (Plackett-Luce).
 -- Two pools per class (both computed by compute_skill.py):
 --   * OVERALL  (license-seeded, full-field): skill_mu/skill_sigma/ordinal,
---              plus the readable elo_before/elo_after/delta mapping.
---   * PEER     (within-license tier): peer_mu/peer_sigma/peer_ordinal -- "how
---              good are you FOR your license class".
--- Confidence: ordinal = mu - 3*sigma (conservative rating).
--- First event still includes the full base in delta, so SUM(delta) = elo.
+--              plus the relatable `elo` (1500 = median driver in class).
+--   * PEER     (within-license tier): peer_mu/peer_sigma/peer_ordinal, plus
+--              `peer_elo` (1500 = median driver OF THAT LICENSE) -- "how good
+--              are you FOR your license class".
+-- Confidence: ordinal = mu - 3*sigma. Sigma is widened by time since a driver
+-- last raced, so a long layoff lowers the conservative rating until re-proven.
+-- elo/peer_elo are 1500-centered transforms of the ordinal, anchored on the
+-- real field median (established drivers), so the numbers are comparable.
 
 DROP TABLE IF EXISTS driver_elo;
 CREATE TABLE driver_elo AS
@@ -24,10 +27,11 @@ WITH ranked AS (
     skill_mu,
     skill_sigma,
     ordinal,
+    elo,
     peer_mu,
     peer_sigma,
     peer_ordinal,
-    elo_after,
+    peer_elo,
     session_date,
     ROW_NUMBER() OVER (
       PARTITION BY driver_id, class
@@ -39,10 +43,11 @@ SELECT
   e.driver_id,
   e.driver_name,
   e.class,
-  r.elo_after                 AS elo,   -- exact final rating (no rounding drift)
+  r.elo,                                  -- relatable overall rating (1500 = class median)
   r.skill_mu,
   r.skill_sigma,
   r.ordinal,                              -- overall conservative rating
+  r.peer_elo,                             -- relatable peer rating (1500 = license median)
   r.peer_mu,
   r.peer_sigma,
   r.peer_ordinal,                         -- within-tier conservative rating
@@ -59,9 +64,8 @@ JOIN ranked r
  AND r.rn = 1
 GROUP BY
   e.driver_id, e.driver_name, e.class,
-  r.elo_after,
-  r.skill_mu, r.skill_sigma, r.ordinal,
-  r.peer_mu, r.peer_sigma, r.peer_ordinal
+  r.elo, r.skill_mu, r.skill_sigma, r.ordinal,
+  r.peer_elo, r.peer_mu, r.peer_sigma, r.peer_ordinal
 ORDER BY e.class, r.ordinal DESC;
 
 -- Within-license leaderboard: rank drivers against same-tier peers.
@@ -72,6 +76,7 @@ SELECT
   driver_id,
   driver_name,
   peer_ordinal,
+  peer_elo,
   peer_mu,
   peer_sigma,
   cumulative_laps,
