@@ -11,6 +11,7 @@ SELECT
     laps.start_date,
     laps.year,
     laps.event,
+    laps.race_label,
     laps.session,
     laps.session_id,
     laps.session_time,

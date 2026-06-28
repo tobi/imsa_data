@@ -92,14 +92,8 @@ WITH base AS (
         edr.year,
         edr.event as event_folder,
         normalize_session(edr.session) as session_normalized,
-        -- Get event name from defined_events, add multi-race suffix if applicable
-        de.display_name ||
-        COALESCE(
-            (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
-             WHERE mrm.series_code = edr.series_code
-               AND normalize_session(edr.session) LIKE mrm.session_prefix || '%'),
-            ''
-        ) AS event,
+        -- Clean event name (no race suffix); race identity is tracked via race_label in laps.
+        de.display_name AS event,
         -- Normalize session type
         get_session_type(normalize_session(edr.session)) AS session,
         edr.start_date,

@@ -41,6 +41,12 @@ SELECT
     series_code || '-' || year as series,
     year,
     normalize_track_name(event_raw) as event,
+    -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
+    (SELECT mrm.race_label FROM multi_race_mappings mrm
+     WHERE mrm.series_code = raw_results.series_code
+       AND mrm.year = raw_results.year
+       AND mrm.event_folder = raw_results.event_raw
+       AND raw_results.session LIKE mrm.session_prefix || '%') as race_label,
     session,
     start_date,
     position,

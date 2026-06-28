@@ -147,14 +147,14 @@ CREATE OR REPLACE TABLE event_laps AS WITH
 named_laps AS (
     SELECT
         series_code, series, start_date, year,
-        -- Get event name from defined_events, add multi-race suffix if applicable
-        event_display_name ||
-        COALESCE(
-            (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
-             WHERE mrm.series_code = event_laps_raw.series_code
-               AND event_laps_raw.session LIKE mrm.session_prefix || '%'),
-            ''
-        ) AS event,
+        -- Clean event name (no race suffix); the race identity lives in race_label.
+        event_display_name AS event,
+        -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
+        (SELECT mrm.race_label FROM multi_race_mappings mrm
+         WHERE mrm.series_code = event_laps_raw.series_code
+           AND mrm.year = event_laps_raw.year
+           AND mrm.event_folder = event_laps_raw.event_folder
+           AND event_laps_raw.session LIKE mrm.session_prefix || '%') AS race_label,
         -- Session type: race, qualifying, practice, warmup, test
         get_session_type(session) AS session,
         lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team,
@@ -177,7 +177,7 @@ named_laps AS (
 ),
 stint_starts AS (
     SELECT
-        series_code, series, start_date, year, event, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
+        series_code, series, start_date, year, event, race_label, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
         car, class, team, session_time, clock_time, pit_time, flags, driver_name, group_license, session_id,
         CASE WHEN LAG (driver_name) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) = driver_name THEN 0 ELSE 1
         END AS stint_start
@@ -232,6 +232,7 @@ ranked_stints AS (
         ranked_stints.start_date,
         ranked_stints.year,
         ranked_stints.event,
+        ranked_stints.race_label,
         ranked_stints.session,
         ranked_stints.session_id,
         ranked_stints.session_time,
@@ -284,6 +285,7 @@ ranked_stints AS (
         lwd.start_date,
         lwd.year,
         lwd.event,
+        lwd.race_label,
         lwd.session,
         lwd.session_id,
         lwd.session_time,
@@ -342,6 +344,7 @@ SELECT
     start_date,
     year,
     event,
+    race_label,
     session,
     session_id,
     session_time,

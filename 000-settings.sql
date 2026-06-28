@@ -174,15 +174,29 @@ FROM read_json_auto('data/*/events.json', filename=true) j,
      UNNEST(j.events) as unnest
 WHERE j.events IS NOT NULL;
 
--- Multi-race session mappings (e.g., race-201 -> "Race 1")
+-- Per-event race-name mappings (e.g. Yas Marina 2024: race-201 -> "Race 1").
+-- Each event in events.json may carry an optional "races" array:
+--   "races": [{"session": "race-201", "name": "Race 1"}, ...]
+-- This maps a (series, year, event_folder, session_prefix) to a human race label.
+-- Events with a single race omit "races" and get no label (race_label = NULL).
 CREATE OR REPLACE TABLE multi_race_mappings AS
+WITH ev AS (
+    SELECT
+        regexp_extract(filename, 'data/([^/]+)/events.json', 1) as series_code,
+        unnest.year as year,
+        unnest.folder as event_folder,
+        unnest.races as races
+    FROM read_json_auto('data/*/events.json', filename=true, union_by_name=true) j,
+         UNNEST(j.events) as unnest
+)
 SELECT
-    regexp_extract(filename, 'data/([^/]+)/events.json', 1) as series_code,
-    unnest.session_prefix,
-    unnest.event_suffix
-FROM read_json_auto('data/*/events.json', filename=true) j,
-     UNNEST(j.multi_race_events) as unnest
-WHERE j.multi_race_events IS NOT NULL;
+    ev.series_code,
+    ev.year,
+    ev.event_folder,
+    r.session as session_prefix,
+    r.name as race_label
+FROM ev, UNNEST(ev.races) AS t(r)
+WHERE ev.races IS NOT NULL;
 
 -- Sessions to ignore (partial data files)
 CREATE OR REPLACE TABLE ignored_sessions AS

@@ -939,32 +939,49 @@ class DatabaseLinter
   end
 
   def check_single_race_per_event
-    section "Checking each event has at most 1 race session"
+    section "Checking multi-race events disambiguate via race_label"
 
-    # Each event should have at most 1 race session
-    # Multi-race weekends (like ALMS Race 1/Race 2) should be split into separate events
+    # Multi-race weekends (e.g. ALMS double-headers) are kept under ONE event and
+    # disambiguated by race_label ("Race 1" / "Race 2" / custom). The data-quality
+    # rule is therefore: if an event has >1 race session, every race session_id must
+    # carry a DISTINCT, non-NULL race_label. A missing or duplicated label is the bug.
     # Note: Multiple qualifying sessions per event is valid - WEC/ELMS have separate
     # qualifying for each class (qualifying-lmp2, qualifying-gt3) which are all normalized
     # to "qualifying" but have different session_ids
-    events_with_multiple_races = query(<<~SQL)
-      WITH session_counts AS (
+    multi_race_label_problems = query(<<~SQL)
+      WITH race_sessions AS (
+        SELECT DISTINCT series_code, year, event, session_id, race_label
+        FROM laps
+        WHERE session = 'race'
+      ),
+      per_event AS (
         SELECT
           series_code, year, event,
-          COUNT(DISTINCT CASE WHEN session = 'race' THEN session_id END) as race_count
-        FROM laps
+          COUNT(*) as race_count,
+          COUNT(DISTINCT race_label) as distinct_labels,
+          COUNT(*) FILTER (WHERE race_label IS NULL) as null_labels
+        FROM race_sessions
         GROUP BY series_code, year, event
       )
-      SELECT series_code, year, event, race_count
-      FROM session_counts
+      SELECT series_code, year, event, race_count, distinct_labels, null_labels
+      FROM per_event
       WHERE race_count > 1
+        AND (null_labels > 0 OR distinct_labels < race_count)
       ORDER BY series_code, year, event
     SQL
 
-    if events_with_multiple_races.empty?
-      ok "All events have at most 1 race session"
+    if multi_race_label_problems.empty?
+      ok "All multi-race events disambiguate every race with a distinct race_label"
     else
-      events_with_multiple_races.each do |row|
-        error "Event has #{row['race_count']} race sessions (should be 1): #{row['series_code']}/#{row['year']}/#{row['event']} - split into separate events"
+      multi_race_label_problems.each do |row|
+        if row['null_labels'].to_i > 0
+          error "Multi-race event has #{row['null_labels']} race session(s) missing race_label: " \
+                "#{row['series_code']}/#{row['year']}/#{row['event']} - add a 'races' entry in events.json"
+        else
+          error "Multi-race event has duplicate race_labels (#{row['distinct_labels']} distinct for " \
+                "#{row['race_count']} races): #{row['series_code']}/#{row['year']}/#{row['event']} - " \
+                "race names must be unique within an event"
+        end
       end
     end
   end

@@ -75,14 +75,8 @@ CREATE OR REPLACE TABLE chassis_lookup AS
 SELECT DISTINCT
     cr.series_code,
     cr.year,
-    -- Get event name from defined_events, add multi-race suffix if applicable
-    de.display_name ||
-    COALESCE(
-        (SELECT ' ' || mrm.event_suffix FROM multi_race_mappings mrm
-         WHERE mrm.series_code = cr.series_code
-           AND normalize_session(cr.session) LIKE mrm.session_prefix || '%'),
-        ''
-    ) AS event,
+    -- Clean event name (no race suffix); join key matches event_drivers/laps.
+    de.display_name AS event,
     -- Normalize session type using macro
     get_session_type(normalize_session(cr.session)) AS session,
     cr.start_date,
