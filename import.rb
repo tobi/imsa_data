@@ -16,6 +16,7 @@ SERIES_CONFIG = {
     name: 'IMSA WeatherTech Championship',
     base_url: 'https://imsa.results.alkamelcloud.com/Results/',
     series_pattern: 'IMSA WeatherTech',
+    temperature_unit: 'F',  # Alkamel reports IMSA weather in Fahrenheit
     year_prefix: ->(year) { "#{year.to_s[-2..]}_#{year}" }  # "24_2024"
   },
   'wec' => {
@@ -23,6 +24,7 @@ SERIES_CONFIG = {
     base_url: 'https://fiawec.alkamelsystems.com/Results/',
     season_page: 'https://fiawec.alkamelsystems.com/?season=',
     series_pattern: 'FIA WEC',
+    temperature_unit: 'C',  # European Alkamel feeds report Celsius
     year_prefix: ->(year) { "#{(year - 2011)}_#{year}" },  # "13_2024" for 2024 (started 2012)
     use_html_scraping: true
   },
@@ -31,6 +33,7 @@ SERIES_CONFIG = {
     base_url: 'https://elms.alkamelsystems.com/Results/',
     season_page: 'https://elms.alkamelsystems.com/?season=',
     series_pattern: 'European Le Mans Series',
+    temperature_unit: 'C',
     year_prefix: ->(year) { "#{(year - 2005)}_#{year}" },  # "19_2024" for 2024 (started 2006)
     use_html_scraping: true
   },
@@ -39,6 +42,7 @@ SERIES_CONFIG = {
     base_url: 'https://alms.alkamelsystems.com/Results/',
     season_page: 'https://alms.alkamelsystems.com/?season=',
     series_pattern: 'Asian Le Mans Series',
+    temperature_unit: 'C',
     # ALMS uses winter season format: "05_2025-2026" for 2025-2026 season
     year_prefix: ->(year) { sprintf("%02d_%d-%d", year - 2021, year - 1, year) },
     use_html_scraping: true
@@ -48,6 +52,7 @@ SERIES_CONFIG = {
     base_url: 'https://lemanscup.alkamelsystems.com/Results/',
     season_page: 'https://lemanscup.alkamelsystems.com/?season=',
     series_pattern: 'Le Mans Cup',
+    temperature_unit: 'C',
     year_prefix: ->(year) { "#{(year - 2015)}_#{year}" },  # Adjust if needed
     use_html_scraping: true
   }
@@ -494,37 +499,32 @@ class EnduranceSeriesImporter
 
     return rows unless air_idx || track_idx
 
-    # Sample temperature values to detect unit
-    temp_samples = []
-    rows[1..20].each do |row|
-      temp_samples << row[air_idx].to_f if air_idx && row[air_idx]
-      temp_samples << row[track_idx].to_f if track_idx && row[track_idx]
-    end
+    # DETERMINISTIC unit handling — no value-based heuristics.
+    #
+    # Source temperature unit is a fixed per-series property of the Alkamel feed
+    # (see SERIES_CONFIG[:temperature_unit]): IMSA reports °F, the European/Asian
+    # series report °C. The previous median<45 heuristic mis-classified cold races
+    # (e.g. a January Daytona °F session, or a cool Spa °C session) and could
+    # double-convert, producing impossible track temps (170°F+). A per-series rule
+    # is exact because a given feed never mixes units within or across sessions.
+    #
+    # Invariant established here: every weather CSV on disk is in Fahrenheit.
+    # Downstream SQL therefore performs NO further conversion.
+    source_unit = (@series_config[:temperature_unit] || 'F').upcase
 
-    return rows if temp_samples.empty?
+    return rows unless source_unit == 'C'
 
-    # Heuristic: if median temp is < 45, it's likely Celsius
-    # (45°C = 113°F, reasonable upper bound for ambient racing temps)
-    # Racing doesn't happen below 0°C typically, so 0-45 range = Celsius
-    median = temp_samples.sort[temp_samples.length / 2]
-    is_celsius = median < 45
+    puts " [converting °C→°F: #{@series_code} source unit is Celsius]"
 
-    return rows unless is_celsius
-
-    puts " [converting °C→°F]"
-
-    # Convert all temperature values
     rows.each_with_index.map do |row, idx|
       next row if idx == 0  # Skip header
 
       new_row = row.dup
-      if air_idx && row[air_idx]
-        celsius = row[air_idx].to_f
-        new_row[air_idx] = ((celsius * 9.0 / 5.0) + 32).round(2).to_s
+      if air_idx && row[air_idx] && !row[air_idx].to_s.strip.empty?
+        new_row[air_idx] = ((row[air_idx].to_f * 9.0 / 5.0) + 32).round(2).to_s
       end
-      if track_idx && row[track_idx]
-        celsius = row[track_idx].to_f
-        new_row[track_idx] = ((celsius * 9.0 / 5.0) + 32).round(2).to_s
+      if track_idx && row[track_idx] && !row[track_idx].to_s.strip.empty?
+        new_row[track_idx] = ((row[track_idx].to_f * 9.0 / 5.0) + 32).round(2).to_s
       end
       new_row
     end

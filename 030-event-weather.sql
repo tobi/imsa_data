@@ -14,9 +14,14 @@ CREATE TEMP TABLE event_weather_raw AS
             TRY_STRPTIME(time_utc_str, '%d-%b-%y %H:%M:%S')
         ) as time_utc,
         -- Raw temperature values
-        -- Sanitize temps: values outside -40 to 250°F are sensor errors
-        CASE WHEN air_temp BETWEEN -40 AND 250 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
-        CASE WHEN track_temp BETWEEN -40 AND 300 THEN track_temp::DECIMAL(6, 2) END as track_temp_raw,
+        -- Sanitize/validate (CHECK-only heuristic — never used to infer units):
+        -- units are already Fahrenheit on disk (import.rb converts per-series).
+        -- These bounds reject physically-impossible sensor readings for a running
+        -- session — e.g. a track surface stuck at the 32°F freezing-point default,
+        -- or sub-20°F air — which would otherwise drag session min/avg temps.
+        -- Plausible racing envelope: air 20–140°F, track 35–200°F.
+        CASE WHEN air_temp BETWEEN 20 AND 140 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
+        CASE WHEN track_temp BETWEEN 35 AND 200 THEN track_temp::DECIMAL(6, 2) END as track_temp_raw,
         humidity::DECIMAL(6, 2) as humidity_percent,
         pressure::DECIMAL(6, 2) as pressure_inhg,
         wind_speed::DECIMAL(6, 2) as wind_speed_mph,
@@ -59,7 +64,13 @@ CREATE TEMP TABLE event_weather_raw AS
 CREATE OR REPLACE TABLE event_weather AS WITH
 named_weather AS (
     SELECT
-        series_code, year, normalize_track_name(event) as event, session, date,
+        series_code, year, normalize_track_name(event) as event,
+        -- Raw event-folder slug + normalized session type: the stable natural key
+        -- used to align weather with laps (see 040-laps.sql). `event` above is the
+        -- canonical venue name kept for 071-events.sql's per-event stats.
+        event as event_folder,
+        get_session_type(session) as session_type,
+        session, date,
         time_utc_seconds, time_utc,
         AVG(CASE WHEN air_temp_raw BETWEEN -20 AND 160 THEN air_temp_raw END)
             OVER (PARTITION BY filename) as avg_air_temp_raw,
@@ -91,7 +102,11 @@ named_weather AS (
         )::DECIMAL(6, 2) as track_temp_f,
         humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
-        DENSE_RANK() OVER (ORDER BY series_code, year, event, session) as session_id,
+        -- One logical session per (series, year, event-folder, session-type, start day).
+        -- Race-hour-* files share the same filename timestamp prefix → same `date`,
+        -- so they collapse into a single race timeline. relative_seconds (computed
+        -- below over this partition) then measures elapsed time from race start.
+        DENSE_RANK() OVER (ORDER BY series_code, year, event_folder, session_type, date) as session_id,
     FROM event_weather_raw
     ORDER BY session_id, time_utc_seconds
 ),

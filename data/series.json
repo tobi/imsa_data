@@ -1,10 +1,10 @@
 {
-  "description": "Series-level metadata used during imports",
+  "description": "Series-level metadata. `source_temperature_unit` is the unit the Alkamel timing feed reports for each series; import.rb uses it to convert to Fahrenheit at scrape time. After import, EVERY weather CSV on disk is in Fahrenheit, so the SQL pipeline performs no further conversion. `temperature_unit` is retained as the on-disk unit (always F) for any downstream consumer that reads series_metadata.",
   "series": [
-    {"series_code": "imsa", "temperature_unit": "F"},
-    {"series_code": "wec", "temperature_unit": "mixed"},
-    {"series_code": "elms", "temperature_unit": "mixed"},
-    {"series_code": "alms", "temperature_unit": "mixed"},
-    {"series_code": "lmc", "temperature_unit": "mixed"}
+    {"series_code": "imsa", "source_temperature_unit": "F", "temperature_unit": "F"},
+    {"series_code": "wec",  "source_temperature_unit": "C", "temperature_unit": "F"},
+    {"series_code": "elms", "source_temperature_unit": "C", "temperature_unit": "F"},
+    {"series_code": "alms", "source_temperature_unit": "C", "temperature_unit": "F"},
+    {"series_code": "lmc",  "source_temperature_unit": "C", "temperature_unit": "F"}
   ]
 }

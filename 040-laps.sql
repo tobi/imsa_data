@@ -51,11 +51,25 @@ SELECT
     ew.wind_direction_degrees,
     ew.raining
 FROM event_laps laps
-LEFT JOIN event_weather ew ON ew.session_id = laps.session_id
+-- Align weather by NATURAL KEY, not session_id. Each table assigns session_id via
+-- an independent DENSE_RANK() over a different row population (laps keeps only
+-- main-class sessions; weather keeps every file), so equal ids do NOT denote the
+-- same session — matching on id silently bound e.g. Daytona's race to Spa's weather.
+-- (series_code, year, event_folder, session, start_date) is the stable shared grain.
+LEFT JOIN event_weather ew
+    ON ew.series_code = laps.series_code
+    AND ew.year = laps.year
+    AND ew.event_folder = laps.event_folder
+    AND ew.session_type = laps.session
+    AND ew.date = laps.start_date
     AND ew.relative_seconds = (
         SELECT MAX(ew2.relative_seconds)
         FROM event_weather ew2
-        WHERE ew2.session_id = laps.session_id
+        WHERE ew2.series_code = laps.series_code
+          AND ew2.year = laps.year
+          AND ew2.event_folder = laps.event_folder
+          AND ew2.session_type = laps.session
+          AND ew2.date = laps.start_date
           AND ew2.relative_seconds <= laps.session_time
     )
 ORDER BY laps.session_id, laps.car, laps.lap;

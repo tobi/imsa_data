@@ -149,6 +149,8 @@ named_laps AS (
         series_code, series, start_date, year,
         -- Clean event name (no race suffix); the race identity lives in race_label.
         event_display_name AS event,
+        -- Raw folder slug: stable natural-key component for the weather join (040-laps.sql).
+        event_folder,
         -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
         (SELECT mrm.race_label FROM multi_race_mappings mrm
          WHERE mrm.series_code = event_laps_raw.series_code
@@ -177,7 +179,7 @@ named_laps AS (
 ),
 stint_starts AS (
     SELECT
-        series_code, series, start_date, year, event, race_label, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
+        series_code, series, start_date, year, event, event_folder, race_label, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
         car, class, team, session_time, clock_time, pit_time, flags, driver_name, group_license, session_id,
         CASE WHEN LAG (driver_name) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) = driver_name THEN 0 ELSE 1
         END AS stint_start
@@ -232,6 +234,7 @@ ranked_stints AS (
         ranked_stints.start_date,
         ranked_stints.year,
         ranked_stints.event,
+        ranked_stints.event_folder,
         ranked_stints.race_label,
         ranked_stints.session,
         ranked_stints.session_id,
@@ -285,6 +288,7 @@ ranked_stints AS (
         lwd.start_date,
         lwd.year,
         lwd.event,
+        lwd.event_folder,
         lwd.race_label,
         lwd.session,
         lwd.session_id,
@@ -344,6 +348,7 @@ SELECT
     start_date,
     year,
     event,
+    event_folder,
     race_label,
     session,
     session_id,

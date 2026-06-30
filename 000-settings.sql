@@ -52,25 +52,20 @@ SELECT
 FROM read_json_auto('data/series.json') j,
      UNNEST(j.series);
 
+-- Temperature handling is DETERMINISTIC and single-pass.
+--
+-- Source units are a per-series property (see data/series.json): IMSA reports °F,
+-- WEC/ELMS/ALMS/LMC report °C. `import.rb` performs the ONE and only unit
+-- conversion when it writes the CSVs, so everything on disk is already °F.
+--
+-- Therefore the SQL layer must NEVER convert again — doing so double-converted any
+-- value that happened to fall in an ambiguous band (e.g. cold WEC rounds: a real
+-- 70°F track became 158°F). This macro is a pass-through kept only so callers in
+-- 030-event-weather.sql need no changes; range sanitization happens at the call
+-- sites via the BETWEEN filters. avg_air/avg_track are unused and retained only
+-- for signature stability.
 CREATE OR REPLACE MACRO temperature(series_id, temp_value, avg_air, avg_track) AS (
-    CASE
-        WHEN temp_value IS NULL THEN NULL
-        ELSE (
-            CASE
-                WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'C'
-                THEN (temp_value * 9 / 5) + 32
-                WHEN (SELECT temperature_unit FROM series_metadata sm WHERE sm.series_code = series_id) = 'mixed'
-                THEN CASE
-                    WHEN avg_air IS NULL THEN ERROR('Temperature unit ambiguous for ' || series_id || ': air=NULL, track=' || avg_track)
-                    WHEN avg_air <= 30 THEN (temp_value * 9 / 5) + 32
-                    WHEN avg_air >= 50 THEN temp_value
-                    WHEN (COALESCE(avg_track, avg_air) - avg_air) >= 20 THEN (temp_value * 9 / 5) + 32
-                    ELSE temp_value
-                END
-                ELSE temp_value
-            END
-        )
-    END
+    temp_value
 );
 
 CREATE OR REPLACE MACRO temperature_checked_air(series_id, temp_value, avg_air, avg_track) AS (
