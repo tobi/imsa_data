@@ -283,6 +283,32 @@ The `bpillar_quartile` column (race sessions only) intelligently filters laps fo
 - Temperature affects tire performance significantly
 - Use `air_temp_f` and `track_temp_f` for analysis
 
+#### Temperature units (deterministic, single-pass)
+All temperatures in the database are **Fahrenheit**. Units are a fixed per-series
+property of the source timing feed — IMSA reports °F; WEC, ELMS, ALMS and Le Mans
+Cup report °C (see `SERIES_CONFIG[:temperature_unit]` in `import.rb` and
+`data/series.json`). `import.rb` performs the **one and only** unit conversion when
+it writes the CSVs, so every weather file on disk is already °F. The SQL pipeline
+therefore never converts again — the `temperature()` macro is a documented
+pass-through.
+
+This replaced an earlier value-based heuristic (guess Celsius if a sample median
+was below ~45) that misfired on cold races and could double-convert, producing
+impossible track temps (a real 70°F Spa surface became 158°F). Heuristics are now
+used for **validation only**: `030-event-weather.sql` nulls physically-impossible
+sensor readings (air outside 32–140°F, track outside 35–200°F), and
+`lint/check_database.rb` flags any event whose temps still look like unconverted
+Celsius.
+
+#### Weather ↔ laps alignment
+The `laps` table joins weather on the natural session key
+`(series_code, year, event_folder, session_type, start_date)`, **not** on a synthetic
+`session_id`. The two tables assign `session_id` via independent `DENSE_RANK()`s over
+different row populations, so equal ids do not denote the same session; matching on id
+previously bound, e.g., Daytona's race to an unrelated event's weather. Per-hour race
+weather files (`...-race-hour-N-weather.csv`) collapse into a single race timeline so
+`relative_seconds` measures elapsed time from race start.
+
 ## Example Queries
 
 ### Compare LMDh vs LMH Performance

@@ -102,6 +102,14 @@ or before the lap's `session_time`.
 | `wind_direction_degrees` | INTEGER | Wind direction in degrees from true north. |
 | `raining` | BOOLEAN | True when the matched weather reading indicates rain. |
 
+> **Weather provenance.** All temps are Fahrenheit (units are converted once per
+> series at import time — IMSA °F, WEC/ELMS/ALMS/LMC °C — never in SQL). Weather is
+> matched to laps by the natural session key
+> `(series_code, year, event_folder, session_type, start_date)`, not by `session_id`.
+> A lap can have NULL weather when its session has no usable weather file or all
+> readings were rejected by the physical-plausibility bounds (air 32–140°F, track
+> 35–200°F).
+
 
 ## Usage Notes
 
