@@ -18,9 +18,9 @@ CREATE TEMP TABLE event_weather_raw AS
         -- units are already Fahrenheit on disk (import.rb converts per-series).
         -- These bounds reject physically-impossible sensor readings for a running
         -- session — e.g. a track surface stuck at the 32°F freezing-point default,
-        -- or sub-20°F air — which would otherwise drag session min/avg temps.
-        -- Plausible racing envelope: air 20–140°F, track 35–200°F.
-        CASE WHEN air_temp BETWEEN 20 AND 140 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
+        -- or sub-freezing air — which would otherwise drag session min/avg temps.
+        -- Plausible racing envelope: air 32–140°F, track 35–200°F.
+        CASE WHEN air_temp BETWEEN 32 AND 140 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
         CASE WHEN track_temp BETWEEN 35 AND 200 THEN track_temp::DECIMAL(6, 2) END as track_temp_raw,
         humidity::DECIMAL(6, 2) as humidity_percent,
         pressure::DECIMAL(6, 2) as pressure_inhg,
