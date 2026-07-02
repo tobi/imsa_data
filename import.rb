@@ -227,9 +227,61 @@ class EnduranceSeriesImporter
 
       # Filter to results (03_), laps (23_), and weather (26_) files
       # Allow files in subfolders (e.g., Race/01_Hour 1/23_Analysis.CSV)
-      csv_paths.select do |path|
+      candidates = csv_paths.select do |path|
         path.match?(/\/(03_[^\/]*|23_[^\/]*|26_[^\/]*)\.CSV$/i)
       end.uniq
+
+      # IMPORTANT: the event page (season_url) can list MULTIPLE series/support
+      # races that all live under the same event folder (e.g. Le Mans hosts a
+      # Porsche Carrera Cup Brésil round alongside the WEC race). Path shape:
+      # Results/<year>/<event>/<series-instance>/<session>/... — so the
+      # series-instance folder is index 3 (e.g. "657_FIA%20WEC" or
+      # "661_Porsche%20Carrera%20Cup%20Bresil"). Filter strictly to folders
+      # matching this importer's series_pattern so support-race CSVs never
+      # get mixed into our series' data (they'd silently overwrite/contaminate
+      # laps under the same event_folder+session-name key otherwise).
+      series_pattern_normalized = @series_config[:series_pattern].downcase.gsub(/\s+/, '')
+      candidates = candidates.select do |path|
+        series_folder = CGI.unescape(path.split('/')[3].to_s)
+        series_folder.downcase.gsub(/\s+/, '').include?(series_pattern_normalized)
+      end
+
+      # Prefer the richer "AnalysisEnduranceWithSections" laps file over the
+      # plain "Analysis" file when both exist for the same session folder —
+      # WithSections carries IMSA/WEC microsector timing points (Le Mans) in
+      # addition to the standard S1/S2/S3 columns.
+      laps_by_session = candidates.select { |p| p.match?(/\/23_[^\/]*\.CSV$/i) }
+                                   .group_by { |p| File.dirname(p) }
+      preferred_laps = laps_by_session.map do |_session_dir, files|
+        files.find { |f| f.match?(/WithSections/i) } || files.first
+      end
+      non_laps = candidates.reject { |p| p.match?(/\/23_[^\/]*\.CSV$/i) }
+
+      result = (non_laps + preferred_laps).uniq
+
+      # Endurance races (Le Mans etc.) publish per-hour subfolders
+      # ("24_Hour 24/") whose laps (23_)/results (03_) files are CUMULATIVE —
+      # the downstream SQL pipeline (race_files_to_keep in 020-event-laps.sql)
+      # only ever keeps the highest-hour file anyway, so fetching every hour's
+      # laps/results is wasted bandwidth. Weather is NOT cumulative (each hour
+      # file only covers that hour's readings), so all hours are kept there to
+      # build the full session weather timeline.
+      # Path shape: Results/<yr>/<event>/<series>/<race_session>/<NN_Hour NN>/<file>
+      grouped_by_race_session = result.group_by { |p| p.split('/')[0..4].join('/') }
+      grouped_by_race_session.flat_map do |_race_session_dir, files|
+        with_hour, without_hour = files.partition { |f| f.split('/')[5].to_s.match?(/^\d+_Hour(%20|\s)*\d+$/i) }
+        next files if with_hour.empty?
+
+        by_type = with_hour.group_by { |f| File.basename(f).match(/^(03|23|26)_/)[1] }
+        kept = by_type.flat_map do |file_type, type_files|
+          if file_type == '26'
+            type_files
+          else
+            type_files.max_by { |f| f.split('/')[5].match(/(\d+)$/)[1].to_i }
+          end
+        end.compact
+        without_hour + kept
+      end
     rescue => e
       puts "Error fetching season page #{season_url}: #{e.message}"
       []
@@ -372,21 +424,29 @@ class EnduranceSeriesImporter
 
     return if hourly_folders.empty?
 
-    # Sort by hour number and process each
-    hourly_folders.sort_by { |f| f.match(/(\d+)_Hour/i)[1].to_i rescue 0 }.each do |hour_folder|
-      # Extract hour number from folder name
+    # The downstream SQL pipeline (race_files_to_keep in 020-event-laps.sql)
+    # only ever keeps the HIGHEST-hour laps/results file per race — earlier
+    # hours are strictly superseded by later cumulative ones. Fetching every
+    # hour is therefore wasted bandwidth/requests; only pull the final hour's
+    # laps/results, plus weather from every hour (weather is NOT cumulative —
+    # each hour file only covers that hour's readings, so all hours are kept
+    # to build the full session weather timeline).
+    sorted_hourly = hourly_folders.sort_by { |f| f.match(/(\d+)_Hour/i)[1].to_i rescue 0 }
+    final_hour_folder = sorted_hourly.last
+
+    sorted_hourly.each do |hour_folder|
       decoded = CGI.unescape(hour_folder)
       hour_num = decoded.match(/(\d+)_Hour\s*(\d+)/i)&.[](2) || decoded.match(/^(\d+)_/)[1]
       hour_url = race_url + hour_folder
+      hourly_race_folder = "#{race_folder.chomp('/')}-hour-#{hour_num}"
 
       hour_files = find_csv_files(hour_url)
 
-      %w[results laps weather].each do |file_type|
+      file_types = (hour_folder == final_hour_folder) ? %w[results laps weather] : %w[weather]
+      file_types.each do |file_type|
         csv_file = hour_files[file_type.to_sym]
         next unless csv_file
 
-        # Add hour suffix to the race folder
-        hourly_race_folder = "#{race_folder.chomp('/')}-hour-#{hour_num}"
         download_and_convert_csv(hour_url + csv_file, year, output_path,
                                 event_name, hourly_race_folder, file_type)
       end
@@ -416,7 +476,7 @@ class EnduranceSeriesImporter
 
     {
       results: find_best_file(csvs, /03_.*\.csv$/i),
-      laps: csvs.find { |f| f.match(/23_.*\.csv$/i) },
+      laps: find_best_laps_file(csvs),
       weather: csvs.find { |f| f.match(/26_.*\.csv$/i) }
     }
   end
@@ -426,6 +486,14 @@ class EnduranceSeriesImporter
     candidates.find { |f| f.match(/official/i) } ||
     candidates.find { |f| f.match(/unofficial/i) } ||
     candidates.first
+  end
+
+  # Prefer the richer "AnalysisEnduranceWithSections" laps file over the
+  # plain "Analysis" file when both exist — WithSections carries microsector
+  # timing points (currently only seen at Le Mans) in addition to S1/S2/S3.
+  def find_best_laps_file(files)
+    candidates = files.grep(/23_.*\.csv$/i)
+    candidates.find { |f| f.match(/WithSections/i) } || candidates.first
   end
 
   def download_and_convert_csv(url, year, output_path, event_name, race_folder, file_type)

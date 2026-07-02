@@ -11,3 +11,7 @@ duckdb*
 pages/dist/
 pages/src/.observablehq/
 .duckdb-skills/
+
+# track-atlas is fetched fresh at build time (rake db:update_track_atlas);
+# don't commit the cache, but keep it locally as a fetch-failure fallback.
+data/track-atlas/

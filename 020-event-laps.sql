@@ -57,6 +57,87 @@ FROM read_csv(
 )
 WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-laps\.csv$', 4) != '';
 
+-- Microsector timing points (only present in AnalysisEnduranceWithSections_*
+-- CSVs — currently WEC/Le Mans; most series/sessions have none of these
+-- columns at all, so this whole block is a no-op for them).
+--
+-- Every "<name>_time"/"<name>_elapsed" column pair becomes one array element
+-- {name, timing, elapsed, meters} in a per-lap JSON array, ordered by
+-- elapsed (i.e. track order). `timing` = time to cross this segment
+-- (interval); `elapsed` = cumulative lap time at this point (matches
+-- FL_elapsed == lap_time); `meters` = cumulative distance around the lap for
+-- this point, from track_atlas_points — NULL when track-atlas has no
+-- geometry for that specific point (e.g. Le Mans's SCL1/SCL2/SCLC/IP2/
+-- FORDOUT aren't in the upstream slow-zone dataset yet).
+CREATE TEMP TABLE microsectors_raw AS
+WITH cols_as_varchar AS (
+    SELECT
+        filename,
+        regexp_extract(filename, '^data/([^/]+)/\d{4}/\d\d\-([^/]+)/', 1) AS series_code,
+        regexp_extract(filename, '^data/([^/]+)/\d{4}/\d\d\-([^/]+)/', 2) AS event_folder,
+        TRIM(number) AS car,
+        lap_number AS lap,
+        COLUMNS(c -> regexp_matches(c, '(_time|_elapsed)$') AND c NOT IN ('lap_time', 'pit_time'))::VARCHAR
+    FROM read_csv(
+        "data/*/*/*/*laps.csv",
+        union_by_name=true,
+        filename=true,
+        null_padding=true,
+        normalize_names=true,
+        types={'number': 'VARCHAR', 'lap_number': 'INT'}
+    )
+),
+times_long AS (
+    UNPIVOT cols_as_varchar
+    ON COLUMNS(c -> c LIKE '%\_time' ESCAPE '\')
+    INTO NAME sector_col VALUE time_raw
+),
+elapsed_long AS (
+    UNPIVOT cols_as_varchar
+    ON COLUMNS(c -> c LIKE '%\_elapsed' ESCAPE '\')
+    INTO NAME sector_col_elapsed VALUE elapsed_raw
+),
+matched AS (
+    SELECT
+        t.filename, t.series_code, t.event_folder, t.car, t.lap,
+        -- Normalize e.g. "a71" -> "A71" so it can be matched against
+        -- track_atlas_points.point_key (which strips hyphens from "A7-1").
+        UPPER(REPLACE(t.sector_col, '_time', '')) AS sector_name,
+        parse_time(t.time_raw) AS timing,
+        parse_time(e.elapsed_raw) AS elapsed
+    FROM times_long t
+    JOIN elapsed_long e
+        ON e.filename = t.filename AND e.car = t.car AND e.lap = t.lap
+       AND e.sector_col_elapsed = REPLACE(t.sector_col, '_time', '_elapsed')
+    WHERE t.time_raw IS NOT NULL
+),
+matched_with_meters AS (
+    SELECT
+        m.filename, m.car, m.lap, m.sector_name, m.timing, m.elapsed,
+        tap.meters
+    FROM matched m
+    LEFT JOIN tracks t ON t.short_name = normalize_track_name(m.event_folder)
+    LEFT JOIN track_atlas_points tap
+        ON tap.imsa_slug = t.track_id
+        AND tap.series_code = m.series_code
+        AND tap.point_key = REGEXP_REPLACE(m.sector_name, '[^A-Za-z0-9]', '', 'g')
+)
+SELECT
+    filename,
+    car,
+    lap,
+    to_json(
+        list(
+            struct_pack(name := sector_name, timing := timing, elapsed := elapsed, meters := meters)
+            ORDER BY elapsed
+        )
+    ) AS microsectors_json,
+    COUNT(*) > 0 AS has_microsectors
+FROM matched_with_meters
+GROUP BY filename, car, lap;
+
+
+
 -- For race sessions, keep only the most complete file per (event, race_number)
 -- This collapses race-hour-6, race-hour-12, etc. into one race session
 CREATE TEMP TABLE race_files_to_keep AS
@@ -123,13 +204,19 @@ SELECT
     e.flags,
     e.start_date,
     e.filename,
-    de.display_name as event_display_name
+    de.display_name as event_display_name,
+    COALESCE(ms.microsectors_json, NULL) as microsectors_json,
+    COALESCE(ms.has_microsectors, false) as has_microsectors
 FROM event_laps_all_files e
 -- Only include events defined in events.json
 INNER JOIN defined_events de
     ON de.series_code = e.series_code
     AND de.year = e.year
     AND de.event_folder = e.event_folder
+LEFT JOIN microsectors_raw ms
+    ON ms.filename = e.filename
+    AND ms.car = e.car
+    AND ms.lap = e.lap
 -- Filter out ignored sessions (e.g., race-201 in WEC/ELMS which are partial data)
 WHERE NOT EXISTS (
     SELECT 1 FROM ignored_sessions i
@@ -161,6 +248,7 @@ named_laps AS (
         get_session_type(session) AS session,
         lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3, car, class, team,
         session_time, clock_time, pit_time, flags, driver_name,
+        microsectors_json, has_microsectors,
         -- Map driver_group to standard license format
         CASE
             WHEN driver_group ILIKE '%platinum%' THEN 'Platinum'
@@ -181,6 +269,7 @@ stint_starts AS (
     SELECT
         series_code, series, start_date, year, event, event_folder, race_label, session, lap, lap_time, lap_time_s1, lap_time_s2, lap_time_s3,
         car, class, team, session_time, clock_time, pit_time, flags, driver_name, group_license, session_id,
+        microsectors_json, has_microsectors,
         CASE WHEN LAG (driver_name) OVER (PARTITION BY session_id, car ORDER BY session_id, lap) = driver_name THEN 0 ELSE 1
         END AS stint_start
     FROM named_laps
@@ -252,6 +341,8 @@ ranked_stints AS (
         ranked_stints.lap_time_s1,
         ranked_stints.lap_time_s2,
         ranked_stints.lap_time_s3,
+        ranked_stints.microsectors_json,
+        ranked_stints.has_microsectors,
         CASE
             WHEN ranked_stints.lap_time IS NULL THEN NULL
             ELSE ranked_stints.lap_time_driver_rank_raw
@@ -305,6 +396,8 @@ ranked_stints AS (
         lwd.lap_time_s1,
         lwd.lap_time_s2,
         lwd.lap_time_s3,
+        lwd.microsectors_json,
+        lwd.has_microsectors,
         lwd.lap_time_driver_rank,
         lwd.lap_time_driver_quartile,
         lwd.pit_time,
@@ -343,7 +436,7 @@ ranked_stints AS (
         AND cl.car = lwd.car
 )
 SELECT
-    series_code,
+    laps_enriched.series_code,
     series,
     start_date,
     year,
@@ -357,7 +450,7 @@ SELECT
     session_time_lap_number,
     car,
     CASE
-        WHEN series_code = 'elms' AND class = 'LMP3' AND cl_homologation = 'GT3' THEN 'LMGT3'
+        WHEN laps_enriched.series_code = 'elms' AND class = 'LMP3' AND cl_homologation = 'GT3' THEN 'LMGT3'
         ELSE class
     END AS class,
     -- Prefer drivers table canonical name (cross-series consistent casing)
@@ -369,6 +462,14 @@ SELECT
     lap_time_s1,
     lap_time_s2,
     lap_time_s3,
+    -- Real sector distances (meters) from track-atlas, keyed by track +
+    -- series (Sebring has distinct wec/imsa sector splits). NULL when
+    -- track-atlas has no geometry for this track (see track_atlas_gaps).
+    tap_sectors.s1_meters,
+    tap_sectors.s2_meters,
+    tap_sectors.s3_meters,
+    has_microsectors,
+    microsectors_json,
     lap_time_driver_rank,
     lap_time_driver_quartile,
     NULL::INTEGER AS bpillar_quartile,
@@ -395,6 +496,19 @@ SELECT
     cl_homologation AS homologation,
     cl_manufacturer AS manufacturer
 FROM laps_enriched
+LEFT JOIN tracks lap_track ON lap_track.short_name = normalize_track_name(laps_enriched.event_folder)
+LEFT JOIN (
+    SELECT
+        imsa_slug, series_code,
+        MAX(CASE WHEN label = 'S1' THEN length_m END) AS s1_meters,
+        MAX(CASE WHEN label = 'S2' THEN length_m END) AS s2_meters,
+        MAX(CASE WHEN label = 'S3' THEN length_m END) AS s3_meters
+    FROM track_atlas_sectors
+    WHERE kind = 'timing_sectors'
+    GROUP BY imsa_slug, series_code
+) tap_sectors
+    ON tap_sectors.imsa_slug = lap_track.track_id
+    AND tap_sectors.series_code = laps_enriched.series_code
 -- Join canonical team names: pick best casing per normalized team key
 -- Prefers mixed case over ALL CAPS, shorter over longer, most frequent
 LEFT JOIN (

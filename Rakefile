@@ -28,9 +28,35 @@ end
 
 task default: "db:update"
 
+TRACK_ATLAS_URL = "https://raw.githubusercontent.com/tobi/track-atlas/main/tracks.jsonl"
+TRACK_ATLAS_PATH = "data/track-atlas/tracks.jsonl"
+
+desc "Fetch the latest tracks.jsonl from tobi/track-atlas (circuit geometry, sector/microsector meters)"
+task :update_track_atlas do
+  FileUtils.mkdir_p(File.dirname(TRACK_ATLAS_PATH))
+  puts "Fetching track-atlas dataset from #{TRACK_ATLAS_URL}..."
+  tmp_path = "#{TRACK_ATLAS_PATH}.tmp"
+  fetched = system("curl -sL --fail #{TRACK_ATLAS_URL} -o #{tmp_path}") &&
+            File.size?(tmp_path) && File.size(tmp_path) > 1000
+
+  if fetched
+    FileUtils.mv(tmp_path, TRACK_ATLAS_PATH)
+    line_count = File.readlines(TRACK_ATLAS_PATH).size
+    puts "  Saved #{TRACK_ATLAS_PATH} (#{line_count} tracks)"
+  else
+    FileUtils.rm_f(tmp_path)
+    if File.exist?(TRACK_ATLAS_PATH)
+      puts "  ⚠️  Fetch failed (network error or repo moved) — keeping existing cached #{TRACK_ATLAS_PATH}"
+    else
+      abort("❌ Failed to fetch track-atlas tracks.jsonl and no cached copy exists at #{TRACK_ATLAS_PATH}. " \
+            "The build requires this file for sector/microsector meter data.")
+    end
+  end
+end
+
 namespace :db do
   desc "Regenerate and open the database"
-  task :update do
+  task update: :update_track_atlas do
     unless duckdb_available?
       print_duckdb_install_instructions
       abort("Please install DuckDB and try again.")
