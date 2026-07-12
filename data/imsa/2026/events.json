@@ -98,5 +98,10 @@
     "event_number": "14",
     "event_name": "Watkins Glen International",
     "event_folder": "14-watkins-glen-international"
+  },
+  {
+    "event_number": "15",
+    "event_name": "Canadian Tire Motorsport Park",
+    "event_folder": "15-canadian-tire-motorsport-park"
   }
 ]

@@ -310,6 +310,11 @@
       "year": "2026",
       "folder": "detroit-street-course",
       "name": "Detroit"
+    },
+    {
+      "year": "2026",
+      "folder": "canadian-tire-motorsport-park",
+      "name": "Canadian Tire Motorsport Park"
     }
   ],
   "excluded_event_patterns": [
