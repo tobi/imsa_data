@@ -27,8 +27,15 @@ CREATE TEMP TABLE event_weather_raw AS
         wind_speed::DECIMAL(6, 2) as wind_speed_mph,
         wind_direction::INT as wind_direction_degrees,
         -- Rain encoding varies: IMSA uses -1=dry, WEC uses 0=dry, ELMS uses -999=nodata
-        -- Positive values indicate rain (amount in mm or flag)
-        (TRY_CAST(rain AS DECIMAL) > 0) as raining,
+        -- Positive values indicate rain (amount in mm or flag).
+        -- -999 is a NO-DATA SENTINEL and must become NULL, never false: a broken
+        -- or absent rain sensor is "unknown", not "dry". Collapsing it to false
+        -- silently asserts a dry track (Road America 2026 FP2 was genuinely very
+        -- wet -- LMP2 best 2:11.8 vs 1:54.2 in FP1, +17.7 s, every class equally
+        -- slower -- yet the feed reported RAIN=0 with humidity railed at 96%).
+        -- Downstream MUST treat NULL as unknown and fall back to pace/observation.
+        CASE WHEN TRY_CAST(rain AS DECIMAL) <= -999 THEN NULL
+             ELSE TRY_CAST(rain AS DECIMAL) > 0 END as raining,
 
         -- Date
         strptime(
