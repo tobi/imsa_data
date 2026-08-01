@@ -2434,7 +2434,8 @@
   "devlin defrancesco": {
     "canonical": "Devlin Defrancesco",
     "variants": [
-      "Devlin DeFrancesco"
+      "Devlin DeFrancesco",
+      "Devlin Defrancesco"
     ]
   },
   "rubens barrichello": {
@@ -4573,6 +4574,12 @@
     "canonical": "Jaxon Evans",
     "variants": [
       "Jaxon Evans"
+    ]
+  },
+  "maximilian van der snel": {
+    "canonical": "Maximilian van der Snel",
+    "variants": [
+      "Max van der Snel"
     ]
   }
 }

@@ -103,5 +103,10 @@
     "event_number": "15",
     "event_name": "Canadian Tire Motorsport Park",
     "event_folder": "15-canadian-tire-motorsport-park"
+  },
+  {
+    "event_number": "16",
+    "event_name": "Road America",
+    "event_folder": "16-road-america"
   }
 ]

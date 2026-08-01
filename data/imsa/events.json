@@ -315,6 +315,11 @@
       "year": "2026",
       "folder": "canadian-tire-motorsport-park",
       "name": "Canadian Tire Motorsport Park"
+    },
+    {
+      "year": "2026",
+      "folder": "road-america",
+      "name": "Road America"
     }
   ],
   "excluded_event_patterns": [
