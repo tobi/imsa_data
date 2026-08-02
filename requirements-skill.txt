@@ -1,2 +1,0 @@
-openskill>=6.0
-duckdb>=1.0

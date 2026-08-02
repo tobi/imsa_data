@@ -85,19 +85,10 @@ namespace :db do
 
     # Phase 2: Compute skill ratings (OpenSkill: multiplayer + confidence,
     # two pools = overall license-seeded + within-tier peer; time-aware sigma
-    # widening + field-median-anchored elo). Bootstraps a local venv with
-    # openskill/duckdb on first run.
-    venv = ".venv"
-    venv_py = "#{venv}/bin/python"
-    unless File.exist?(venv_py)
-      puts "Creating Python venv for skill ratings..."
-      system("python3 -m venv #{venv}") &&
-        system("#{venv}/bin/pip install -q -r requirements-skill.txt")
-    end
-    abort("❌ Python venv unavailable; cannot compute skill ratings.") unless File.exist?(venv_py)
-
+    # widening + field-median-anchored elo). Dependencies are declared inline
+    # in compute_skill.py and uv creates the isolated environment.
     puts "Computing skill ratings (OpenSkill, two-pool)..."
-    unless system("#{venv_py} compute_skill.py > #{OUTPUT_DIR}/driver_elo.csv")
+    unless system("uv", "run", "--python", "3.11", "compute_skill.py", out: "#{OUTPUT_DIR}/driver_elo.csv")
       abort("❌ compute_skill.py failed.")
     end
 

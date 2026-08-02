@@ -58,6 +58,14 @@ Usage:
   python compute_skill.py --bucket 600    # window width seconds (default 600)
 """
 
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "duckdb>=1.0",
+#   "openskill>=6.0",
+# ]
+# ///
+
 import argparse
 import math
 import os
