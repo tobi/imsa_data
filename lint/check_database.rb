@@ -78,6 +78,7 @@ class DatabaseLinter
     # Event checks
     check_missing_events_json
     check_undefined_event_folders
+    check_series_season_coverage
     check_orphan_events
     check_missing_weather
     check_missing_race_data
@@ -299,6 +300,39 @@ class DatabaseLinter
     end
   end
 
+  def excluded_patterns_by_series
+    # Per-series "intentionally excluded" fnmatch globs (tests, ROAR, prologues)
+    # read from data/<series>/events.json -> excluded_event_patterns.
+    @excluded_patterns_by_series ||= begin
+      h = {}
+      Dir.glob("data/*/events.json").each do |f|
+        series = f[%r{^data/([^/]+)/events\.json$}, 1]
+        begin
+          h[series] = JSON.parse(File.read(f))['excluded_event_patterns'] || []
+        rescue
+          h[series] = []
+        end
+      end
+      h
+    end
+  end
+
+  # Every (series, year, slug, dir) folder on disk that carries timing data and
+  # is not intentionally excluded. Shared by the folder-level and year-level
+  # coverage checks so they can never disagree about what "has data" means.
+  def event_folders_with_data
+    @event_folders_with_data ||= Dir.glob("data/*/*/*").select { |d| File.directory?(d) }.filter_map do |dir|
+      m = dir.match(%r{^data/([^/]+)/(\d{4})/\d\d-(.+)$})
+      next unless m
+      series, year, slug = m[1], m[2], m[3]
+      has_data = !Dir.glob(File.join(dir, "*-laps.csv")).empty? ||
+                 !Dir.glob(File.join(dir, "*-results.csv")).empty?
+      next unless has_data
+      next if (excluded_patterns_by_series[series] || []).any? { |p| File.fnmatch(p, slug) }
+      [series, year, slug, dir]
+    end
+  end
+
   def check_undefined_event_folders
     section "Checking for event folders with data but no events.json entry"
     # Any folder under data/<series>/<year>/NN-<slug>/ that contains lap or
@@ -311,32 +345,8 @@ class DatabaseLinter
     SQL
     defined_set = defined.map { |r| [r['series_code'], r['year'].to_s, r['event_folder']] }.to_set
 
-    # Per-series "intentionally excluded" fnmatch globs (tests, ROAR, prologues)
-    # read from data/<series>/events.json -> excluded_event_patterns.
-    excluded_patterns = {}
-    Dir.glob("data/*/events.json").each do |f|
-      series = f[%r{^data/([^/]+)/events\.json$}, 1]
-      begin
-        j = JSON.parse(File.read(f))
-        excluded_patterns[series] = j['excluded_event_patterns'] || []
-      rescue
-        excluded_patterns[series] = []
-      end
-    end
-
-    undefined = []
-    Dir.glob("data/*/*/*").select { |d| File.directory?(d) }.each do |dir|
-      m = dir.match(%r{^data/([^/]+)/(\d{4})/\d\d-(.+)$})
-      next unless m
-      series, year, slug = m[1], m[2], m[3]
-      # only care about folders that actually carry timing data
-      has_data = !Dir.glob(File.join(dir, "*-laps.csv")).empty? ||
-                 !Dir.glob(File.join(dir, "*-results.csv")).empty?
-      next unless has_data
-      next if defined_set.include?([series, year, slug])
-      # skip folders intentionally excluded via known patterns
-      next if (excluded_patterns[series] || []).any? { |p| File.fnmatch(p, slug) }
-      undefined << [series, year, slug, dir]
+    undefined = event_folders_with_data.reject do |series, year, slug, _dir|
+      defined_set.include?([series, year, slug])
     end
 
     if undefined.empty?
@@ -344,6 +354,61 @@ class DatabaseLinter
     else
       undefined.sort.each do |series, year, slug, dir|
         error "Undefined event with data: #{dir} — add {\"year\":\"#{year}\",\"folder\":\"#{slug}\",\"name\":\"...\"} to data/#{series}/events.json (its laps are being DROPPED)"
+      end
+    end
+  end
+
+  # Catches the failure mode the folder-level check CANNOT see: a season that
+  # was never scraped at all. If nothing was ever downloaded there is no folder
+  # on disk, so check_undefined_event_folders has nothing to flag and the DB
+  # just quietly lacks a whole series-year. This is how ELMS 2026 went missing
+  # for months while imsa/wec/alms all carried 2026 data.
+  #
+  # Two independent signals, both offline (no network):
+  #   1. HARD ERROR — a series-year has data folders on disk but ZERO laps in
+  #      the DB. Means the allowlist/build dropped an entire season.
+  #   2. WARNING — a series' newest season lags the newest season any other
+  #      series has. Means that series is probably not being imported at all.
+  def check_series_season_coverage
+    section "Checking for missing/stale series seasons"
+
+    db_rows = query(<<~SQL)
+      SELECT series_code, year, COUNT(*) AS laps
+      FROM laps
+      GROUP BY series_code, year
+    SQL
+
+    if db_rows.empty?
+      error "No laps in the database at all — every series is missing"
+      return
+    end
+
+    db_year_set = db_rows.map { |r| [r['series_code'], r['year'].to_s] }.to_set
+
+    # --- Signal 1: whole season on disk but absent from the DB ---
+    disk_years = event_folders_with_data.map { |series, year, _slug, _dir| [series, year] }.uniq
+    dropped = disk_years.reject { |series, year| db_year_set.include?([series, year]) }
+
+    if dropped.empty?
+      ok "Every series-year with data on disk is present in the database"
+    else
+      dropped.sort.each do |series, year|
+        n = event_folders_with_data.count { |s, y, _sl, _d| s == series && y == year }
+        error "Whole season dropped: #{series} #{year} has #{n} event folder(s) with data on disk but 0 laps in the DB — check data/#{series}/events.json has #{year} entries"
+      end
+    end
+
+    # --- Signal 2: a series' newest season lags the rest ---
+    max_year_by_series = db_rows.group_by { |r| r['series_code'] }
+                                .transform_values { |rs| rs.map { |r| r['year'].to_i }.max }
+    global_max = max_year_by_series.values.max
+    stale = max_year_by_series.select { |_s, y| y < global_max }
+
+    if stale.empty?
+      ok "Every series has data for the newest season on record (#{global_max})"
+    else
+      stale.sort.each do |series, year|
+        warn "Stale series: #{series} has no #{global_max} data (newest is #{year}) while other series do — is it being imported? Try: ruby import.rb --series #{series} --year #{global_max}"
       end
     end
   end
