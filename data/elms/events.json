@@ -33,7 +33,11 @@
     {"year": "2025", "folder": "imola", "name": "Imola"},
     {"year": "2025", "folder": "spa-francorchamps", "name": "Spa"},
     {"year": "2025", "folder": "silverstone", "name": "Silverstone"},
-    {"year": "2025", "folder": "autodromo-do-algarve", "name": "Portimao"}
+    {"year": "2025", "folder": "autodromo-do-algarve", "name": "Portimao"},
+
+    {"year": "2026", "folder": "barcelona-catalunya", "name": "Barcelona"},
+    {"year": "2026", "folder": "paul-ricard", "name": "Paul Ricard"},
+    {"year": "2026", "folder": "imola", "name": "Imola"}
   ],
   "ignore_sessions": {
     "description": "race-20X sessions are partial class/driver data, not separate races",
