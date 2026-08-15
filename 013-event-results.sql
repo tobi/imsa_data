@@ -74,6 +74,14 @@ INNER JOIN defined_events de
     AND de.year = raw_results.year
     AND de.event_folder = raw_results.event_raw
 WHERE is_main_class(raw_results.series_code, raw_results.class)
+  -- Same ignored-sessions filter as 020-event-laps: partial-data sessions
+  -- (e.g. WEC race-201/race-202 splits) must not contribute classifications
+  -- either — they carried junk rows like a "Porsche RS Spyder" in 2026 WEC.
+  AND NOT EXISTS (
+      SELECT 1 FROM ignored_sessions i
+      WHERE i.series_code = raw_results.series_code
+        AND raw_results.session LIKE i.session_pattern || '%'
+  )
 ORDER BY raw_results.series_code, raw_results.year, event, raw_results.session, raw_results.start_date, raw_results.position;
 
 -- Summary of results by series
