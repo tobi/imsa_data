@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./query.sh:*)"
+      "Bash(./query.sh:*)",
+      "Bash(rake db:update:*)",
+      "Bash(duckdb:*)",
+      "Bash(git add:*)",
+      "Bash(uv run jupyter nbconvert:*)",
+      "Bash(uv run:*)"
     ],
     "deny": [],
     "ask": []

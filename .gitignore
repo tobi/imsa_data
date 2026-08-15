@@ -15,3 +15,6 @@ pages/src/.observablehq/
 # track-atlas is fetched fresh at build time (rake db:update_track_atlas);
 # don't commit the cache, but keep it locally as a fetch-failure fallback.
 data/track-atlas/
+
+# Personal Claude Code permission grants — machine-local by convention
+.claude/settings.local.json
