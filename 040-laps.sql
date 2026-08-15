@@ -20,8 +20,12 @@ SELECT
     laps.car,
     laps.class,
     laps.driver_name,
-    -- Apply alias resolution to driver_id
-    resolve_driver_alias(laps.driver_name) AS driver_id,
+    -- driver_id was already resolved in 020-event-laps.sql. Do NOT re-resolve
+    -- from driver_name here: driver_name is the *display* name pulled from the
+    -- drivers table, so resolving it a second time is a second pass over the
+    -- alias graph and can land on a different id than the one the laps were
+    -- attributed to.
+    laps.driver_id,
     laps.lap,
     laps.lap_time,
     laps.lap_time_s1,

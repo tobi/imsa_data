@@ -20,16 +20,8 @@
     "canonical_id": "benjamin barker"
   },
   {
-    "alias": "ben hanley",
-    "canonical_id": "benjamin hanley"
-  },
-  {
     "alias": "c\u00e9lia martin",
     "canonical_id": "celia martin"
-  },
-  {
-    "alias": "dan goldburg",
-    "canonical_id": "daniel goldburg"
   },
   {
     "alias": "david heinemeier-hansson",
@@ -61,7 +53,7 @@
   },
   {
     "alias": "jean-\u00e9ric vergne",
-    "canonical_id": "jean-eric vergne"
+    "canonical_id": "jean eric vergne"
   },
   {
     "alias": "k\u00e9vin estre",
@@ -114,10 +106,6 @@
   {
     "alias": "nicholas boulle",
     "canonical_id": "nick boulle"
-  },
-  {
-    "alias": "nick yelloly",
-    "canonical_id": "nicholas yelloly"
   },
   {
     "alias": "nyck de vries",
@@ -221,7 +209,7 @@
   },
   {
     "alias": "charly samani",
-    "canonical_id": "charles-henri samani"
+    "canonical_id": "charles henri samani"
   },
   {
     "alias": "frankie bird",

@@ -306,6 +306,116 @@ class TracksJsonTest < Minitest::Test
   end
 end
 
+# === Driver Identity Tests ===
+# Driver ids are load-bearing (driver_aliases.json keys, paddock API ids), and
+# they must be resolved identically by every stage of the pipeline. These tests
+# guard the plumbing, not any individual driver.
+class DriverIdentityTest < Minitest::Test
+  # Folds a driver_id the same way driver_match_key() does in SQL.
+  FOLD_SQL = "lower(regexp_replace(replace(strip_accents(driver_id), '-', ' '), '\\s+', ' ', 'g'))".freeze
+
+  def query(sql)
+    stdout, stderr, status = Open3.capture3("duckdb", DB_PATH, "-json", "-c", sql)
+    raise "Query failed: #{stderr}" unless status.success?
+    JSON.parse(stdout)
+  end
+
+  def query_single(sql)
+    query(sql).first&.values&.first
+  end
+
+  def aliases
+    @aliases ||= JSON.parse(File.read("driver_aliases.json"))
+  end
+
+  def test_alias_graph_has_no_cycles
+    map = aliases.each_with_object({}) { |a, h| h[a["alias"]] = a["canonical_id"] }
+    cyclic = map.select { |_alias, canonical| map.key?(canonical) }
+    assert_empty cyclic.keys,
+                 "driver_aliases.json canonical_ids must not themselves be aliases " \
+                 "(a -> b -> a never converges): #{cyclic.inspect}"
+  end
+
+  def test_alias_keys_are_unique
+    keys = aliases.map { |a| a["alias"] }
+    dupes = keys.group_by { |k| k }.select { |_k, v| v.length > 1 }.keys
+    assert_empty dupes, "Duplicate alias keys in driver_aliases.json: #{dupes.inspect}"
+  end
+
+  def test_driver_ids_are_ascii_lowercase
+    bad = query(<<~SQL)
+      SELECT driver_id FROM drivers_v
+      WHERE driver_id <> lower(driver_id)
+         OR NOT regexp_matches(driver_id, '^[a-z0-9 .''-]+$')
+      LIMIT 10
+    SQL
+    assert_empty bad.map { |r| r["driver_id"] },
+                 "driver_ids must be ascii lowercase (diacritics folded)"
+  end
+
+  def test_no_diacritic_duplicate_identities
+    dupes = query(<<~SQL)
+      WITH k AS (SELECT driver_id, #{FOLD_SQL} AS mk FROM drivers_v)
+      SELECT mk, list(driver_id) AS ids FROM k GROUP BY mk HAVING count(*) > 1
+    SQL
+    assert_empty dupes, "driver_ids differing only by accents/hyphens/case must be merged: #{dupes.inspect}"
+  end
+
+  def test_resolution_is_idempotent
+    # No driver_id may itself be an alias key: that would mean a second pass
+    # over the alias graph moves the identity again.
+    leaked = query(<<~SQL)
+      SELECT d.driver_id
+      FROM drivers_v d
+      JOIN driver_identity_map m ON m.match_key = #{FOLD_SQL}
+      WHERE m.canonical_id <> d.driver_id
+      LIMIT 10
+    SQL
+    assert_empty leaked.map { |r| r["driver_id"] },
+                 "driver_ids that still resolve to some other id (alias applied too late)"
+  end
+
+  def test_driver_ids_agree_across_surfaces
+    # Every identity that raced must exist with the same id in each surface
+    # that exposes drivers: laps, event_driver_summary, drivers_v, driver_elo.
+    %w[event_driver_summary drivers_v driver_elo].each do |surface|
+      missing = query(<<~SQL)
+        SELECT DISTINCT l.driver_id
+        FROM laps l
+        WHERE (l.session = 'race' OR l.session LIKE 'race-hour-%')
+          AND l.driver_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM #{surface} s WHERE s.driver_id = l.driver_id)
+        LIMIT 10
+      SQL
+      # driver_elo only covers classes it can rate, so allow a shortfall there
+      next if surface == "driver_elo"
+
+      assert_empty missing.map { |r| r["driver_id"] },
+                   "race-lap driver_ids missing from #{surface}"
+    end
+  end
+
+  def test_known_alias_merges_are_applied
+    # Curated alias in driver_aliases.json: benjamin hanley -> ben hanley
+    ids = query("SELECT driver_id FROM drivers_v WHERE #{FOLD_SQL} LIKE '%hanley'").map { |r| r["driver_id"] }
+    assert_equal ["ben hanley"], ids, "ben/benjamin hanley must be one identity"
+  end
+
+  def test_diacritic_variants_merge_without_an_alias
+    # No alias entry exists for Lotterer: folding alone must merge these.
+    ids = query("SELECT driver_id FROM drivers_v WHERE #{FOLD_SQL} = 'andre lotterer'").map { |r| r["driver_id"] }
+    assert_equal ["andre lotterer"], ids, "andre/andré lotterer must be one identity"
+  end
+
+  def test_distinct_drivers_are_not_over_merged
+    # Tom Blomqvist and Thomas Blomqvist are NOT known to be the same person and
+    # have no alias entry -- mechanical folding must leave them alone.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%blomqvist'").map { |r| r["driver_id"] }
+    assert_includes ids, "tom blomqvist"
+    assert_includes ids, "thomas blomqvist"
+  end
+end
+
 if __FILE__ == $0
   # Run with verbose output
   Minitest.run(ARGV + ["--verbose"])

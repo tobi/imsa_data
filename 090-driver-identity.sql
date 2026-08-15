@@ -5,20 +5,13 @@
 -- 1. DRIVER ALIAS RESOLUTION
 ---------------------------------------------------------------------
 
--- Load aliases from JSON array
-CREATE OR REPLACE TABLE driver_aliases AS
-SELECT 
-    alias,
-    canonical_id
-FROM read_json_auto('driver_aliases.json');
-
--- Function to resolve a driver name to canonical ID
-CREATE OR REPLACE MACRO resolve_driver_id(name) AS (
-    COALESCE(
-        (SELECT canonical_id FROM driver_aliases WHERE alias = LOWER(TRIM(name))),
-        LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
-    )
-);
+-- The driver_aliases table and the resolution macros are built once in
+-- 000-settings.sql (driver_identity_map + resolve_driver_alias). This file
+-- used to re-declare a second, weaker resolver here (exact lowercase match
+-- only, no accent folding, no alias chains), which meant event_driver_summary
+-- / drivers_v could land on a different driver_id than laps did for the very
+-- same name. Keep resolve_driver_id as a thin alias for the one resolver.
+CREATE OR REPLACE MACRO resolve_driver_id(name) AS (resolve_driver_alias(name));
 
 ---------------------------------------------------------------------
 -- 2. EVENT DRIVERS (per driver per event summary)
@@ -26,9 +19,11 @@ CREATE OR REPLACE MACRO resolve_driver_id(name) AS (
 
 CREATE OR REPLACE TABLE event_driver_summary AS
 WITH race_laps AS (
-    SELECT 
+    SELECT
         l.*,
-        resolve_driver_id(driver_name) AS resolved_driver_id
+        -- Use the id the laps were already attributed to (resolved in 020),
+        -- not a fresh resolution of the display name.
+        l.driver_id AS resolved_driver_id
     FROM laps l
     WHERE session = 'race' 
        OR session LIKE 'race-hour-%'

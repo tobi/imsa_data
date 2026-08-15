@@ -223,10 +223,90 @@ CREATE OR REPLACE MACRO get_session_type(session_name) AS (
         ELSE session_name
     END
 );
--- Load driver aliases for name resolution across all pipeline stages
-CREATE TEMP TABLE IF NOT EXISTS driver_aliases_tbl AS
+-- ============================================================================
+-- DRIVER IDENTITY RESOLUTION
+-- ============================================================================
+-- Single source of truth for turning a raw driver name into a driver_id.
+-- Curated mappings live in driver_aliases.json (per CLAUDE.md: metadata in
+-- JSON, generic SQL); everything below is mechanical and driver-agnostic.
+--
+-- Two layers:
+--   1. MECHANICAL FOLDING (no curation needed) -- accents, case, whitespace.
+--   2. CURATED ALIASES from driver_aliases.json, transitively closed so that
+--      a -> b -> c collapses to c and every canonical_id resolves to itself
+--      (i.e. resolution is IDEMPOTENT: resolve(resolve(x)) = resolve(x)).
+-- ============================================================================
+
+-- Load curated aliases. Persistent (not TEMP) so later duckdb sessions
+-- (the Elo phase) and the linters can still see them.
+CREATE OR REPLACE TABLE driver_aliases AS
 SELECT alias, canonical_id
 FROM read_json_auto('driver_aliases.json');
+
+-- Mechanical folding, applied to every driver name AND to the alias keys, so
+-- variants merge without anyone having to curate an entry for them:
+--   * diacritics -> ascii  (André LOTTERER == Andre Lotterer)
+--   * hyphen     -> space  (Jean-Baptiste == Jean Baptiste)
+--   * lowercase, whitespace collapsed
+-- strip_accents() handles NFD-decomposable characters; the REPLACE chain
+-- covers the ligature/stroke letters it cannot decompose (ø, ß, æ, œ, đ, ł).
+-- The result stays ascii-lowercase, which is what driver_id has always been.
+CREATE OR REPLACE MACRO driver_canonical_form(name) AS (
+    NULLIF(TRIM(REGEXP_REPLACE(
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            LOWER(strip_accents(CAST(name AS VARCHAR))),
+            'ø', 'o'), 'ß', 'ss'), 'æ', 'ae'), 'œ', 'oe'), 'đ', 'd'), 'ł', 'l'), '-', ' '),
+        '\s+', ' ', 'g')), '')
+);
+
+-- Alias lookup key == the folded form, so an alias written with accents or
+-- hyphens ('jean-éric vergne') matches a name written without them.
+CREATE OR REPLACE MACRO driver_match_key(name) AS (driver_canonical_form(name));
+
+-- Alias edges, keyed by match key and pointing at the folded canonical id.
+CREATE OR REPLACE TABLE driver_alias_edges AS
+SELECT DISTINCT
+    driver_match_key(alias) AS match_key,
+    driver_canonical_form(canonical_id) AS canonical_id
+FROM driver_aliases
+WHERE driver_match_key(alias) IS NOT NULL
+  AND driver_canonical_form(canonical_id) IS NOT NULL;
+
+-- Transitive closure of the alias graph. Depth is capped so a bad (cyclic)
+-- alias set degrades to "pick one deterministically" instead of looping
+-- forever; lint/check_drivers.rb fails the build on cycles.
+CREATE OR REPLACE TABLE driver_identity_map AS
+WITH RECURSIVE walked(match_key, canonical_id, depth) AS (
+    SELECT match_key, canonical_id, 0 FROM driver_alias_edges
+    UNION ALL
+    SELECT w.match_key, e.canonical_id, w.depth + 1
+    FROM walked w
+    JOIN driver_alias_edges e ON e.match_key = driver_match_key(w.canonical_id)
+    WHERE w.depth < 8
+      AND driver_match_key(w.canonical_id) <> w.match_key
+),
+terminal AS (
+    SELECT match_key,
+           FIRST(canonical_id ORDER BY depth DESC, canonical_id ASC) AS canonical_id
+    FROM walked
+    GROUP BY match_key
+),
+all_entries AS (
+    SELECT match_key, canonical_id FROM terminal
+    UNION ALL
+    -- Every canonical id must resolve to itself, so that resolution is
+    -- idempotent and the hyphen-folded spelling of a hyphenated id maps
+    -- back to it.
+    SELECT DISTINCT driver_match_key(t.canonical_id), t.canonical_id
+    FROM terminal t
+    WHERE NOT EXISTS (
+        SELECT 1 FROM terminal x WHERE x.match_key = driver_match_key(t.canonical_id)
+    )
+)
+-- One row per match_key (deterministic), so the lookup stays a scalar subquery.
+SELECT match_key, FIRST(canonical_id ORDER BY canonical_id) AS canonical_id
+FROM all_entries
+GROUP BY match_key;
 
 -- Macro to canonicalize a name: first 4 chars of first name + full surname(s)
 -- This naturally merges Nick/Nicholas, Alex/Alexander, Phil/Philip, etc.
@@ -243,18 +323,21 @@ CREATE OR REPLACE MACRO fuzzy_driver_key(name) AS (
     END
 );
 
--- Macro to resolve a driver name to a canonical driver_id:
--- 1. Check explicit aliases by exact lowercased name
--- 2. Check explicit aliases by fuzzy key (first4+rest) — catches nickname variants
--- 3. Final fallback: plain lowercased name (NOT fuzzy key — keep readable IDs)
+-- Resolve a driver name to a canonical driver_id. THE one entry point --
+-- every stage of the pipeline (010, 020, 040, 090) must go through this so
+-- laps, event_drivers, event_driver_summary, drivers_v and the Elo input all
+-- agree on identity.
+-- 1. Exact match on the folded key (accents/case/whitespace/hyphen-insensitive)
+-- 2. Fuzzy key (first4 + surname) — catches Nick/Nicholas style nicknames
+-- 3. Fallback: the mechanically folded name (ascii, lowercase)
 CREATE OR REPLACE MACRO resolve_driver_alias(name) AS (
     COALESCE(
-        (SELECT canonical_id FROM driver_aliases_tbl
-         WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
-        (SELECT canonical_id FROM driver_aliases_tbl
-         WHERE alias = fuzzy_driver_key(name)
+        (SELECT canonical_id FROM driver_identity_map
+         WHERE match_key = driver_match_key(name)),
+        (SELECT canonical_id FROM driver_identity_map
+         WHERE match_key = fuzzy_driver_key(driver_match_key(name))
          LIMIT 1),
-        LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
+        driver_canonical_form(name)
     )
 );
 
