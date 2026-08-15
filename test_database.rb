@@ -425,6 +425,36 @@ class DriverIdentityTest < Minitest::Test
     assert_includes ids, "tom blomqvist"
     assert_includes ids, "thomas blomqvist"
   end
+
+  # --- DI1 curation fixtures (doc/driver-merge-review-2026-08.md) ---------
+  # Three merges from the 2026-08 duplicate-identity review, one per class of
+  # evidence, so a regression in the alias file or the resolver is caught.
+
+  def test_nickname_merge_conway
+    # michael conway -> mike conway. Complementary seasons (2021-2025 vs 2026),
+    # same team (Toyota), never co-occurring in a session.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%conway'").map { |r| r["driver_id"] }
+    assert_includes ids, "mike conway"
+    refute_includes ids, "michael conway", "michael/mike conway must be one identity"
+    # ... but Kevin Conway raced against Mike Conway and must stay separate.
+    assert_includes ids, "kevin conway"
+  end
+
+  def test_middle_name_superset_merge_andrade
+    # rui pinto de andrade -> rui andrade, and the laps must be summed, not lost.
+    rows = query("SELECT driver_id, total_laps FROM drivers_v WHERE driver_id LIKE '%andrade'")
+    assert_equal ["rui andrade"], rows.map { |r| r["driver_id"] }
+    assert_equal 3316, rows.first["total_laps"].to_i,
+                 "merged career laps must equal 2410 + 906"
+  end
+
+  def test_suffix_variant_merge_does_not_swallow_a_relative
+    # 'Horst Felbermayr JR' was split across two ids ('horst felbermayr' and
+    # 'horst jr felbermayr') that never co-occur -> merged. His relative
+    # 'Horst Felix Felbermayr' co-occurs with him in 33 sessions -> kept apart.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%felbermayr'").map { |r| r["driver_id"] }
+    assert_equal ["horst felbermayr", "horst felix felbermayr"].sort, ids.sort
+  end
 end
 
 if __FILE__ == $0
