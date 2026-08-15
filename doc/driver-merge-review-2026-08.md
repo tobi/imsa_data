@@ -88,32 +88,38 @@ only because those two spellings happen never to land in one session.
 
 ## Decisions needed
 
+**RESOLVED 2026-08-14.** The artifact cluster was approved (merge, via aliases)
+along with five of the six judgement calls. `jon miller` ↔ `jonathan miller` is the one
+decline: it stays two people. The 19 approved aliases are now in
+`driver_aliases.json`; canonical id = more career laps (goethe and ed jones per
+the recommendations above their tables).
+
 ### The artifact cluster — one decision covering 14 pairs
 
-- [ ] **2026 Daytona split names**: merge all 14, or normalise at import instead?
-  - [ ] `matt campbell` ↔ `matthew campbell`
-  - [ ] `thomas dillmann` ↔ `tom dillmann`
-  - [ ] `thomas blomqvist` ↔ `tom blomqvist`
-  - [ ] `nicholas tandy` ↔ `nick tandy`
-  - [ ] `nicholas cassidy` ↔ `nick cassidy`
-  - [ ] `thomas sargent` ↔ `tom sargent`
-  - [ ] `ben keating` ↔ `benjamin keating`
-  - [ ] `max hesse` ↔ `maximilian hesse`
-  - [ ] `alex palou` ↔ `alexander palou`
-  - [ ] `ben barnicoat` ↔ `benjamin barnicoat`
-  - [ ] `max esterson` ↔ `maximilian esterson`
-  - [ ] `ben green` ↔ `benjamin green`
-  - [ ] `thomas gamble` ↔ `tom gamble`
-  - [ ] `michael rockenfeller` ↔ `mike rockenfeller`
+- [x] **2026 Daytona split names**: merge all 14, or normalise at import instead? — **Decision: merge all 14** (alias entries, not import-time normalisation)
+  - [x] `matt campbell` ↔ `matthew campbell`
+  - [x] `thomas dillmann` ↔ `tom dillmann`
+  - [x] `thomas blomqvist` ↔ `tom blomqvist`
+  - [x] `nicholas tandy` ↔ `nick tandy`
+  - [x] `nicholas cassidy` ↔ `nick cassidy`
+  - [x] `thomas sargent` ↔ `tom sargent`
+  - [x] `ben keating` ↔ `benjamin keating`
+  - [x] `max hesse` ↔ `maximilian hesse`
+  - [x] `alex palou` ↔ `alexander palou`
+  - [x] `ben barnicoat` ↔ `benjamin barnicoat`
+  - [x] `max esterson` ↔ `maximilian esterson`
+  - [x] `ben green` ↔ `benjamin green`
+  - [x] `thomas gamble` ↔ `tom gamble`
+  - [x] `michael rockenfeller` ↔ `mike rockenfeller`
 
 ### Individual judgement calls
 
-- [ ] `benjamin goethe` ↔ `benji goethe` — Benji is the standard diminutive; both drove for **Garage 59**; seasons are complementary (2023/2025 vs 2026); no co-occurrence.
-- [ ] `abdulla al-khelaifi` ↔ `abdulla ali al-khelaifi` — Middle-name superset, same country and licence, and in 2026 **the same team and the same car number** (Team Qatar by Iron Lynx #62) in two different championships — which is what one driver's split programme looks like.
-- [ ] `jon miller` ↔ `jonathan miller` — jon/jonathan nickname, same country and licence, both 2022 — but different championships (IMSA Crucial #59 vs Asian LMS Walkenhorst #34), no team link, and Miller is a very common surname.
-- [ ] `nico muller` ↔ `nicolas muller` — Complementary seasons (2022-25 vs 2026), same country, same licence (Platinum), nickname-shaped.
-- [ ] `ed jones` ↔ `edward jones` — ed/edward nickname, same licence (Gold), no co-occurrence and no shared event; the 2022 IMSA and 2022 WEC programmes are compatible for one driver.
-- [ ] `eddie cheever` ↔ `edward cheever` — eddie/edward nickname, same country and licence, no co-occurrence and no shared event.
+- [x] `benjamin goethe` ↔ `benji goethe` — **Decision: merge.** Benji is the standard diminutive; both drove for **Garage 59**; seasons are complementary (2023/2025 vs 2026); no co-occurrence.
+- [x] `abdulla al-khelaifi` ↔ `abdulla ali al-khelaifi` — **Decision: merge.** Middle-name superset, same country and licence, and in 2026 **the same team and the same car number** (Team Qatar by Iron Lynx #62) in two different championships — which is what one driver's split programme looks like.
+- [ ] `jon miller` ↔ `jonathan miller` — **Decision: do NOT merge.** jon/jonathan nickname, same country and licence, both 2022 — but different championships (IMSA Crucial #59 vs Asian LMS Walkenhorst #34), no team link, and Miller is a very common surname.
+- [x] `nico muller` ↔ `nicolas muller` — **Decision: merge.** Complementary seasons (2022-25 vs 2026), same country, same licence (Platinum), nickname-shaped.
+- [x] `ed jones` ↔ `edward jones` — **Decision: merge.** ed/edward nickname, same licence (Gold), no co-occurrence and no shared event; the 2022 IMSA and 2022 WEC programmes are compatible for one driver.
+- [x] `eddie cheever` ↔ `edward cheever` — **Decision: merge.** eddie/edward nickname, same country and licence, no co-occurrence and no shared event.
 
 ---
 

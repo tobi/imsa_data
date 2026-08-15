@@ -374,5 +374,81 @@
   {
     "alias": "tom fleming",
     "canonical_id": "thomas fleming"
+  },
+  {
+    "alias": "abdulla al-khelaifi",
+    "canonical_id": "abdulla ali al-khelaifi"
+  },
+  {
+    "alias": "alexander palou",
+    "canonical_id": "alex palou"
+  },
+  {
+    "alias": "ben green",
+    "canonical_id": "benjamin green"
+  },
+  {
+    "alias": "benjamin barnicoat",
+    "canonical_id": "ben barnicoat"
+  },
+  {
+    "alias": "benjamin keating",
+    "canonical_id": "ben keating"
+  },
+  {
+    "alias": "benji goethe",
+    "canonical_id": "benjamin goethe"
+  },
+  {
+    "alias": "edward cheever",
+    "canonical_id": "eddie cheever"
+  },
+  {
+    "alias": "edward jones",
+    "canonical_id": "ed jones"
+  },
+  {
+    "alias": "matthew campbell",
+    "canonical_id": "matt campbell"
+  },
+  {
+    "alias": "max esterson",
+    "canonical_id": "maximilian esterson"
+  },
+  {
+    "alias": "maximilian hesse",
+    "canonical_id": "max hesse"
+  },
+  {
+    "alias": "michael rockenfeller",
+    "canonical_id": "mike rockenfeller"
+  },
+  {
+    "alias": "nicholas tandy",
+    "canonical_id": "nick tandy"
+  },
+  {
+    "alias": "nick cassidy",
+    "canonical_id": "nicholas cassidy"
+  },
+  {
+    "alias": "nicolas muller",
+    "canonical_id": "nico muller"
+  },
+  {
+    "alias": "thomas blomqvist",
+    "canonical_id": "tom blomqvist"
+  },
+  {
+    "alias": "thomas dillmann",
+    "canonical_id": "tom dillmann"
+  },
+  {
+    "alias": "thomas gamble",
+    "canonical_id": "tom gamble"
+  },
+  {
+    "alias": "thomas sargent",
+    "canonical_id": "tom sargent"
   }
 ]
