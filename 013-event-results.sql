@@ -37,10 +37,15 @@ WITH raw_results AS (
       AND regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != ''
 )
 SELECT
-    series_code,
-    series_code || '-' || year as series,
-    year,
-    normalize_track_name(event_raw) as event,
+    raw_results.series_code,
+    raw_results.series_code || '-' || raw_results.year as series,
+    raw_results.year,
+    -- Same event naming as 020-event-laps (events.json display name), so
+    -- laps and event_results always agree on `event`. normalize_track_name
+    -- gave the TRACK name instead, which diverges wherever the display name
+    -- is an alias (Canadian Tire Motorsport Park vs Mosport) or the weekend
+    -- splits into multiple named events (Watkins Glen 240 / 6 Hours, 2021).
+    de.display_name as event,
     -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
     (SELECT mrm.race_label FROM multi_race_mappings mrm
      WHERE mrm.series_code = raw_results.series_code
@@ -64,8 +69,12 @@ SELECT
     get_homologation(chassis) as homologation,
     get_manufacturer(chassis) as manufacturer
 FROM raw_results
-WHERE is_main_class(series_code, class)
-ORDER BY series_code, year, event, session, start_date, position;
+INNER JOIN defined_events de
+    ON de.series_code = raw_results.series_code
+    AND de.year = raw_results.year
+    AND de.event_folder = raw_results.event_raw
+WHERE is_main_class(raw_results.series_code, raw_results.class)
+ORDER BY raw_results.series_code, raw_results.year, event, raw_results.session, raw_results.start_date, raw_results.position;
 
 -- Summary of results by series
 SELECT
