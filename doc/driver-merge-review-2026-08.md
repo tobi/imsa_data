@@ -316,6 +316,8 @@ manny/manuel nickname; same country and licence; no co-occurrence, no shared eve
 
 ### `horst felbermayr` ↔ `horst jr felbermayr`
 
+> NOTE (review): the target id also absorbs 905 rows of bare 'Horst FELBERMAYR' (ELMS 2023/2025) via a PRE-EXISTING fold, alongside 'Horst Felbermayr JR'. All three spellings are session-disjoint, so no conflict is visible — but if bare 'Horst Felbermayr' is ever the father (Sr.), that older fold is wrong. Flag when reviewing.
+
 **AUTO-MERGE** → canonical `horst felbermayr` (812 laps vs 93).
 
 **Both ids are 'Horst Felbermayr JR'** — one spelled 'Horst Felbermayr JR', the other 'Horst Jr Felbermayr'. Same country, same licence, same team (Proton Competition), and they never co-occur. The proof is triangulation: the *third* id, `horst felix felbermayr`, co-occurs with `horst felbermayr` in 33 sessions and with `horst jr felbermayr` in 7 — so Felix is the relative, and the two JR spellings are one man.

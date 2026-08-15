@@ -451,7 +451,7 @@ class DriverIdentityTest < Minitest::Test
   def test_suffix_variant_merge_does_not_swallow_a_relative
     # 'Horst Felbermayr JR' was split across two ids ('horst felbermayr' and
     # 'horst jr felbermayr') that never co-occur -> merged. His relative
-    # 'Horst Felix Felbermayr' co-occurs with him in 33 sessions -> kept apart.
+    # 'Horst Felix Felbermayr' co-occurs with him (31 sessions / 33 hand-overs pre-merge; 40/46 post-merge) -> kept apart.
     ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%felbermayr'").map { |r| r["driver_id"] }
     assert_equal ["horst felbermayr", "horst felix felbermayr"].sort, ids.sort
   end
