@@ -311,8 +311,11 @@ end
 # they must be resolved identically by every stage of the pipeline. These tests
 # guard the plumbing, not any individual driver.
 class DriverIdentityTest < Minitest::Test
-  # Folds a driver_id the same way driver_match_key() does in SQL.
-  FOLD_SQL = "lower(regexp_replace(replace(strip_accents(driver_id), '-', ' '), '\\s+', ' ', 'g'))".freeze
+  # The SQL macros themselves, so the tests can never drift from the pipeline.
+  # driver_canonical_form = the emitted id form (accents/case, hyphens kept);
+  # driver_match_key = the alias lookup key (additionally folds hyphens).
+  FOLD_SQL = "driver_canonical_form(driver_id)".freeze
+  MATCH_KEY_SQL = "driver_match_key(driver_id)".freeze
 
   def query(sql)
     stdout, stderr, status = Open3.capture3("duckdb", DB_PATH, "-json", "-c", sql)
@@ -358,7 +361,15 @@ class DriverIdentityTest < Minitest::Test
       WITH k AS (SELECT driver_id, #{FOLD_SQL} AS mk FROM drivers_v)
       SELECT mk, list(driver_id) AS ids FROM k GROUP BY mk HAVING count(*) > 1
     SQL
-    assert_empty dupes, "driver_ids differing only by accents/hyphens/case must be merged: #{dupes.inspect}"
+    assert_empty dupes, "driver_ids differing only by accents or case must be merged: #{dupes.inspect}"
+  end
+
+  def test_hyphenation_is_not_folded_into_ids
+    # Hyphens are part of established ids and are the JSON's editorial call,
+    # so the pipeline must not rewrite them on its own.
+    hyphenated = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%-%'")
+    refute_empty hyphenated, "hyphenated driver_ids should survive folding"
+    assert_includes hyphenated.map { |r| r["driver_id"] }, "ryan hunter-reay"
   end
 
   def test_resolution_is_idempotent
@@ -367,7 +378,7 @@ class DriverIdentityTest < Minitest::Test
     leaked = query(<<~SQL)
       SELECT d.driver_id
       FROM drivers_v d
-      JOIN driver_identity_map m ON m.match_key = #{FOLD_SQL}
+      JOIN driver_identity_map m ON m.match_key = #{MATCH_KEY_SQL}
       WHERE m.canonical_id <> d.driver_id
       LIMIT 10
     SQL

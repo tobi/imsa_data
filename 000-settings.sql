@@ -243,25 +243,35 @@ CREATE OR REPLACE TABLE driver_aliases AS
 SELECT alias, canonical_id
 FROM read_json_auto('driver_aliases.json');
 
--- Mechanical folding, applied to every driver name AND to the alias keys, so
+-- THE EMITTED ID FORM. Mechanical folding applied to every driver name, so
 -- variants merge without anyone having to curate an entry for them:
 --   * diacritics -> ascii  (André LOTTERER == Andre Lotterer)
---   * hyphen     -> space  (Jean-Baptiste == Jean Baptiste)
 --   * lowercase, whitespace collapsed
 -- strip_accents() handles NFD-decomposable characters; the REPLACE chain
 -- covers the ligature/stroke letters it cannot decompose (ø, ß, æ, œ, đ, ł).
 -- The result stays ascii-lowercase, which is what driver_id has always been.
+--
+-- HYPHENS ARE DELIBERATELY PRESERVED HERE. driver_id is public surface (the
+-- HF artifact, paddock's API paths, the keys of driver_aliases.json), so a
+-- name that no curated alias touches must keep the id it has always had:
+-- 'ryan hunter-reay' stays 'ryan hunter-reay'. Whether a compound name is
+-- hyphenated is a per-driver editorial call, and driver_aliases.json is the
+-- authority for it (see 'paul-loup chatin' -> 'paul loup chatin').
 CREATE OR REPLACE MACRO driver_canonical_form(name) AS (
     NULLIF(TRIM(REGEXP_REPLACE(
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
             LOWER(strip_accents(CAST(name AS VARCHAR))),
-            'ø', 'o'), 'ß', 'ss'), 'æ', 'ae'), 'œ', 'oe'), 'đ', 'd'), 'ł', 'l'), '-', ' '),
+            'ø', 'o'), 'ß', 'ss'), 'æ', 'ae'), 'œ', 'oe'), 'đ', 'd'), 'ł', 'l'),
         '\s+', ' ', 'g')), '')
 );
 
--- Alias lookup key == the folded form, so an alias written with accents or
--- hyphens ('jean-éric vergne') matches a name written without them.
-CREATE OR REPLACE MACRO driver_match_key(name) AS (driver_canonical_form(name));
+-- ALIAS LOOKUP KEY ONLY -- never emitted as an id. Additionally folds hyphens
+-- to spaces so a curated alias written either way still matches a name written
+-- the other way ('jean-éric vergne' matches 'Jean Eric Vergne'), without that
+-- folding leaking into the id itself.
+CREATE OR REPLACE MACRO driver_match_key(name) AS (
+    NULLIF(TRIM(REGEXP_REPLACE(REPLACE(driver_canonical_form(name), '-', ' '), '\s+', ' ', 'g')), '')
+);
 
 -- Alias edges, keyed by match key and pointing at the folded canonical id.
 CREATE OR REPLACE TABLE driver_alias_edges AS

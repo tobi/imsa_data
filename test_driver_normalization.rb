@@ -129,10 +129,28 @@ class DriverIdMacroTest < Minitest::Test
     assert_equal a, b
   end
 
-  def test_folding_merges_hyphen_variants
-    a, b = fold('Jean-Baptiste Simmenauer', 'Jean Baptiste Simmenauer')
-    assert_equal a, b
-    assert_equal 'jean baptiste simmenauer', a
+  def test_hyphens_survive_into_the_id
+    # driver_id is public surface, so a name no curated alias touches keeps
+    # the hyphenation it has always had.
+    assert_equal ['ryan hunter-reay'], fold('Ryan HUNTER-REAY')
+  end
+
+  def test_match_key_folds_hyphens_even_though_the_id_does_not
+    hyphen_id, plain_id = fold('Jean-Baptiste Simmenauer', 'Jean Baptiste Simmenauer')
+    refute_equal hyphen_id, plain_id, 'the emitted id must keep the hyphen as written'
+
+    keys = duckdb_row(<<~SQL).values
+      driver_match_key('Jean-Baptiste Simmenauer') AS a,
+      driver_match_key('Jean Baptiste Simmenauer') AS b
+    SQL
+    assert_equal keys[0], keys[1], 'alias lookup must be hyphen-insensitive'
+  end
+
+  def test_curated_alias_matches_either_hyphenation
+    # driver_aliases.json spells this one 'jean-éric vergne'; a name written
+    # without the hyphen (or the accent) must still find it.
+    assert_equal ['jean-eric vergne', 'jean-eric vergne'],
+                 resolve('Jean-Éric VERGNE', 'Jean Eric Vergne')
   end
 
   def test_folding_collapses_whitespace_and_case
@@ -157,6 +175,35 @@ class DriverIdMacroTest < Minitest::Test
   def test_distinct_names_are_not_merged
     tom, thomas = resolve('Tom Blomqvist', 'Thomas Blomqvist')
     refute_equal tom, thomas
+  end
+
+  # Multi-hop chains are exercised against a synthetic alias file rather than
+  # reasoned about: a -> b -> c must collapse to c for every spelling, and c
+  # must resolve to itself.
+  def test_multi_hop_alias_chain_collapses_to_the_end_of_the_chain
+    Dir.mktmpdir do |dir|
+      fixture = File.join(dir, 'chain_aliases.json')
+      File.write(fixture, JSON.pretty_generate([
+        { 'alias' => 'aaa driverone', 'canonical_id' => 'bbb driverone' },
+        { 'alias' => 'bbb driverone', 'canonical_id' => 'ccc driverone' },
+        { 'alias' => 'zzz drivertwo', 'canonical_id' => 'yyy drivertwo' }
+      ]))
+
+      script = identity_sql.sub("'driver_aliases.json'", "'#{fixture}'") + <<~SQL
+        SELECT resolve_driver_alias('Aaa Driverone') AS head,
+               resolve_driver_alias('Bbb Driverone') AS middle,
+               resolve_driver_alias('Ccc Driverone') AS tail,
+               resolve_driver_alias('Zzz Drivertwo') AS single;
+      SQL
+      stdout, stderr, status = Open3.capture3('duckdb', '-json', '-c', script, chdir: dir)
+      raise "duckdb failed: #{stderr}" unless status.success?
+
+      row = JSON.parse(stdout).first
+      assert_equal 'ccc driverone', row['head'],   'a -> b -> c must collapse to c'
+      assert_equal 'ccc driverone', row['middle'], 'b -> c'
+      assert_equal 'ccc driverone', row['tail'],   'c must resolve to itself'
+      assert_equal 'yyy drivertwo', row['single'], 'single-hop aliases still work'
+    end
   end
 
   def test_alias_map_has_one_row_per_key

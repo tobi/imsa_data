@@ -57,8 +57,11 @@ class DriverChecker
     summary
   end
 
-  # Folds a driver_id the same way driver_canonical_form() does in SQL.
-  FOLD = "lower(regexp_replace(replace(strip_accents(driver_id), '-', ' '), '\\s+', ' ', 'g'))".freeze
+  # The SQL macros themselves, so the linter can never drift from the pipeline.
+  # driver_canonical_form = the emitted id form (accents/case, hyphens kept);
+  # driver_match_key = the alias lookup key (additionally folds hyphens).
+  FOLD = "driver_canonical_form(driver_id)".freeze
+  MATCH_KEY = "driver_match_key(driver_id)".freeze
 
   def check_alias_integrity
     puts "\n--- Alias File Integrity ---"
@@ -88,8 +91,9 @@ class DriverChecker
     issue(:error, "Self-referential aliases", self_refs.keys.join(", ")) if self_refs.any?
 
     # canonical_id is what actually lands in driver_id, so it must already be
-    # in the folded form (ascii, lowercase, no hyphens) the pipeline emits.
-    unfolded = map.values.uniq.reject { |c| c =~ /\A[a-z0-9 .']+\z/ }
+    # in the emitted form: ascii, lowercase. Hyphens are allowed and are the
+    # JSON's editorial call ('jean-eric vergne' vs 'paul loup chatin').
+    unfolded = map.values.uniq.reject { |c| c =~ /\A[a-z0-9 .'-]+\z/ }
     if unfolded.any?
       issue(:error, "canonical_ids are not in folded ascii-lowercase form", unfolded.join(", "))
     end
@@ -121,10 +125,25 @@ class DriverChecker
       FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
     SQL
     if collisions.any?
-      issue(:error, "#{collisions.length} identities differ only by accents/hyphens/case",
+      issue(:error, "#{collisions.length} identities differ only by accents or case",
             collisions.first(5).map { |r| r["ids"] }.join("; "))
     else
-      puts "  ✓ No accent/hyphen duplicate identities"
+      puts "  ✓ No accent/case duplicate identities"
+    end
+
+    # Hyphenation is NOT folded into the id -- 'ryan hunter-reay' keeps its
+    # hyphen. So hyphen-only variant pairs are a curation question for
+    # driver_aliases.json, not something the pipeline decides on its own.
+    hyphen_pairs = query(<<~SQL)
+      WITH k AS (SELECT driver_id, #{MATCH_KEY} AS mk FROM drivers_v)
+      SELECT mk, string_agg(driver_id, ' | ') AS ids
+      FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
+    SQL
+    if hyphen_pairs.any?
+      issue(:info, "#{hyphen_pairs.length} identities differ only by hyphenation (add an alias to merge)",
+            hyphen_pairs.map { |r| r["ids"] }.join("; "))
+    else
+      puts "  ✓ No hyphen-only duplicate identities"
     end
 
     # Resolution must be a fixed point: no surviving driver_id may itself
@@ -132,7 +151,7 @@ class DriverChecker
     unstable = query(<<~SQL)
       SELECT d.driver_id, m.canonical_id
       FROM drivers_v d
-      JOIN driver_identity_map m ON m.match_key = #{FOLD}
+      JOIN driver_identity_map m ON m.match_key = #{MATCH_KEY}
       WHERE m.canonical_id <> d.driver_id
       LIMIT 20
     SQL
