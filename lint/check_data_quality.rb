@@ -12,10 +12,20 @@ class DataQualityChecker
     @issues = []
   end
 
+  # Matches the decimal strings `duckdb -json` emits for DECIMAL-typed values
+  # (e.g. MIN/MAX/SUM over lap_time or pit_time -> "50.746"), while DOUBLE
+  # aggregates like AVG/STDDEV arrive as JSON numbers. Coerced once here so
+  # every consumer can compare and do arithmetic regardless of CLI version.
+  DECIMAL_STRING = /\A-?\d+(\.\d+)?\z/
+
   def query(sql)
     stdout, stderr, status = Open3.capture3("duckdb", DB_PATH, "-json", "-c", sql)
     raise "Query failed: #{stderr}" unless status.success?
-    JSON.parse(stdout)
+    JSON.parse(stdout).map do |row|
+      row.each_with_object({}) do |(k, v), out|
+        out[k] = v.is_a?(String) && v.match?(DECIMAL_STRING) ? v.to_f : v
+      end
+    end
   rescue JSON::ParserError
     []
   end
