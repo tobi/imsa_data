@@ -1,63 +1,50 @@
 # Driver duplicate-identity review — 2026-08
 
-Curation pass over the **67 duplicate-identity candidate pairs** left by the DI0
-identity-plumbing fix. A candidate pair is two `drivers_v` ids that share a last
-token and score `jaro_winkler_similarity(a.driver_id, b.driver_id) >= 0.80`.
+Curation of the 67 duplicate-identity candidate pairs left after the alias
+resolution fix. A candidate pair is two `drivers_v` ids sharing a last token
+with `jaro_winkler_similarity(a.driver_id, b.driver_id) >= 0.80`.
 
-| verdict | pairs | meaning |
+| verdict | pairs | outcome |
 |---|---|---|
-| AUTO-MERGE | 27 | applied — an entry now exists in `driver_aliases.json` |
-| NEEDS-DECISION | 20 | **no** alias entry written; awaiting a decision |
-| REJECT | 20 | provably or clearly two different people; **never** merge |
+| AUTO-MERGE | 27 | alias added |
+| NEEDS-DECISION | 20 | 19 merged after review, 1 kept separate (`jon miller` / `jonathan miller`) |
+| REJECT | 20 | two different people; never merge |
 
-After applying the 27 merges: **1114 → 1087** distinct driver ids, and the
-candidate-pair count falls **67 → 39**. (39, not 40, because `horst jr felbermayr`
-was one half of two different candidate pairs.)
+Net: 46 merged, 21 kept separate; distinct driver ids 1114 → 1068. Canonical
+id = the id with more career laps.
 
-## How each verdict was reached
+## Method
 
-**The co-occurrence guard.** One person cannot drive two stints of the same
-session at once, so two ids that appear in the same `session_id` are different
-people. 26 of the 67 pairs co-occur.
+- **Co-occurrence guard.** Two ids in the same `session_id` are different
+  people — one person cannot drive two stints at once. 26 of 67 pairs co-occur.
+- **Same-car exception.** Co-occurrence in *different* cars is airtight; in the
+  *same* car it can also be a source-data name split. Discriminator: a real
+  driver change needs a pit stop, so a hand-over between the two ids on
+  consecutive laps with no `pit_time` on the incoming lap is impossible.
 
-**Where the guard breaks — and how to tell.** Co-occurrence in *different cars*
-is airtight. Co-occurrence in the *same car* is not: it is also what a source-data
-name split looks like. The discriminator is physical — a driver change requires a
-pit stop, so for every hand-over between the two ids on consecutive laps, check
-whether the incoming lap records a `pit_time`:
+  ```sql
+  SELECT session_id, car, lap, driver_id,
+         lead(driver_id) OVER w AS next_driver,
+         lead(pit_time)  OVER w AS next_pit
+  FROM (SELECT DISTINCT session_id, car, lap, driver_id, pit_time FROM laps)
+  WINDOW w AS (PARTITION BY session_id, car ORDER BY lap);
+  -- next_pit IS NULL on a hand-over = impossible
+  ```
 
-```sql
-SELECT session_id, car, lap, driver_id,
-       lead(driver_id)  OVER w AS next_driver,
-       lead(pit_time)   OVER w AS next_pit
-FROM (SELECT DISTINCT session_id, car, lap, driver_id, pit_time FROM laps)
-WINDOW w AS (PARTITION BY session_id, car ORDER BY lap);
--- a hand-over with next_pit IS NULL is physically impossible
-```
+  Perfectly bimodal: 5 same-car pairs have zero impossible hand-overs
+  (relatives/team-mates → REJECT), 14 have many (→ the artifact below).
+- **Country and licence are not evidence.** Both vary within one driver
+  (`nico muller` is SUI and CHE; `finn gehrsitz` GER and DEU; `benji goethe`
+  MCO/Silver and DEU/Gold in the same car and year). Country counts only when
+  it names two genuinely different countries, never alone.
+- **Positive evidence for a merge:** nickname / middle-name / hyphen /
+  transliteration pattern, plus one of: overlapping team, strictly
+  complementary seasons, or both spellings on the same car at the same event.
 
-The result is perfectly bimodal: 5 same-car pairs have **zero** impossible
-hand-overs (clean contiguous stints — genuine relatives or team-mates sharing a
-car → REJECT), and 14 have **many** (→ the artifact below).
+## The 2026 Daytona split-name artifact (14 pairs)
 
-**Two fields that look like evidence and are not.** Neither country nor licence
-can contradict an identity in this database, because both vary *within* a single
-driver: `nico muller` is recorded as both SUI and CHE; `finn gehrsitz` as both GER
-and DEU; `benji goethe` appears as MCO/Silver and DEU/Gold in the same year, same
-team, same car. Licence tier legitimately changes across years as well. Country
-was therefore only ever used when it named two genuinely different countries, and
-never on its own.
-
-**Positive evidence used for merges:** nickname or middle-name/hyphen/transliteration
-pattern, plus at least one of — an overlapping team, strictly complementary
-seasons, or both spellings on the *same car* at the *same event* in different
-sessions.
-
----
-
-## ⚠️ The 2026 Daytona split-name artifact (read this first)
-
-Fourteen pairs co-occur **in the same car** with hand-overs that no pit stop can
-explain. IMSA 2026 Daytona practice is the epicentre. Car #6, session 703:
+IMSA 2026 Daytona practice emits two spellings of one driver, alternating lap
+by lap through a single run with no pit stops — car #6, session 703:
 
 ```
 lap  driver_name        lap_time  pit_time
@@ -65,61 +52,28 @@ lap  driver_name        lap_time  pit_time
  10  Matthew Campbell      98.168  NULL
  11  Matthew Campbell      98.607  NULL
  12  Matt Campbell         98.260  NULL
- 13  Matthew Campbell      98.729  NULL
 ```
 
-The two spellings alternate lap by lap through a single uninterrupted run, and
-together they partition laps 8-43 exactly. That is one driver whose name the
-timing feed emitted two ways, not two drivers. The same shape appears for Palou,
-Hesse, Tandy, Keating, Blomqvist, Dillmann, Cassidy, Sargent, Esterson,
-Barnicoat, Green, Gamble and Rockenfeller.
+Together the two spellings partition laps 8-43 exactly: one driver, two feed
+spellings. Same shape for Palou, Hesse, Tandy, Keating, Blomqvist, Dillmann,
+Cassidy, Sargent, Esterson, Barnicoat, Green, Gamble, Rockenfeller. These
+co-occur in the same car, so the guard flags them; the honest reading is
+*same person*. Filed NEEDS-DECISION rather than auto-merged because it
+overrides the pass's own rule; **decision: merge all 14 via aliases**
+(alternative considered: normalise the 2026 Daytona names at import).
+`dan harper` / `daniel harper` is the same artifact and was auto-merged only
+because its two spellings never share a session.
 
-So the co-occurrence guard has a false-positive mode, and the honest reading of
-these 14 pairs is *same person*. They are nevertheless filed as **NEEDS-DECISION, not
-AUTO-MERGE**: the guard is the rule this pass was told to apply, and overriding it
-with a newly discovered failure mode is a maintainer's call, not the curation pass's. They
-are one decision, not fourteen — and there is a second option worth weighing:
-**fix it upstream**, by normalising the 2026 Daytona names at import, which would
-dissolve all fourteen without any alias entries. Note that `dan harper` /
-`daniel harper` is the *same* artifact (car #1, 2026 Daytona) and was auto-merged
-only because those two spellings happen never to land in one session.
+## Judgement calls (decided)
 
----
-
-## Decisions needed
-
-**RESOLVED 2026-08-14.** The artifact cluster was approved (merge, via aliases)
-along with five of the six judgement calls. `jon miller` ↔ `jonathan miller` is the one
-decline: it stays two people. The 19 approved aliases are now in
-`driver_aliases.json`; canonical id = more career laps (goethe and ed jones per
-the recommendations above their tables).
-
-### The artifact cluster — one decision covering 14 pairs
-
-- [x] **2026 Daytona split names**: merge all 14, or normalise at import instead? — **Decision: merge all 14** (alias entries, not import-time normalisation)
-  - [x] `matt campbell` ↔ `matthew campbell`
-  - [x] `thomas dillmann` ↔ `tom dillmann`
-  - [x] `thomas blomqvist` ↔ `tom blomqvist`
-  - [x] `nicholas tandy` ↔ `nick tandy`
-  - [x] `nicholas cassidy` ↔ `nick cassidy`
-  - [x] `thomas sargent` ↔ `tom sargent`
-  - [x] `ben keating` ↔ `benjamin keating`
-  - [x] `max hesse` ↔ `maximilian hesse`
-  - [x] `alex palou` ↔ `alexander palou`
-  - [x] `ben barnicoat` ↔ `benjamin barnicoat`
-  - [x] `max esterson` ↔ `maximilian esterson`
-  - [x] `ben green` ↔ `benjamin green`
-  - [x] `thomas gamble` ↔ `tom gamble`
-  - [x] `michael rockenfeller` ↔ `mike rockenfeller`
-
-### Individual judgement calls
-
-- [x] `benjamin goethe` ↔ `benji goethe` — **Decision: merge.** Benji is the standard diminutive; both drove for **Garage 59**; seasons are complementary (2023/2025 vs 2026); no co-occurrence.
-- [x] `abdulla al-khelaifi` ↔ `abdulla ali al-khelaifi` — **Decision: merge.** Middle-name superset, same country and licence, and in 2026 **the same team and the same car number** (Team Qatar by Iron Lynx #62) in two different championships — which is what one driver's split programme looks like.
-- [ ] `jon miller` ↔ `jonathan miller` — **Decision: do NOT merge.** jon/jonathan nickname, same country and licence, both 2022 — but different championships (IMSA Crucial #59 vs Asian LMS Walkenhorst #34), no team link, and Miller is a very common surname.
-- [x] `nico muller` ↔ `nicolas muller` — **Decision: merge.** Complementary seasons (2022-25 vs 2026), same country, same licence (Platinum), nickname-shaped.
-- [x] `ed jones` ↔ `edward jones` — **Decision: merge.** ed/edward nickname, same licence (Gold), no co-occurrence and no shared event; the 2022 IMSA and 2022 WEC programmes are compatible for one driver.
-- [x] `eddie cheever` ↔ `edward cheever` — **Decision: merge.** eddie/edward nickname, same country and licence, no co-occurrence and no shared event.
+| pair | decision | basis |
+|---|---|---|
+| `benjamin goethe` ↔ `benji goethe` | merge | standard diminutive; both Garage 59; complementary seasons |
+| `abdulla al-khelaifi` ↔ `abdulla ali al-khelaifi` | merge | middle-name superset; same team **and car number** (#62) in two championships |
+| `nico muller` ↔ `nicolas muller` | merge | complementary seasons, same country/licence, nickname-shaped |
+| `ed jones` ↔ `edward jones` | merge | nickname, same licence, no co-occurrence; 2022 IMSA + WEC compatible |
+| `eddie cheever` ↔ `edward cheever` | merge | nickname, same country/licence, no co-occurrence |
+| `jon miller` ↔ `jonathan miller` | **keep separate** | different championships, no team link, common surname |
 
 ---
 
@@ -702,13 +656,13 @@ mike/michael nickname; same country and licence (Platinum); **same team lineage*
 | **hand-overs / impossible** | | n/a — never shared a car in a session |
 | name similarity (jw) | | 0.8196 |
 
-## NEEDS-DECISION — not applied (20 pairs)
+## NEEDS-DECISION — resolved (20 pairs: 19 merged, 1 kept separate)
 
 ### `benjamin goethe` ↔ `benji goethe`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Benji is the standard diminutive; both drove for **Garage 59**; seasons are complementary (2023/2025 vs 2026); no co-occurrence. Two wrinkles: the country field says DEN vs DEU, and career laps are 228 vs 230 — a two-lap margin makes the mechanical 'more laps wins' canonical choice a coin flip. Recommended: merge, canonical `benjamin goethe`.
+Standard diminutive; both Garage 59; complementary seasons (2023/2025 vs 2026); no co-occurrence. Country reads DEN vs DEU (not evidence — see Method); career laps 228 vs 230, so canonical `benjamin goethe` was a coin flip.
 
 | evidence | A | B |
 |---|---|---|
@@ -727,9 +681,9 @@ Benji is the standard diminutive; both drove for **Garage 59**; seasons are comp
 
 ### `abdulla al-khelaifi` ↔ `abdulla ali al-khelaifi`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Middle-name superset, same country and licence, and in 2026 **the same team and the same car number** (Team Qatar by Iron Lynx #62) in two different championships — which is what one driver's split programme looks like. But 'Ali' is a patronymic, and the sibling/cousin pattern is exactly what produced the two Princes Ibrahim below. Different championships mean the co-occurrence guard has no purchase here. Recommended: merge, canonical `abdulla ali al-khelaifi` — but this is a judgement about Qatari naming, not about data.
+Middle-name superset; same country, licence, and in 2026 the same team **and car number** (Team Qatar by Iron Lynx #62) across two championships — one driver's split programme. Caveat: 'Ali' is a patronymic and the sibling pattern produced the two Princes Ibrahim below; the guard has no purchase across championships.
 
 | evidence | A | B |
 |---|---|---|
@@ -748,9 +702,9 @@ Middle-name superset, same country and licence, and in 2026 **the same team and 
 
 ### `jon miller` ↔ `jonathan miller`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → kept separate**
 
-jon/jonathan nickname, same country and licence, both 2022 — but different championships (IMSA Crucial #59 vs Asian LMS Walkenhorst #34), no team link, and Miller is a very common surname. A third driver, Joel Miller, raced against Jon Miller in 2022, so this surname is already known to hold several people.
+Nickname-shaped, same country/licence, both 2022 — but different championships (IMSA Crucial #59 vs Asian LMS Walkenhorst #34), no team link, and a common surname already holding several drivers (Joel Miller raced against Jon Miller in 2022).
 
 | evidence | A | B |
 |---|---|---|
@@ -769,9 +723,9 @@ jon/jonathan nickname, same country and licence, both 2022 — but different cha
 
 ### `nico muller` ↔ `nicolas muller`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Complementary seasons (2022-25 vs 2026), same country, same licence (Platinum), nickname-shaped. Against: no team link, and this surname cluster is already contaminated — `dirk mueller`, `nico mueller` and `sven muller` are all separate people in this database. 'Nicolas' is also not an established expansion of Nico Müller's name.
+Complementary seasons (2022-25 vs 2026), same country and licence (Platinum), nickname-shaped. Against: no team link, and the surname cluster already holds several distinct drivers (`dirk mueller`, `sven muller`).
 
 | evidence | A | B |
 |---|---|---|
@@ -790,9 +744,9 @@ Complementary seasons (2022-25 vs 2026), same country, same licence (Platinum), 
 
 ### `ed jones` ↔ `edward jones`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-ed/edward nickname, same licence (Gold), no co-occurrence and no shared event; the 2022 IMSA and 2022 WEC programmes are compatible for one driver. Against: the country field disagrees on a real distinction (ARE vs GBR, not a coding variant) and there is no team link. Recommended: merge, canonical `ed jones` — but verify the WEC JOTA #28 2022 line-up first.
+Nickname, same licence (Gold), no co-occurrence or shared event; 2022 IMSA and WEC programmes compatible. Against: country ARE vs GBR (a real distinction) and no team link.
 
 | evidence | A | B |
 |---|---|---|
@@ -811,9 +765,9 @@ ed/edward nickname, same licence (Gold), no co-occurrence and no shared event; t
 
 ### `eddie cheever` ↔ `edward cheever`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-eddie/edward nickname, same country and licence, no co-occurrence and no shared event. Against: the Cheevers are a multi-generation racing family, both ids are active in 2025 with different teams in different championships, and there is no team link. Recommended: merge once confirmed that both lines are Eddie Cheever III.
+Nickname, same country and licence, no co-occurrence or shared event. Against: a multi-generation racing family, both active in 2025 with different teams, no team link.
 
 | evidence | A | B |
 |---|---|---|
@@ -832,9 +786,9 @@ eddie/edward nickname, same country and licence, no co-occurrence and no shared 
 
 ### `alex palou` ↔ `alexander palou`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 6 hand-overs between the two spellings in the same car, **6 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 6 same-car hand-overs, 6 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -853,9 +807,9 @@ Part of the **2026 Daytona split-name artifact**: 6 hand-overs between the two s
 
 ### `thomas gamble` ↔ `tom gamble`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 2 hand-overs between the two spellings in the same car, **2 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 2 same-car hand-overs, 2 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -874,9 +828,9 @@ Part of the **2026 Daytona split-name artifact**: 2 hand-overs between the two s
 
 ### `ben green` ↔ `benjamin green`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 2 hand-overs between the two spellings in the same car, **2 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 2 same-car hand-overs, 2 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -895,9 +849,9 @@ Part of the **2026 Daytona split-name artifact**: 2 hand-overs between the two s
 
 ### `ben barnicoat` ↔ `benjamin barnicoat`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 5 hand-overs between the two spellings in the same car, **5 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 5 same-car hand-overs, 5 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -916,9 +870,9 @@ Part of the **2026 Daytona split-name artifact**: 5 hand-overs between the two s
 
 ### `michael rockenfeller` ↔ `mike rockenfeller`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 1 hand-overs between the two spellings in the same car, **1 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 1 same-car hand-overs, 1 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -937,9 +891,9 @@ Part of the **2026 Daytona split-name artifact**: 1 hand-overs between the two s
 
 ### `matt campbell` ↔ `matthew campbell`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 23 hand-overs between the two spellings in the same car, **21 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 23 same-car hand-overs, 21 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -958,9 +912,9 @@ Part of the **2026 Daytona split-name artifact**: 23 hand-overs between the two 
 
 ### `thomas sargent` ↔ `tom sargent`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 11 hand-overs between the two spellings in the same car, **8 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 11 same-car hand-overs, 8 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -979,9 +933,9 @@ Part of the **2026 Daytona split-name artifact**: 11 hand-overs between the two 
 
 ### `max hesse` ↔ `maximilian hesse`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 8 hand-overs between the two spellings in the same car, **7 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 8 same-car hand-overs, 7 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1000,9 +954,9 @@ Part of the **2026 Daytona split-name artifact**: 8 hand-overs between the two s
 
 ### `nicholas tandy` ↔ `nick tandy`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 16 hand-overs between the two spellings in the same car, **16 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 16 same-car hand-overs, 16 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1021,9 +975,9 @@ Part of the **2026 Daytona split-name artifact**: 16 hand-overs between the two 
 
 ### `ben keating` ↔ `benjamin keating`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 7 hand-overs between the two spellings in the same car, **7 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 7 same-car hand-overs, 7 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1042,9 +996,9 @@ Part of the **2026 Daytona split-name artifact**: 7 hand-overs between the two s
 
 ### `max esterson` ↔ `maximilian esterson`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 5 hand-overs between the two spellings in the same car, **5 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 5 same-car hand-overs, 5 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1063,9 +1017,9 @@ Part of the **2026 Daytona split-name artifact**: 5 hand-overs between the two s
 
 ### `nicholas cassidy` ↔ `nick cassidy`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 10 hand-overs between the two spellings in the same car, **9 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 10 same-car hand-overs, 9 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1084,9 +1038,9 @@ Part of the **2026 Daytona split-name artifact**: 10 hand-overs between the two 
 
 ### `thomas dillmann` ↔ `tom dillmann`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 23 hand-overs between the two spellings in the same car, **19 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 23 same-car hand-overs, 19 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|
@@ -1105,9 +1059,9 @@ Part of the **2026 Daytona split-name artifact**: 23 hand-overs between the two 
 
 ### `thomas blomqvist` ↔ `tom blomqvist`
 
-**NEEDS-DECISION**
+**NEEDS-DECISION → merged**
 
-Part of the **2026 Daytona split-name artifact**: 23 hand-overs between the two spellings in the same car, **21 of them with no pit stop** — physically impossible for two people. Evidence says one person; filed for a maintainer decision because the co-occurrence guard says otherwise.
+2026 Daytona split-name artifact: 23 same-car hand-overs, 21 with no pit stop. Merged.
 
 | evidence | A | B |
 |---|---|---|

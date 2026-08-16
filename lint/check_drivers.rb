@@ -57,9 +57,8 @@ class DriverChecker
     summary
   end
 
-  # The SQL macros themselves, so the linter can never drift from the pipeline.
-  # driver_canonical_form = the emitted id form (accents/case, hyphens kept);
-  # driver_match_key = the alias lookup key (additionally folds hyphens).
+  # The pipeline's own SQL macros, so the linter can't drift from it:
+  # driver_canonical_form = emitted id form; driver_match_key = alias lookup key
   FOLD = "driver_canonical_form(driver_id)".freeze
   MATCH_KEY = "driver_match_key(driver_id)".freeze
 
@@ -75,9 +74,7 @@ class DriverChecker
                    .keys
     issue(:error, "Duplicate alias keys in driver_aliases.json", dupes.join(", ")) if dupes.any?
 
-    # A canonical_id that is itself an alias never converges in a single pass:
-    # 'ben hanley' -> 'benjamin hanley' -> 'ben hanley' leaves BOTH identities
-    # alive in laps / drivers_v / driver_elo. This is what DI0 fixed.
+    # A canonical_id that is itself an alias (a -> b -> a) leaves both ids alive
     cyclic = map.select { |_a, c| map.key?(c) && map[map[c]] == c }
     if cyclic.any?
       issue(:error, "#{cyclic.length} alias cycles (a -> b -> a) in driver_aliases.json",
@@ -90,9 +87,8 @@ class DriverChecker
     self_refs = map.select { |a, c| a == c }
     issue(:error, "Self-referential aliases", self_refs.keys.join(", ")) if self_refs.any?
 
-    # canonical_id is what actually lands in driver_id, so it must already be
-    # in the emitted form: ascii, lowercase. Hyphens are allowed and are the
-    # JSON's editorial call ('jean-eric vergne' vs 'paul loup chatin').
+    # canonical_id becomes driver_id, so it must already be ascii-lowercase
+    # (hyphens allowed — hyphenation is the JSON's editorial call)
     unfolded = map.values.uniq.reject { |c| c =~ /\A[a-z0-9 .'-]+\z/ }
     if unfolded.any?
       issue(:error, "canonical_ids are not in folded ascii-lowercase form", unfolded.join(", "))
@@ -131,9 +127,8 @@ class DriverChecker
       puts "  ✓ No accent/case duplicate identities"
     end
 
-    # Hyphenation is NOT folded into the id -- 'ryan hunter-reay' keeps its
-    # hyphen. So hyphen-only variant pairs are a curation question for
-    # driver_aliases.json, not something the pipeline decides on its own.
+    # Hyphens are not folded into ids, so hyphen-only variant pairs are a
+    # curation question for driver_aliases.json
     hyphen_pairs = query(<<~SQL)
       WITH k AS (SELECT driver_id, #{MATCH_KEY} AS mk FROM drivers_v)
       SELECT mk, string_agg(driver_id, ' | ') AS ids
@@ -146,8 +141,7 @@ class DriverChecker
       puts "  ✓ No hyphen-only duplicate identities"
     end
 
-    # Resolution must be a fixed point: no surviving driver_id may itself
-    # resolve to a different id.
+    # Resolution must be a fixed point: no surviving driver_id resolves elsewhere
     unstable = query(<<~SQL)
       SELECT d.driver_id, m.canonical_id
       FROM drivers_v d
@@ -190,9 +184,8 @@ class DriverChecker
             "drivers_v: #{stats['canonical_drivers']}, event_summary: #{stats['event_summary_drivers']}")
     end
     
-    # An alias should point at an identity that actually exists in the data.
-    # (Checking for the *alias spelling* in laps is meaningless once the alias
-    # is applied -- by then every lap carries the canonical id.)
+    # An alias should point at an identity that exists in the data (the alias
+    # spelling itself never appears in laps once applied)
     dangling = query(<<~SQL)
       SELECT da.alias, da.canonical_id
       FROM driver_aliases da

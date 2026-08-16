@@ -12,10 +12,7 @@ class DataQualityChecker
     @issues = []
   end
 
-  # Matches the decimal strings `duckdb -json` emits for DECIMAL-typed values
-  # (e.g. MIN/MAX/SUM over lap_time or pit_time -> "50.746"), while DOUBLE
-  # aggregates like AVG/STDDEV arrive as JSON numbers. Coerced once here so
-  # every consumer can compare and do arithmetic regardless of CLI version.
+  # duckdb -json emits DECIMAL values as strings ("50.746"); coerce once here
   DECIMAL_STRING = /\A-?\d+(\.\d+)?\z/
 
   def query(sql)

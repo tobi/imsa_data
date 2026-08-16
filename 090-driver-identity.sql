@@ -5,12 +5,8 @@
 -- 1. DRIVER ALIAS RESOLUTION
 ---------------------------------------------------------------------
 
--- The driver_aliases table and the resolution macros are built once in
--- 000-settings.sql (driver_identity_map + resolve_driver_alias). This file
--- used to re-declare a second, weaker resolver here (exact lowercase match
--- only, no accent folding, no alias chains), which meant event_driver_summary
--- / drivers_v could land on a different driver_id than laps did for the very
--- same name. Keep resolve_driver_id as a thin alias for the one resolver.
+-- Alias resolution lives in 000-settings.sql; this is a thin alias so drivers_v
+-- and laps can never disagree on a driver_id
 CREATE OR REPLACE MACRO resolve_driver_id(name) AS (resolve_driver_alias(name));
 
 ---------------------------------------------------------------------
@@ -21,8 +17,7 @@ CREATE OR REPLACE TABLE event_driver_summary AS
 WITH race_laps AS (
     SELECT
         l.*,
-        -- Use the id the laps were already attributed to (resolved in 020),
-        -- not a fresh resolution of the display name.
+        -- Use the id laps already carry, not a fresh resolution of the display name
         l.driver_id AS resolved_driver_id
     FROM laps l
     WHERE session = 'race' 

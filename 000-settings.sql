@@ -223,40 +223,19 @@ CREATE OR REPLACE MACRO get_session_type(session_name) AS (
         ELSE session_name
     END
 );
--- ============================================================================
--- DRIVER IDENTITY RESOLUTION
--- ============================================================================
--- Single source of truth for turning a raw driver name into a driver_id.
--- Curated mappings live in driver_aliases.json (per CLAUDE.md: metadata in
--- JSON, generic SQL); everything below is mechanical and driver-agnostic.
---
--- Two layers:
---   1. MECHANICAL FOLDING (no curation needed) -- accents, case, whitespace.
---   2. CURATED ALIASES from driver_aliases.json, transitively closed so that
---      a -> b -> c collapses to c and every canonical_id resolves to itself
---      (i.e. resolution is IDEMPOTENT: resolve(resolve(x)) = resolve(x)).
--- ============================================================================
+-- Driver identity: raw name -> driver_id. Two layers: mechanical folding
+-- (accents/case/whitespace), then curated aliases from driver_aliases.json,
+-- transitively closed so a -> b -> c gives c and resolve() is idempotent.
 
--- Load curated aliases. Persistent (not TEMP) so later duckdb sessions
--- (the Elo phase) and the linters can still see them.
+-- Curated aliases; persistent (not TEMP) so the Elo phase and linters see them
 CREATE OR REPLACE TABLE driver_aliases AS
 SELECT alias, canonical_id
 FROM read_json_auto('driver_aliases.json');
 
--- THE EMITTED ID FORM. Mechanical folding applied to every driver name, so
--- variants merge without anyone having to curate an entry for them:
---   * diacritics -> ascii  (André LOTTERER == Andre Lotterer)
---   * lowercase, whitespace collapsed
--- strip_accents() handles NFD-decomposable characters; the REPLACE chain
--- covers the ligature/stroke letters it cannot decompose (ø, ß, æ, œ, đ, ł).
--- The result stays ascii-lowercase, which is what driver_id has always been.
---
--- HYPHENS ARE DELIBERATELY PRESERVED HERE. driver_id is public surface (the
--- HF artifact, paddock's API paths, the keys of driver_aliases.json), so a
--- name that no curated alias touches must keep the id it has always had:
--- 'ryan hunter-reay' stays 'ryan hunter-reay'. Whether a compound name is
--- hyphenated is a per-driver editorial call, and driver_aliases.json is the
--- authority for it (see 'paul-loup chatin' -> 'paul loup chatin').
+-- Emitted id form: diacritics -> ascii, lowercase, whitespace collapsed.
+-- The REPLACE chain covers ligature/stroke letters strip_accents() can't.
+-- Hyphens are kept: driver_id is public surface, so an id no alias touches
+-- must not change ('ryan hunter-reay' stays as-is).
 CREATE OR REPLACE MACRO driver_canonical_form(name) AS (
     NULLIF(TRIM(REGEXP_REPLACE(
         REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
@@ -265,15 +244,13 @@ CREATE OR REPLACE MACRO driver_canonical_form(name) AS (
         '\s+', ' ', 'g')), '')
 );
 
--- ALIAS LOOKUP KEY ONLY -- never emitted as an id. Additionally folds hyphens
--- to spaces so a curated alias written either way still matches a name written
--- the other way ('jean-éric vergne' matches 'Jean Eric Vergne'), without that
--- folding leaking into the id itself.
+-- Alias lookup key only (never emitted): also folds hyphens to spaces so an
+-- alias written either way matches
 CREATE OR REPLACE MACRO driver_match_key(name) AS (
     NULLIF(TRIM(REGEXP_REPLACE(REPLACE(driver_canonical_form(name), '-', ' '), '\s+', ' ', 'g')), '')
 );
 
--- Alias edges, keyed by match key and pointing at the folded canonical id.
+-- Alias edges: match key -> folded canonical id
 CREATE OR REPLACE TABLE driver_alias_edges AS
 SELECT DISTINCT
     driver_match_key(alias) AS match_key,
@@ -282,9 +259,8 @@ FROM driver_aliases
 WHERE driver_match_key(alias) IS NOT NULL
   AND driver_canonical_form(canonical_id) IS NOT NULL;
 
--- Transitive closure of the alias graph. Depth is capped so a bad (cyclic)
--- alias set degrades to "pick one deterministically" instead of looping
--- forever; lint/check_drivers.rb fails the build on cycles.
+-- Transitive closure, depth-capped so a cyclic alias set degrades
+-- deterministically instead of looping (lint/check_drivers.rb rejects cycles)
 CREATE OR REPLACE TABLE driver_identity_map AS
 WITH RECURSIVE walked(match_key, canonical_id, depth) AS (
     SELECT match_key, canonical_id, 0 FROM driver_alias_edges
@@ -304,16 +280,14 @@ terminal AS (
 all_entries AS (
     SELECT match_key, canonical_id FROM terminal
     UNION ALL
-    -- Every canonical id must resolve to itself, so that resolution is
-    -- idempotent and the hyphen-folded spelling of a hyphenated id maps
-    -- back to it.
+    -- Every canonical id resolves to itself (idempotency)
     SELECT DISTINCT driver_match_key(t.canonical_id), t.canonical_id
     FROM terminal t
     WHERE NOT EXISTS (
         SELECT 1 FROM terminal x WHERE x.match_key = driver_match_key(t.canonical_id)
     )
 )
--- One row per match_key (deterministic), so the lookup stays a scalar subquery.
+-- One row per match_key so the lookup stays a scalar subquery
 SELECT match_key, FIRST(canonical_id ORDER BY canonical_id) AS canonical_id
 FROM all_entries
 GROUP BY match_key;

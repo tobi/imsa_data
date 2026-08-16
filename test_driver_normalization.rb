@@ -23,7 +23,7 @@ SETTINGS_SQL = File.expand_path('000-settings.sql', __dir__)
 def identity_sql
   @identity_sql ||= begin
     body = File.read(SETTINGS_SQL)
-    start = body.index('-- DRIVER IDENTITY RESOLUTION')
+    start = body.index('-- Driver identity: raw name -> driver_id')
     raise 'driver identity section not found in 000-settings.sql' unless start
 
     body[start..]
@@ -172,9 +172,17 @@ class DriverIdMacroTest < Minitest::Test
     assert_equal once, twice
   end
 
-  def test_distinct_names_are_not_merged
+  # Mechanical folding must not merge distinct names on its own; only a
+  # curated alias may. Uncurated look-alikes stay apart, and a curated pair
+  # (tom/thomas blomqvist, the 2026 Daytona split-name artifact) merges.
+  def test_distinct_names_are_not_merged_without_an_alias
+    jon, jonathan = resolve('Jon Miller', 'Jonathan Miller')
+    refute_equal jon, jonathan
+  end
+
+  def test_curated_pair_merges
     tom, thomas = resolve('Tom Blomqvist', 'Thomas Blomqvist')
-    refute_equal tom, thomas
+    assert_equal tom, thomas
   end
 
   # Multi-hop chains are exercised against a synthetic alias file rather than

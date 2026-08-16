@@ -306,14 +306,9 @@ class TracksJsonTest < Minitest::Test
   end
 end
 
-# === Driver Identity Tests ===
-# Driver ids are load-bearing (driver_aliases.json keys, paddock API ids), and
-# they must be resolved identically by every stage of the pipeline. These tests
-# guard the plumbing, not any individual driver.
+# === Driver identity: ids must resolve identically at every pipeline stage ===
 class DriverIdentityTest < Minitest::Test
-  # The SQL macros themselves, so the tests can never drift from the pipeline.
-  # driver_canonical_form = the emitted id form (accents/case, hyphens kept);
-  # driver_match_key = the alias lookup key (additionally folds hyphens).
+  # The pipeline's own SQL macros, so the tests can't drift from it
   FOLD_SQL = "driver_canonical_form(driver_id)".freeze
   MATCH_KEY_SQL = "driver_match_key(driver_id)".freeze
 
@@ -419,11 +414,11 @@ class DriverIdentityTest < Minitest::Test
   end
 
   def test_distinct_drivers_are_not_over_merged
-    # Tom Blomqvist and Thomas Blomqvist are NOT known to be the same person and
-    # have no alias entry -- mechanical folding must leave them alone.
-    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%blomqvist'").map { |r| r["driver_id"] }
-    assert_includes ids, "tom blomqvist"
-    assert_includes ids, "thomas blomqvist"
+    # jon/jonathan miller were reviewed and deliberately kept separate (see
+    # doc/driver-merge-review-2026-08.md); no alias exists, and folding alone
+    # must not merge them.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id IN ('jon miller', 'jonathan miller')").map { |r| r["driver_id"] }.sort
+    assert_equal ["jon miller", "jonathan miller"], ids
   end
 
   # --- DI1 curation fixtures (doc/driver-merge-review-2026-08.md) ---------

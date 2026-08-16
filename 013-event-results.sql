@@ -40,11 +40,7 @@ SELECT
     raw_results.series_code,
     raw_results.series_code || '-' || raw_results.year as series,
     raw_results.year,
-    -- Same event naming as 020-event-laps (events.json display name), so
-    -- laps and event_results always agree on `event`. normalize_track_name
-    -- gave the TRACK name instead, which diverges wherever the display name
-    -- is an alias (Canadian Tire Motorsport Park vs Mosport) or the weekend
-    -- splits into multiple named events (Watkins Glen 240 / 6 Hours, 2021).
+    -- events.json display name, same as 020-event-laps, so laps and results agree on event
     de.display_name as event,
     -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
     (SELECT mrm.race_label FROM multi_race_mappings mrm
@@ -74,9 +70,7 @@ INNER JOIN defined_events de
     AND de.year = raw_results.year
     AND de.event_folder = raw_results.event_raw
 WHERE is_main_class(raw_results.series_code, raw_results.class)
-  -- Same ignored-sessions filter as 020-event-laps: partial-data sessions
-  -- (e.g. WEC race-201/race-202 splits) must not contribute classifications
-  -- either — they carried junk rows like a "Porsche RS Spyder" in 2026 WEC.
+  -- Same ignored-sessions filter as 020-event-laps (partial-data race-201/202 splits)
   AND NOT EXISTS (
       SELECT 1 FROM ignored_sessions i
       WHERE i.series_code = raw_results.series_code
