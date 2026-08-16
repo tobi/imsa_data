@@ -43,6 +43,8 @@ class DriverChecker
       exit 1
     end
 
+    check_alias_integrity
+    check_identity_folding
     check_alias_coverage
     check_orphan_drivers
     check_driver_laps_linkage
@@ -53,6 +55,119 @@ class DriverChecker
     check_known_driver_identities
 
     summary
+  end
+
+  # The pipeline's own SQL macros, so the linter can't drift from it:
+  # driver_canonical_form = emitted id form; driver_match_key = alias lookup key
+  FOLD = "driver_canonical_form(driver_id)".freeze
+  MATCH_KEY = "driver_match_key(driver_id)".freeze
+
+  def check_alias_integrity
+    puts "\n--- Alias File Integrity ---"
+
+    aliases = JSON.parse(File.read("driver_aliases.json"))
+    map = aliases.each_with_object({}) { |a, h| h[a["alias"]] = a["canonical_id"] }
+
+    dupes = aliases.map { |a| a["alias"] }
+                   .group_by { |k| k }
+                   .select { |_k, v| v.length > 1 }
+                   .keys
+    issue(:error, "Duplicate alias keys in driver_aliases.json", dupes.join(", ")) if dupes.any?
+
+    # A canonical_id that is itself an alias (a -> b -> a) leaves both ids alive
+    cyclic = map.select { |_a, c| map.key?(c) && map[map[c]] == c }
+    if cyclic.any?
+      issue(:error, "#{cyclic.length} alias cycles (a -> b -> a) in driver_aliases.json",
+            cyclic.map { |a, c| "#{a} <-> #{c}" }.join(", "))
+    end
+
+    chains = map.select { |_a, c| map.key?(c) && map[map[c]] != c }
+    issue(:info, "#{chains.length} alias chains (a -> b -> c); resolved transitively") if chains.any?
+
+    self_refs = map.select { |a, c| a == c }
+    issue(:error, "Self-referential aliases", self_refs.keys.join(", ")) if self_refs.any?
+
+    # canonical_id becomes driver_id, so it must already be ascii-lowercase
+    # (hyphens allowed — hyphenation is the JSON's editorial call)
+    unfolded = map.values.uniq.reject { |c| c =~ /\A[a-z0-9 .'-]+\z/ }
+    if unfolded.any?
+      issue(:error, "canonical_ids are not in folded ascii-lowercase form", unfolded.join(", "))
+    end
+
+    if dupes.empty? && cyclic.empty? && self_refs.empty? && unfolded.empty?
+      puts "  ✓ #{aliases.length} aliases, no cycles, no duplicates"
+    end
+
+    # A canonical_id that is itself an alias key is a chain (a -> b -> c). The
+    # resolver's transitive closure handles it, but keep the file flat so
+    # every alias points at its terminal id and no depth cap can matter.
+    canon_is_alias = map.select { |_a, c| map.key?(c) }
+    if canon_is_alias.any?
+      issue(:error, "#{canon_is_alias.length} alias chains in driver_aliases.json (point aliases at the terminal id)",
+            canon_is_alias.first(5).map { |a, c| "#{a} -> #{c} -> #{map[c]}" }.join(", "))
+    else
+      puts "  ✓ No alias chains (every canonical_id is terminal)"
+    end
+  end
+
+  def check_identity_folding
+    puts "\n--- Mechanical Identity Folding ---"
+
+    non_ascii = query(<<~SQL)
+      SELECT driver_id FROM drivers_v
+      WHERE driver_id <> lower(driver_id)
+         OR NOT regexp_matches(driver_id, '^[a-z0-9 .''-]+$')
+      LIMIT 20
+    SQL
+    if non_ascii.any?
+      issue(:error, "#{non_ascii.length} driver_ids are not ascii-lowercase (folding not applied)",
+            non_ascii.first(5).map { |r| r["driver_id"] }.join(", "))
+    else
+      puts "  ✓ All driver_ids are ascii lowercase"
+    end
+
+    collisions = query(<<~SQL)
+      WITH k AS (SELECT DISTINCT driver_id, #{FOLD} AS mk FROM laps)
+      SELECT mk, string_agg(driver_id, ' | ') AS ids
+      FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
+    SQL
+    if collisions.any?
+      issue(:error, "#{collisions.length} identities differ only by accents or case",
+            collisions.first(5).map { |r| r["ids"] }.join("; "))
+    else
+      puts "  ✓ No accent/case duplicate identities"
+    end
+
+    # Hyphens are not folded into ids, so hyphen-only variant pairs are a
+    # curation question for driver_aliases.json. Scan all of laps, not just
+    # race-derived drivers_v: a twin that only ever appears in practice/test
+    # laps is otherwise invisible here.
+    hyphen_pairs = query(<<~SQL)
+      WITH k AS (SELECT DISTINCT driver_id, #{MATCH_KEY} AS mk FROM laps)
+      SELECT mk, string_agg(driver_id, ' | ') AS ids
+      FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
+    SQL
+    if hyphen_pairs.any?
+      issue(:info, "#{hyphen_pairs.length} identities differ only by hyphenation (add an alias to merge)",
+            hyphen_pairs.map { |r| r["ids"] }.join("; "))
+    else
+      puts "  ✓ No hyphen-only duplicate identities"
+    end
+
+    # Resolution must be a fixed point: no surviving driver_id resolves elsewhere
+    unstable = query(<<~SQL)
+      SELECT d.driver_id, m.canonical_id
+      FROM (SELECT DISTINCT driver_id FROM laps) d
+      JOIN driver_identity_map m ON m.match_key = #{MATCH_KEY}
+      WHERE m.canonical_id <> d.driver_id
+      LIMIT 20
+    SQL
+    if unstable.any?
+      issue(:error, "#{unstable.length} driver_ids still resolve to another id (alias applied too late)",
+            unstable.first(5).map { |r| "#{r['driver_id']} -> #{r['canonical_id']}" }.join(", "))
+    else
+      puts "  ✓ Alias resolution is a fixed point across every driver_id in laps"
+    end
   end
 
   def check_alias_coverage
@@ -82,18 +197,19 @@ class DriverChecker
             "drivers_v: #{stats['canonical_drivers']}, event_summary: #{stats['event_summary_drivers']}")
     end
     
-    # Check aliases are being used
-    unused = query(<<~SQL)
+    # An alias should point at an identity that exists in the data (the alias
+    # spelling itself never appears in laps once applied)
+    dangling = query(<<~SQL)
       SELECT da.alias, da.canonical_id
       FROM driver_aliases da
       WHERE NOT EXISTS (
-        SELECT 1 FROM laps l 
-        WHERE LOWER(TRIM(l.driver_name)) = da.alias
+        SELECT 1 FROM laps l
+        WHERE l.driver_id = driver_canonical_form(da.canonical_id)
       )
     SQL
-    
-    if unused.any?
-      issue(:info, "#{unused.length} aliases have no matching laps (may be from other series)")
+
+    if dangling.any?
+      issue(:info, "#{dangling.length} aliases point at a driver with no laps (may be from other series)")
     end
   end
 

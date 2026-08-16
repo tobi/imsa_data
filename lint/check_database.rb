@@ -321,7 +321,7 @@ class DatabaseLinter
   # is not intentionally excluded. Shared by the folder-level and year-level
   # coverage checks so they can never disagree about what "has data" means.
   def event_folders_with_data
-    @event_folders_with_data ||= Dir.glob("data/*/*/*").select { |d| File.directory?(d) }.filter_map do |dir|
+    @event_folders_with_data ||= Dir.glob("data/*/*/*").select { |d| File.directory?(d) }.map do |dir|
       m = dir.match(%r{^data/([^/]+)/(\d{4})/\d\d-(.+)$})
       next unless m
       series, year, slug = m[1], m[2], m[3]
@@ -330,7 +330,7 @@ class DatabaseLinter
       next unless has_data
       next if (excluded_patterns_by_series[series] || []).any? { |p| File.fnmatch(p, slug) }
       [series, year, slug, dir]
-    end
+    end.compact
   end
 
   def check_undefined_event_folders

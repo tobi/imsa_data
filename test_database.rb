@@ -306,6 +306,152 @@ class TracksJsonTest < Minitest::Test
   end
 end
 
+# === Driver identity: ids must resolve identically at every pipeline stage ===
+class DriverIdentityTest < Minitest::Test
+  # The pipeline's own SQL macros, so the tests can't drift from it
+  FOLD_SQL = "driver_canonical_form(driver_id)".freeze
+  MATCH_KEY_SQL = "driver_match_key(driver_id)".freeze
+
+  def query(sql)
+    stdout, stderr, status = Open3.capture3("duckdb", DB_PATH, "-json", "-c", sql)
+    raise "Query failed: #{stderr}" unless status.success?
+    JSON.parse(stdout)
+  end
+
+  def query_single(sql)
+    query(sql).first&.values&.first
+  end
+
+  def aliases
+    @aliases ||= JSON.parse(File.read("driver_aliases.json"))
+  end
+
+  def test_alias_graph_has_no_cycles
+    map = aliases.each_with_object({}) { |a, h| h[a["alias"]] = a["canonical_id"] }
+    cyclic = map.select { |_alias, canonical| map.key?(canonical) }
+    assert_empty cyclic.keys,
+                 "driver_aliases.json canonical_ids must not themselves be aliases " \
+                 "(a -> b -> a never converges): #{cyclic.inspect}"
+  end
+
+  def test_alias_keys_are_unique
+    keys = aliases.map { |a| a["alias"] }
+    dupes = keys.group_by { |k| k }.select { |_k, v| v.length > 1 }.keys
+    assert_empty dupes, "Duplicate alias keys in driver_aliases.json: #{dupes.inspect}"
+  end
+
+  def test_driver_ids_are_ascii_lowercase
+    bad = query(<<~SQL)
+      SELECT driver_id FROM drivers_v
+      WHERE driver_id <> lower(driver_id)
+         OR NOT regexp_matches(driver_id, '^[a-z0-9 .''-]+$')
+      LIMIT 10
+    SQL
+    assert_empty bad.map { |r| r["driver_id"] },
+                 "driver_ids must be ascii lowercase (diacritics folded)"
+  end
+
+  def test_no_diacritic_duplicate_identities
+    dupes = query(<<~SQL)
+      WITH k AS (SELECT driver_id, #{FOLD_SQL} AS mk FROM drivers_v)
+      SELECT mk, list(driver_id) AS ids FROM k GROUP BY mk HAVING count(*) > 1
+    SQL
+    assert_empty dupes, "driver_ids differing only by accents or case must be merged: #{dupes.inspect}"
+  end
+
+  def test_hyphenation_is_not_folded_into_ids
+    # Hyphens are part of established ids and are the JSON's editorial call,
+    # so the pipeline must not rewrite them on its own.
+    hyphenated = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%-%'")
+    refute_empty hyphenated, "hyphenated driver_ids should survive folding"
+    assert_includes hyphenated.map { |r| r["driver_id"] }, "ryan hunter-reay"
+  end
+
+  def test_resolution_is_idempotent
+    # No driver_id may itself be an alias key: that would mean a second pass
+    # over the alias graph moves the identity again.
+    leaked = query(<<~SQL)
+      SELECT d.driver_id
+      FROM drivers_v d
+      JOIN driver_identity_map m ON m.match_key = #{MATCH_KEY_SQL}
+      WHERE m.canonical_id <> d.driver_id
+      LIMIT 10
+    SQL
+    assert_empty leaked.map { |r| r["driver_id"] },
+                 "driver_ids that still resolve to some other id (alias applied too late)"
+  end
+
+  def test_driver_ids_agree_across_surfaces
+    # Every identity that raced must exist with the same id in each surface
+    # that exposes drivers: laps, event_driver_summary, drivers_v, driver_elo.
+    %w[event_driver_summary drivers_v driver_elo].each do |surface|
+      missing = query(<<~SQL)
+        SELECT DISTINCT l.driver_id
+        FROM laps l
+        WHERE (l.session = 'race' OR l.session LIKE 'race-hour-%')
+          AND l.driver_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM #{surface} s WHERE s.driver_id = l.driver_id)
+        LIMIT 10
+      SQL
+      # driver_elo only covers classes it can rate, so allow a shortfall there
+      next if surface == "driver_elo"
+
+      assert_empty missing.map { |r| r["driver_id"] },
+                   "race-lap driver_ids missing from #{surface}"
+    end
+  end
+
+  def test_known_alias_merges_are_applied
+    # Curated alias in driver_aliases.json: benjamin hanley -> ben hanley
+    ids = query("SELECT driver_id FROM drivers_v WHERE #{FOLD_SQL} LIKE '%hanley'").map { |r| r["driver_id"] }
+    assert_equal ["ben hanley"], ids, "ben/benjamin hanley must be one identity"
+  end
+
+  def test_diacritic_variants_merge_without_an_alias
+    # No alias entry exists for Lotterer: folding alone must merge these.
+    ids = query("SELECT driver_id FROM drivers_v WHERE #{FOLD_SQL} = 'andre lotterer'").map { |r| r["driver_id"] }
+    assert_equal ["andre lotterer"], ids, "andre/andré lotterer must be one identity"
+  end
+
+  def test_distinct_drivers_are_not_over_merged
+    # jon/jonathan miller were reviewed and deliberately kept separate (see
+    # doc/driver-merge-review-2026-08.md); no alias exists, and folding alone
+    # must not merge them.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id IN ('jon miller', 'jonathan miller')").map { |r| r["driver_id"] }.sort
+    assert_equal ["jon miller", "jonathan miller"], ids
+  end
+
+  # --- DI1 curation fixtures (doc/driver-merge-review-2026-08.md) ---------
+  # Three merges from the 2026-08 duplicate-identity review, one per class of
+  # evidence, so a regression in the alias file or the resolver is caught.
+
+  def test_nickname_merge_conway
+    # michael conway -> mike conway. Complementary seasons (2021-2025 vs 2026),
+    # same team (Toyota), never co-occurring in a session.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%conway'").map { |r| r["driver_id"] }
+    assert_includes ids, "mike conway"
+    refute_includes ids, "michael conway", "michael/mike conway must be one identity"
+    # ... but Kevin Conway raced against Mike Conway and must stay separate.
+    assert_includes ids, "kevin conway"
+  end
+
+  def test_middle_name_superset_merge_andrade
+    # rui pinto de andrade -> rui andrade, and the laps must be summed, not lost.
+    rows = query("SELECT driver_id, total_laps FROM drivers_v WHERE driver_id LIKE '%andrade'")
+    assert_equal ["rui andrade"], rows.map { |r| r["driver_id"] }
+    assert_equal 3316, rows.first["total_laps"].to_i,
+                 "merged career laps must equal 2410 + 906"
+  end
+
+  def test_suffix_variant_merge_does_not_swallow_a_relative
+    # 'Horst Felbermayr JR' was split across two ids ('horst felbermayr' and
+    # 'horst jr felbermayr') that never co-occur -> merged. His relative
+    # 'Horst Felix Felbermayr' co-occurs with him (31 sessions / 33 hand-overs pre-merge; 40/46 post-merge) -> kept apart.
+    ids = query("SELECT driver_id FROM drivers_v WHERE driver_id LIKE '%felbermayr'").map { |r| r["driver_id"] }
+    assert_equal ["horst felbermayr", "horst felix felbermayr"].sort, ids.sort
+  end
+end
+
 if __FILE__ == $0
   # Run with verbose output
   Minitest.run(ARGV + ["--verbose"])
