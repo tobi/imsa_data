@@ -108,5 +108,10 @@
     "event_number": "16",
     "event_name": "Road America",
     "event_folder": "16-road-america"
+  },
+  {
+    "event_number": "17",
+    "event_name": "Road America (AEC)",
+    "event_folder": "17-road-america-aec-"
   }
 ]
