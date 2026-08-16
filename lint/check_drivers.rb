@@ -97,6 +97,17 @@ class DriverChecker
     if dupes.empty? && cyclic.empty? && self_refs.empty? && unfolded.empty?
       puts "  ✓ #{aliases.length} aliases, no cycles, no duplicates"
     end
+
+    # A canonical_id that is itself an alias key is a chain (a -> b -> c). The
+    # resolver's transitive closure handles it, but keep the file flat so
+    # every alias points at its terminal id and no depth cap can matter.
+    canon_is_alias = map.select { |_a, c| map.key?(c) }
+    if canon_is_alias.any?
+      issue(:error, "#{canon_is_alias.length} alias chains in driver_aliases.json (point aliases at the terminal id)",
+            canon_is_alias.first(5).map { |a, c| "#{a} -> #{c} -> #{map[c]}" }.join(", "))
+    else
+      puts "  ✓ No alias chains (every canonical_id is terminal)"
+    end
   end
 
   def check_identity_folding
@@ -116,7 +127,7 @@ class DriverChecker
     end
 
     collisions = query(<<~SQL)
-      WITH k AS (SELECT driver_id, #{FOLD} AS mk FROM drivers_v)
+      WITH k AS (SELECT DISTINCT driver_id, #{FOLD} AS mk FROM laps)
       SELECT mk, string_agg(driver_id, ' | ') AS ids
       FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
     SQL
@@ -128,9 +139,11 @@ class DriverChecker
     end
 
     # Hyphens are not folded into ids, so hyphen-only variant pairs are a
-    # curation question for driver_aliases.json
+    # curation question for driver_aliases.json. Scan all of laps, not just
+    # race-derived drivers_v: a twin that only ever appears in practice/test
+    # laps is otherwise invisible here.
     hyphen_pairs = query(<<~SQL)
-      WITH k AS (SELECT driver_id, #{MATCH_KEY} AS mk FROM drivers_v)
+      WITH k AS (SELECT DISTINCT driver_id, #{MATCH_KEY} AS mk FROM laps)
       SELECT mk, string_agg(driver_id, ' | ') AS ids
       FROM k GROUP BY mk HAVING count(*) > 1 ORDER BY mk
     SQL
@@ -144,7 +157,7 @@ class DriverChecker
     # Resolution must be a fixed point: no surviving driver_id resolves elsewhere
     unstable = query(<<~SQL)
       SELECT d.driver_id, m.canonical_id
-      FROM drivers_v d
+      FROM (SELECT DISTINCT driver_id FROM laps) d
       JOIN driver_identity_map m ON m.match_key = #{MATCH_KEY}
       WHERE m.canonical_id <> d.driver_id
       LIMIT 20
@@ -153,7 +166,7 @@ class DriverChecker
       issue(:error, "#{unstable.length} driver_ids still resolve to another id (alias applied too late)",
             unstable.first(5).map { |r| "#{r['driver_id']} -> #{r['canonical_id']}" }.join(", "))
     else
-      puts "  ✓ Alias resolution is a fixed point across drivers_v"
+      puts "  ✓ Alias resolution is a fixed point across every driver_id in laps"
     end
   end
 

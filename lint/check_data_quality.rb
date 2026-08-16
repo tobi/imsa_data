@@ -12,15 +12,18 @@ class DataQualityChecker
     @issues = []
   end
 
-  # duckdb -json emits DECIMAL values as strings ("50.746"); coerce once here
-  DECIMAL_STRING = /\A-?\d+(\.\d+)?\z/
+  # duckdb -json emits DECIMAL aggregates as strings ("50.746"); coerce only
+  # the numeric measure columns, never identifiers like car ("007") or year
+  DECIMAL_STRING = /\A-?\d+\.\d+\z/
+  NUMERIC_COLUMNS = %w[avg_lap stddev_lap min_lap max_lap median_lap avg_pit min_pit max_pit].freeze
 
   def query(sql)
     stdout, stderr, status = Open3.capture3("duckdb", DB_PATH, "-json", "-c", sql)
     raise "Query failed: #{stderr}" unless status.success?
     JSON.parse(stdout).map do |row|
       row.each_with_object({}) do |(k, v), out|
-        out[k] = v.is_a?(String) && v.match?(DECIMAL_STRING) ? v.to_f : v
+        coerce = NUMERIC_COLUMNS.include?(k) && v.is_a?(String) && v.match?(DECIMAL_STRING)
+        out[k] = coerce ? v.to_f : v
       end
     end
   rescue JSON::ParserError
