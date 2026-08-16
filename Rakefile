@@ -87,9 +87,12 @@ namespace :db do
     # two pools = overall license-seeded + within-tier peer; time-aware sigma
     # widening + field-median-anchored elo). Dependencies are declared inline
     # in compute_skill.py and uv creates the isolated environment.
+    unless system("command -v uv > /dev/null 2>&1")
+      abort("❌ uv not found in PATH. Install it: https://docs.astral.sh/uv/getting-started/installation/")
+    end
     puts "Computing skill ratings (OpenSkill, two-pool)..."
     unless system("uv", "run", "--python", "3.11", "compute_skill.py", out: "#{OUTPUT_DIR}/driver_elo.csv")
-      abort("❌ compute_skill.py failed.")
+      abort("❌ compute_skill.py failed. Check uv output above for details.")
     end
 
     # Phase 3: Load Elo data
