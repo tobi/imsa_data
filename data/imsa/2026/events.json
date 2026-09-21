@@ -113,5 +113,20 @@
     "event_number": "17",
     "event_name": "Road America (AEC)",
     "event_folder": "17-road-america-aec-"
+  },
+  {
+    "event_number": "18",
+    "event_name": "VIRginia International Raceway",
+    "event_folder": "18-virginia-international-raceway"
+  },
+  {
+    "event_number": "19",
+    "event_name": "Circuit of The Americas (MC)",
+    "event_folder": "19-circuit-of-the-americas-mc-"
+  },
+  {
+    "event_number": "20",
+    "event_name": "Indianapolis Motor Speedway RC",
+    "event_folder": "20-indianapolis-motor-speedway-rc"
   }
 ]
