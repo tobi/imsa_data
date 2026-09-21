@@ -320,6 +320,16 @@
       "year": "2026",
       "folder": "road-america",
       "name": "Road America"
+    },
+    {
+      "year": "2026",
+      "folder": "virginia-international-raceway",
+      "name": "VIR"
+    },
+    {
+      "year": "2026",
+      "folder": "indianapolis-motor-speedway-rc",
+      "name": "Indianapolis"
     }
   ],
   "excluded_event_patterns": [
