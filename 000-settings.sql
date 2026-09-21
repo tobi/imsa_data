@@ -223,10 +223,74 @@ CREATE OR REPLACE MACRO get_session_type(session_name) AS (
         ELSE session_name
     END
 );
--- Load driver aliases for name resolution across all pipeline stages
-CREATE TEMP TABLE IF NOT EXISTS driver_aliases_tbl AS
+-- Driver identity: raw name -> driver_id. Two layers: mechanical folding
+-- (accents/case/whitespace), then curated aliases from driver_aliases.json,
+-- transitively closed so a -> b -> c gives c and resolve() is idempotent.
+
+-- Curated aliases; persistent (not TEMP) so the Elo phase and linters see them
+CREATE OR REPLACE TABLE driver_aliases AS
 SELECT alias, canonical_id
 FROM read_json_auto('driver_aliases.json');
+
+-- Emitted id form: diacritics -> ascii, lowercase, whitespace collapsed.
+-- The REPLACE chain covers ligature/stroke letters strip_accents() can't.
+-- Hyphens are kept: driver_id is public surface, so an id no alias touches
+-- must not change ('ryan hunter-reay' stays as-is).
+CREATE OR REPLACE MACRO driver_canonical_form(name) AS (
+    NULLIF(TRIM(REGEXP_REPLACE(
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+            LOWER(strip_accents(CAST(name AS VARCHAR))),
+            'ø', 'o'), 'ß', 'ss'), 'æ', 'ae'), 'œ', 'oe'), 'đ', 'd'), 'ł', 'l'),
+        '\s+', ' ', 'g')), '')
+);
+
+-- Alias lookup key only (never emitted): also folds hyphens to spaces so an
+-- alias written either way matches
+CREATE OR REPLACE MACRO driver_match_key(name) AS (
+    NULLIF(TRIM(REGEXP_REPLACE(REPLACE(driver_canonical_form(name), '-', ' '), '\s+', ' ', 'g')), '')
+);
+
+-- Alias edges: match key -> folded canonical id
+CREATE OR REPLACE TABLE driver_alias_edges AS
+SELECT DISTINCT
+    driver_match_key(alias) AS match_key,
+    driver_canonical_form(canonical_id) AS canonical_id
+FROM driver_aliases
+WHERE driver_match_key(alias) IS NOT NULL
+  AND driver_canonical_form(canonical_id) IS NOT NULL;
+
+-- Transitive closure, depth-capped so a cyclic alias set degrades
+-- deterministically instead of looping (lint/check_drivers.rb rejects cycles)
+CREATE OR REPLACE TABLE driver_identity_map AS
+WITH RECURSIVE walked(match_key, canonical_id, depth) AS (
+    SELECT match_key, canonical_id, 0 FROM driver_alias_edges
+    UNION ALL
+    SELECT w.match_key, e.canonical_id, w.depth + 1
+    FROM walked w
+    JOIN driver_alias_edges e ON e.match_key = driver_match_key(w.canonical_id)
+    WHERE w.depth < 8
+      AND driver_match_key(w.canonical_id) <> w.match_key
+),
+terminal AS (
+    SELECT match_key,
+           FIRST(canonical_id ORDER BY depth DESC, canonical_id ASC) AS canonical_id
+    FROM walked
+    GROUP BY match_key
+),
+all_entries AS (
+    SELECT match_key, canonical_id FROM terminal
+    UNION ALL
+    -- Every canonical id resolves to itself (idempotency)
+    SELECT DISTINCT driver_match_key(t.canonical_id), t.canonical_id
+    FROM terminal t
+    WHERE NOT EXISTS (
+        SELECT 1 FROM terminal x WHERE x.match_key = driver_match_key(t.canonical_id)
+    )
+)
+-- One row per match_key so the lookup stays a scalar subquery
+SELECT match_key, FIRST(canonical_id ORDER BY canonical_id) AS canonical_id
+FROM all_entries
+GROUP BY match_key;
 
 -- Macro to canonicalize a name: first 4 chars of first name + full surname(s)
 -- This naturally merges Nick/Nicholas, Alex/Alexander, Phil/Philip, etc.
@@ -243,18 +307,21 @@ CREATE OR REPLACE MACRO fuzzy_driver_key(name) AS (
     END
 );
 
--- Macro to resolve a driver name to a canonical driver_id:
--- 1. Check explicit aliases by exact lowercased name
--- 2. Check explicit aliases by fuzzy key (first4+rest) — catches nickname variants
--- 3. Final fallback: plain lowercased name (NOT fuzzy key — keep readable IDs)
+-- Resolve a driver name to a canonical driver_id. THE one entry point --
+-- every stage of the pipeline (010, 020, 040, 090) must go through this so
+-- laps, event_drivers, event_driver_summary, drivers_v and the Elo input all
+-- agree on identity.
+-- 1. Exact match on the folded key (accents/case/whitespace/hyphen-insensitive)
+-- 2. Fuzzy key (first4 + surname) — catches Nick/Nicholas style nicknames
+-- 3. Fallback: the mechanically folded name (ascii, lowercase)
 CREATE OR REPLACE MACRO resolve_driver_alias(name) AS (
     COALESCE(
-        (SELECT canonical_id FROM driver_aliases_tbl
-         WHERE alias = LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))),
-        (SELECT canonical_id FROM driver_aliases_tbl
-         WHERE alias = fuzzy_driver_key(name)
+        (SELECT canonical_id FROM driver_identity_map
+         WHERE match_key = driver_match_key(name)),
+        (SELECT canonical_id FROM driver_identity_map
+         WHERE match_key = fuzzy_driver_key(driver_match_key(name))
          LIMIT 1),
-        LOWER(REGEXP_REPLACE(TRIM(name), '\s+', ' '))
+        driver_canonical_form(name)
     )
 );
 

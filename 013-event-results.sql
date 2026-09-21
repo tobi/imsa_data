@@ -37,10 +37,11 @@ WITH raw_results AS (
       AND regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-results\.csv$', 4) != ''
 )
 SELECT
-    series_code,
-    series_code || '-' || year as series,
-    year,
-    normalize_track_name(event_raw) as event,
+    raw_results.series_code,
+    raw_results.series_code || '-' || raw_results.year as series,
+    raw_results.year,
+    -- events.json display name, same as 020-event-laps, so laps and results agree on event
+    de.display_name as event,
     -- Per-event race label (e.g. "Race 1") for multi-race weekends; NULL otherwise.
     (SELECT mrm.race_label FROM multi_race_mappings mrm
      WHERE mrm.series_code = raw_results.series_code
@@ -64,8 +65,18 @@ SELECT
     get_homologation(chassis) as homologation,
     get_manufacturer(chassis) as manufacturer
 FROM raw_results
-WHERE is_main_class(series_code, class)
-ORDER BY series_code, year, event, session, start_date, position;
+INNER JOIN defined_events de
+    ON de.series_code = raw_results.series_code
+    AND de.year = raw_results.year
+    AND de.event_folder = raw_results.event_raw
+WHERE is_main_class(raw_results.series_code, raw_results.class)
+  -- Same ignored-sessions filter as 020-event-laps (partial-data race-201/202 splits)
+  AND NOT EXISTS (
+      SELECT 1 FROM ignored_sessions i
+      WHERE i.series_code = raw_results.series_code
+        AND raw_results.session LIKE i.session_pattern || '%'
+  )
+ORDER BY raw_results.series_code, raw_results.year, event, raw_results.session, raw_results.start_date, raw_results.position;
 
 -- Summary of results by series
 SELECT
