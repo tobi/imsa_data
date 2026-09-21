@@ -83,16 +83,12 @@ namespace :db do
       duckdb.write(script)
     end
 
-    # Phase 2: Compute skill ratings (OpenSkill: multiplayer + confidence,
+    # Phase 2: Compute skill ratings (Plackett-Luce: multiplayer + confidence,
     # two pools = overall license-seeded + within-tier peer; time-aware sigma
-    # widening + field-median-anchored elo). Dependencies are declared inline
-    # in compute_skill.py and uv creates the isolated environment.
-    unless system("command -v uv > /dev/null 2>&1")
-      abort("❌ uv not found in PATH. Install it: https://docs.astral.sh/uv/getting-started/installation/")
-    end
-    puts "Computing skill ratings (OpenSkill, two-pool)..."
-    unless system("uv", "run", "--python", "3.11", "compute_skill.py", out: "#{OUTPUT_DIR}/driver_elo.csv")
-      abort("❌ compute_skill.py failed. Check uv output above for details.")
+    # widening + field-median-anchored elo). Pure Ruby + duckdb CLI -- no uv/Python.
+    puts "Computing skill ratings (Plackett-Luce, two-pool)..."
+    unless system("ruby", "compute_skill.rb", out: "#{OUTPUT_DIR}/driver_elo.csv")
+      abort("❌ compute_skill.rb failed. Check output above for details.")
     end
 
     # Phase 3: Load Elo data
@@ -204,6 +200,7 @@ end
 desc "Run all tests"
 task :test do
   sh "ruby test_database.rb"
+  sh "ruby test_plackett_luce.rb"
 end
 
 desc "Run database linting checks"

@@ -2,8 +2,8 @@
 # Data loader for Elo / skill rating history
 # Outputs CSV to stdout for Observable Framework time-series visualization.
 #
-# Sources the precomputed driver_elo table (OpenSkill two-pool ratings from
-# compute_skill.py). Columns include both the overall (license-seeded) rating
+# Sources the precomputed driver_elo table (Plackett-Luce two-pool ratings from
+# compute_skill.rb). Columns include both the overall (license-seeded) rating
 # and the within-tier peer rating, with confidence (sigma).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

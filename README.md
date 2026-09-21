@@ -88,9 +88,9 @@ motorsportdb/
 │
 ├── Skills (Claude Code)
 │   └── skills/
-│       ├── imsa/             # IMSA analysis skill
-│       └── marimo/           # Notebook generation skill
+│       └── imsa/             # IMSA analysis skill
 │
+├── compute_skill.rb          # Plackett-Luce driver skill ratings (Ruby)
 ├── import.rb                 # Multi-series data importer
 └── Rakefile                  # Build tasks
 ```
@@ -123,15 +123,15 @@ High-level overview of all sessions.
 #### `drivers` - Driver Directory
 Aggregated driver info with latest license and team.
 
-#### `driver_elo` - Skill Rating History (OpenSkill, two-pool)
-Lap-by-lap skill ratings computed independently per class by `compute_skill.py`
-using **OpenSkill** (Plackett-Luce — multiplayer, MIT-licensed, patent-free).
+#### `driver_elo` - Skill Rating History (Plackett-Luce, two-pool)
+Lap-by-lap skill ratings computed independently per class by `compute_skill.rb`
+using **Plackett-Luce** (Weng–Lin Algorithm 4 — multiplayer, inlined, no Python).
 
 **Model.** Each green-flag (`flags='GF'`), non-pit lap is bucketed into a
 10-minute wall-clock window by its mid-point `session_time`, so a driver is only
 ranked against same-class cars actually circulating alongside them. Each driver
 contributes one representative lap per window (median of their green laps); the
-window's pace ranking is a single multiplayer OpenSkill match. Two pools are
+window's pace ranking is a single multiplayer Plackett-Luce match. Two pools are
 emitted:
 
 * **Overall** (license-seeded, full field): `skill_mu` / `skill_sigma` /
@@ -178,8 +178,8 @@ comparable over time.
 | `peer_mu` / `peer_sigma` / `peer_ordinal` | DOUBLE | Within-tier pool equivalents |
 | `peer_elo` | INTEGER | Relatable peer rating (1500 = license-tier median) |
 
-Ratings are computed in a local Python venv (`compute_skill.py`, OpenSkill +
-DuckDB); the Rake task bootstraps it on first run.
+Ratings are computed by `compute_skill.rb` (pure Ruby + the DuckDB CLI); no
+Python or `uv` required.
 
 ```sql
 -- Current overall + peer rating for a driver

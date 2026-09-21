@@ -1,5 +1,5 @@
--- Driver skill ratings computed lap-by-lap with OpenSkill (Plackett-Luce).
--- Two pools per class (both computed by compute_skill.py):
+-- Driver skill ratings computed lap-by-lap with Plackett-Luce (Weng–Lin).
+-- Two pools per class (both computed by compute_skill.rb):
 --   * OVERALL  (license-seeded, full-field): skill_mu/skill_sigma/ordinal,
 --              plus the relatable `elo` (1500 = median driver in class).
 --   * PEER     (within-license tier): peer_mu/peer_sigma/peer_ordinal, plus
