@@ -72,8 +72,7 @@ motorsportdb/
 │   ├── 071-events.sql        # Events table
 │   ├── 080-event-metadata.sql       # Circuit details, race types
 │   ├── 090-driver-identity.sql      # Driver identity and normalization
-│   ├── 100-driver-matching.sql      # Driver matching and merging
-│   └── 110-driver-ratings.sql       # Driver ratings
+│   └── 100-driver-matching.sql      # Driver matching and merging
 │
 ├── Configuration Files
 │   ├── tracks.json           # 45 circuits with coordinates & aliases
