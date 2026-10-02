@@ -128,5 +128,10 @@
     "event_number": "20",
     "event_name": "Indianapolis Motor Speedway RC",
     "event_folder": "20-indianapolis-motor-speedway-rc"
+  },
+  {
+    "event_number": "21",
+    "event_name": "Road Atlanta",
+    "event_folder": "21-road-atlanta"
   }
 ]

@@ -330,6 +330,11 @@
       "year": "2026",
       "folder": "indianapolis-motor-speedway-rc",
       "name": "Indianapolis"
+    },
+    {
+      "year": "2026",
+      "folder": "road-atlanta",
+      "name": "Road Atlanta"
     }
   ],
   "excluded_event_patterns": [
