@@ -5,6 +5,7 @@
 require 'minitest/autorun'
 require 'open3'
 require 'json'
+require 'csv'
 
 DB_PATH = "output/imsa.duckdb"
 
@@ -258,6 +259,34 @@ class DatabaseTest < Minitest::Test
     SQL
     # Retain a broad ingestion smoke check as well as exact per-event joins.
     assert_operator query_single("SELECT COUNT(*) FROM events WHERE weather_status = 'available' AND start_date IS NOT NULL"), :>, 50
+  end
+
+  def test_weather_source_rows_are_not_silently_discarded
+    # Independent CSV count catches numeric parsing failures even when all SQL
+    # aggregates agree with one another after accidentally dropping a file.
+    expected = Dir['data/*/*/*/*weather.csv'].select { |f| f.match?(%r{/\d{12}-[^/]+-weather\.csv$}) }.sum do |file|
+      CSV.read(file, headers: true, encoding: 'bom|utf-8').size
+    end
+    assert_operator expected, :>, 0
+    assert_equal expected, query_single('SELECT COUNT(*) FROM event_weather_observations')
+    assert_equal 0, query_single('SELECT COUNT(*) FROM event_weather_observations WHERE time_utc_seconds IS NULL')
+    assert_equal 0, query_single("SELECT COUNT(*) FROM event_weather WHERE pressure_unit IS NULL AND pressure_inhg IS NOT NULL")
+    assert_equal 0, query_single("SELECT COUNT(*) FROM event_weather WHERE wind_speed_unit IS NULL AND wind_speed_mph IS NOT NULL")
+  end
+
+  def test_decimal_comma_weather_is_imported
+    row = query(<<~SQL).first
+      SELECT air_temp_raw, humidity_percent, pressure_raw, wind_speed_raw
+      FROM event_weather_observations
+      WHERE filename = 'data/alms/2025/01-sepang/202412051300-private-20test-20session-201-weather.csv'
+        AND time_utc_seconds = 1733374848
+    SQL
+    refute_nil row
+    assert_in_delta 87.8, row['air_temp_raw'].to_f, 0.001
+    assert_in_delta 62.44, row['humidity_percent'].to_f, 0.001
+    assert_in_delta 1005, row['pressure_raw'].to_f, 0.001
+    assert_in_delta 1.3, row['wind_speed_raw'].to_f, 0.001
+    assert_in_delta 62.44, query_single("SELECT weather_number('62,44')").to_f, 0.001
   end
 
   # === Track Alias Tests ===

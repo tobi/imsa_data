@@ -205,6 +205,7 @@ task :test do
   sh "ruby test_database.rb"
   sh "ruby test_plackett_luce.rb"
   sh "ruby test_driver_normalization.rb"
+  sh "ruby test_weather_import.rb"
 end
 
 desc "Run database linting checks"

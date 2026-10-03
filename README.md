@@ -396,3 +396,11 @@ observations with no usable air temperature. Rain remains unknown when all
 readings are unknown; unknown is not dry. These fields describe the imported
 source, not whether the upstream provider might publish more data later.
 The quality-summary SQL exposes remaining coverage gaps without inventing values.
+
+Weather numeric parsing accepts decimal commas and does not silently discard rows.
+`event_weather_observations` preserves the pre-deduplication source observations
+and filenames. Pressure and wind are converted only when explicit source units
+are present; otherwise `pressure_inhg`/`wind_speed_mph` are NULL and the source
+values remain in `pressure_raw`/`wind_speed_raw` with their unit fields.
+Historical temperature precision lost by older imports cannot be reconstructed;
+new imports preserve decimal-comma fractional values.
