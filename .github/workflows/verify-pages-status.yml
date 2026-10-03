@@ -1,7 +1,7 @@
 name: Verify Pages retirement status
 on:
-  push:
-    branches: [fix/data-only-quality]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
   pages: read
