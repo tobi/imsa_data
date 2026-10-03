@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 # Elo ratings for gentleman drivers (Bronze + Silver in LMP2)
-set -euo pipefail
+set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"

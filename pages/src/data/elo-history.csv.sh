@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Data loader for Elo / skill rating history
 # Outputs CSV to stdout for Observable Framework time-series visualization.
 #
@@ -6,7 +6,7 @@
 # compute_skill.rb). Columns include both the overall (license-seeded) rating
 # and the within-tier peer rating, with confidence (sigma).
 
-set -euo pipefail
+set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="${IMSA_DB:-$SCRIPT_DIR/../../../output/imsa.duckdb}"

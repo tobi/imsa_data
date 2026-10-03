@@ -155,7 +155,8 @@ class PagesLoadersTest < Minitest::Test
 
   def run_loader(loader, database = @db)
     script = File.join(ROOT, "pages", "src", "data", "#{loader}.csv.sh")
-    Open3.capture3({ "IMSA_DB" => database }, "bash", script, chdir: @tmp)
+    # Observable invokes .sh data loaders with sh, regardless of their shebang.
+    Open3.capture3({ "IMSA_DB" => database }, "sh", script, chdir: @tmp)
   end
 
   def load_rows(loader)
