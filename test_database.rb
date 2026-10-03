@@ -145,6 +145,19 @@ class DatabaseTest < Minitest::Test
     end
   end
 
+  def test_recorded_long_pit_lap_is_preserved
+    # Source: 202601241340-race-hour-24-laps.csv, car 11, lap 102:
+    # LAP_TIME=12:18.929, PIT_TIME=0:10:52.239. Do not trim authentic delays.
+    rows = query(<<~SQL)
+      SELECT lap_time, pit_time FROM laps
+      WHERE series_code = 'imsa' AND year = '2026' AND event = 'Daytona'
+        AND session = 'race' AND car = '11' AND lap = 102
+    SQL
+    assert_equal 1, rows.size
+    assert_in_delta 738.929, rows.first['lap_time'].to_f, 0.0001
+    assert_in_delta 652.239, rows.first['pit_time'].to_f, 0.0001
+  end
+
   def test_weather_temperatures_are_reasonable
     unreasonable = query(<<~SQL)
       SELECT COUNT(*) as cnt

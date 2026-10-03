@@ -71,7 +71,7 @@ event_race_stats AS (
     GROUP BY series_code, year, event_folder
 )
 SELECT
-    -- Generate event_id as series-year-track (e.g., "imsa-2025-daytona")
+    -- Folder-based identity separates different events at the same circuit.
     er.series_code || '-' || er.year || '-' || er.event_folder as event_id,
     er.series_code,
     er.year,

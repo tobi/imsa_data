@@ -48,8 +48,10 @@ UPDATE event_metadata
 SET
     circuit_name = t.official_name,
     circuit_country = t.country
-FROM tracks t
-WHERE event_metadata.event = t.short_name;
+FROM events e JOIN tracks t ON t.track_id = e.track_id
+WHERE event_metadata.series_code = e.series_code
+  AND event_metadata.year = e.year
+  AND event_metadata.event = e.event;
 
 -- Add special notes for notable races
 UPDATE event_metadata

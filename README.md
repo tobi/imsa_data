@@ -365,3 +365,34 @@ MIT
 1. Add new tracks to `tracks.json`
 2. Add new chassis to `chassis.json`
 3. Run `rake check` to validate changes
+
+## Rebuilding and validating the data
+
+This repository contains racing source data, database generation, and analysis
+pipelines. The former Observable dashboard and Pages workflow have been removed.
+
+With Ruby 3.3, Rake, and DuckDB 1.5.6 on PATH:
+
+```sh
+rake clean db:update
+rake test
+rake lint_data lint_drivers
+duckdb output/imsa.duckdb < scripts/data_quality_summary.sql
+```
+
+`events.event_id` and `laps.event_id` use `(series_code, year, event_folder)`.
+Join on that key, not venue/display name: Watkins Glen and Bahrain can each host
+multiple events in a year. Event folders omit the download manifest's round-number
+prefix. `race_count` counts race sessions, not laps.
+
+Timing columns are durations in seconds, including long pit stops and red-flag
+interruptions. Durations beyond 24 hours are supported; missing/malformed timing
+remains NULL. Raw CSVs are retained unchanged. A lap over ten minutes is not by
+itself invalid and must not be silently deleted or capped.
+
+Weather is not guaranteed. `events.weather_status`, `weather_readings`, and
+`air_temp_readings` distinguish available observations, absent observations, and
+observations with no usable air temperature. Rain remains unknown when all
+readings are unknown; unknown is not dry. These fields describe the imported
+source, not whether the upstream provider might publish more data later.
+The quality-summary SQL exposes remaining coverage gaps without inventing values.
