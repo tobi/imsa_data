@@ -83,6 +83,8 @@ namespace :db do
       duckdb.write(script)
     end
 
+    abort("Database SQL failed") unless $?.success?
+
     # Phase 2: Compute skill ratings (Plackett-Luce: multiplayer + confidence,
     # two pools = overall license-seeded + within-tier peer; time-aware sigma
     # widening + field-median-anchored elo). Pure Ruby + duckdb CLI -- no uv/Python.
@@ -99,6 +101,7 @@ namespace :db do
       IO.popen("duckdb #{OUTPUT_DIR}/imsa.duckdb", "w") do |duckdb|
         duckdb.write(elo_commands)
       end
+      abort("Rating SQL failed") unless $?.success?
     end
 
     Rake::Task[:lint].invoke
@@ -201,6 +204,7 @@ desc "Run all tests"
 task :test do
   sh "ruby test_database.rb"
   sh "ruby test_plackett_luce.rb"
+  sh "ruby test_driver_normalization.rb"
 end
 
 desc "Run database linting checks"
@@ -242,17 +246,5 @@ task publish: "db:update" do
     cp "#{OUTPUT_DIR}/imsa.duckdb", "."
     cp "#{OUTPUT_DIR}/../README.hf.md", "README.md"
     sh "hf upload tobil/imsa . --repo-type dataset"
-  end
-end
-
-namespace :dashboard do
-  desc "Build the Observable Framework dashboard"
-  task :build => "db:update" do
-    Dir.chdir("pages") { sh "npm run build" }
-  end
-
-  desc "Start the Observable Framework dev server"
-  task :dev do
-    Dir.chdir("pages") { exec "npm run dev" }
   end
 end
