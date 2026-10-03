@@ -26,6 +26,8 @@ jobs:
           sudo install /tmp/duckdb-cli/duckdb /usr/local/bin/duckdb
       - name: Clean database build
         run: rake clean db:update
+      - name: Data coverage summary
+        run: duckdb output/imsa.duckdb < scripts/data_quality_summary.sql
       - name: Full tests
         if: ${{ !cancelled() }}
         run: rake test

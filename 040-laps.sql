@@ -11,6 +11,8 @@ SELECT
     laps.start_date,
     laps.year,
     laps.event,
+    laps.event_folder,
+    laps.series_code || '-' || laps.year || '-' || laps.event_folder AS event_id,
     laps.race_label,
     laps.session,
     laps.session_id,

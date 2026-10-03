@@ -4,14 +4,27 @@
 
 -- First, load all events.json manifests into a raw table
 -- The JSON files are arrays at root level, so read_json_auto already unnests them
+-- Use the same folder grain as event_laps. Manifest round numbers can change
+-- across downloads; strip that prefix and retain one row per natural event key.
 CREATE TEMP TABLE events_raw AS
+WITH manifests AS (
+    SELECT
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/events\.json$', 1) AS series_code,
+        regexp_extract(filename, '^data/([^/]+)/(\d{4})/events\.json$', 2) AS year,
+        MIN(event_number) AS event_number,
+        MIN(event_name) AS event_name,
+        regexp_replace(event_folder, '^\d{2}-', '') AS event_folder
+    FROM read_json_auto('data/*/*/events.json', filename=true)
+    GROUP BY series_code, year, regexp_replace(event_folder, '^\d{2}-', '')
+)
 SELECT
-    regexp_extract(filename, '^data/([^/]+)/(\d{4})/events\.json$', 1) as series_code,
-    regexp_extract(filename, '^data/([^/]+)/(\d{4})/events\.json$', 2) as year,
-    event_number,
-    event_name,
-    event_folder
-FROM read_json_auto('data/*/*/events.json', filename=true);
+    COALESCE(m.series_code, d.series_code) AS series_code,
+    COALESCE(m.year, d.year) AS year,
+    m.event_number,
+    COALESCE(d.display_name, m.event_name) AS event_name,
+    COALESCE(m.event_folder, d.event_folder) AS event_folder
+FROM manifests m
+FULL OUTER JOIN defined_events d USING (series_code, year, event_folder);
 
 -- Create the events table with all metadata
 CREATE OR REPLACE TABLE events AS
@@ -20,48 +33,51 @@ WITH event_sessions AS (
     SELECT
         series_code,
         year,
-        event,
+        event_folder,
         MIN(start_date) as start_date,
         MAX(start_date) as end_date,
         COUNT(DISTINCT session_id) as session_count,
-        SUM(CASE WHEN session = 'race' THEN 1 ELSE 0 END) as race_count
+        COUNT(DISTINCT session_id) FILTER (WHERE session = 'race') as race_count
     FROM event_laps
-    GROUP BY series_code, year, event
+    GROUP BY series_code, year, event_folder
 ),
 event_weather_stats AS (
     -- Compute weather statistics per event
     SELECT
         series_code,
         year,
-        event,
+        event_folder,
         ROUND(AVG(air_temp_f), 1) as avg_air_temp_f,
         ROUND(MIN(air_temp_f), 1) as min_air_temp_f,
         ROUND(MAX(air_temp_f), 1) as max_air_temp_f,
         ROUND(AVG(track_temp_f), 1) as avg_track_temp_f,
         ROUND(AVG(humidity_percent), 1) as avg_humidity_pct,
-        SUM(CASE WHEN raining THEN 1 ELSE 0 END) > 0 as had_rain,
-        ROUND(100.0 * SUM(CASE WHEN raining THEN 1 ELSE 0 END) / COUNT(*), 1) as rain_pct
+        COUNT(*) AS weather_readings,
+        COUNT(air_temp_f) AS air_temp_readings,
+        BOOL_OR(raining) as had_rain,
+        ROUND(100.0 * COUNT(*) FILTER (WHERE raining) / NULLIF(COUNT(raining), 0), 1) as rain_pct
     FROM event_weather
-    GROUP BY series_code, year, event
+    GROUP BY series_code, year, event_folder
 ),
 event_race_stats AS (
     -- Get race duration from laps data
     SELECT
         series_code,
         year,
-        event,
+        event_folder,
         MAX(session_time) / 60.0 as race_duration_minutes
     FROM event_laps
     WHERE session = 'race'
-    GROUP BY series_code, year, event
+    GROUP BY series_code, year, event_folder
 )
 SELECT
     -- Generate event_id as series-year-track (e.g., "imsa-2025-daytona")
-    er.series_code || '-' || er.year || '-' || LOWER(REPLACE(normalize_track_name(er.event_folder), ' ', '-')) as event_id,
+    er.series_code || '-' || er.year || '-' || er.event_folder as event_id,
     er.series_code,
     er.year,
     er.event_number,
     er.event_name,
+    er.event_name AS event,
     er.event_folder,
     -- Track info - use normalize_track_name which will ERROR on unknown tracks
     normalize_track_name(er.event_folder) as track,
@@ -78,11 +94,17 @@ SELECT
     -- Race duration
     CAST(ers.race_duration_minutes AS INTEGER) as race_duration_minutes,
     CASE
+        WHEN ers.race_duration_minutes IS NULL THEN NULL
         WHEN ers.race_duration_minutes < 180 THEN 'Sprint'
         WHEN ers.race_duration_minutes < 360 THEN 'Endurance'
         ELSE 'Ultra-Endurance'
     END as race_type,
     -- Weather stats
+    COALESCE(ews.weather_readings, 0) AS weather_readings,
+    COALESCE(ews.air_temp_readings, 0) AS air_temp_readings,
+    CASE WHEN ews.weather_readings IS NULL THEN 'no_observations'
+         WHEN ews.air_temp_readings = 0 THEN 'no_usable_air_temperature'
+         ELSE 'available' END AS weather_status,
     ews.avg_air_temp_f,
     ews.min_air_temp_f,
     ews.max_air_temp_f,
@@ -97,15 +119,15 @@ LEFT JOIN tracks t
 LEFT JOIN event_sessions es
     ON es.series_code = er.series_code
     AND es.year = er.year
-    AND es.event = normalize_track_name(er.event_folder)
+    AND es.event_folder = er.event_folder
 LEFT JOIN event_weather_stats ews
     ON ews.series_code = er.series_code
     AND ews.year = er.year
-    AND ews.event = normalize_track_name(er.event_folder)
+    AND ews.event_folder = er.event_folder
 LEFT JOIN event_race_stats ers
     ON ers.series_code = er.series_code
     AND ers.year = er.year
-    AND ers.event = normalize_track_name(er.event_folder)
+    AND ers.event_folder = er.event_folder
 ORDER BY er.series_code, er.year, er.event_number;
 
 -- Display events summary

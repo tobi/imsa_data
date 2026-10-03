@@ -20,10 +20,7 @@ SELECT
     parse_time(s2) as lap_time_s2,
     parse_time(s3) as lap_time_s3,
     parse_time(elapsed) as session_time,
-    CASE
-        WHEN parse_time(pit_time) >= 86000 THEN NULL
-        ELSE parse_time(pit_time)
-    END as pit_time,
+    parse_time(pit_time) as pit_time,
     parse_time(_hour) as clock_time,
     kph::INT as kph,
     top_speed::INT as top_speed,
