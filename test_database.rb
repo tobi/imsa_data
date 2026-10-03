@@ -5,6 +5,7 @@
 require 'minitest/autorun'
 require 'open3'
 require 'json'
+require 'csv'
 
 DB_PATH = "output/imsa.duckdb"
 
@@ -122,17 +123,40 @@ class DatabaseTest < Minitest::Test
     assert_equal 0, null_check.first["cnt"], "Laps should have series_code, year, event, and session"
   end
 
-  def test_lap_times_are_reasonable
-    unreasonable = query(<<~SQL)
-      SELECT COUNT(*) as cnt
-      FROM laps
-      WHERE lap_time IS NOT NULL
-        AND (lap_time < 30 OR lap_time > 600)
-    SQL
+  def test_lap_times_are_positive
+    # A lap includes time stopped in the pits/red flags; ten minutes is not an
+    # upper physical bound. Keep authentic long laps, reject nonpositive timing.
+    assert_equal 0, query_single("SELECT COUNT(*) FROM laps WHERE lap_time <= 0")
+    assert_equal 0, query_single("SELECT COUNT(*) FROM laps WHERE lap_time < 30")
+  end
 
-    # Some laps might be slow due to cautions, but none should be < 30s or > 10 min
-    unreasonable_count = unreasonable.first["cnt"]
-    assert unreasonable_count < 100, "Very few laps should have unreasonable times (< 30s or > 600s): #{unreasonable_count}"
+  def test_duration_parser_preserves_missing_and_long_times
+    {nil => nil, '' => nil, '-' => nil, 'bad' => nil, '1:60.000' => nil,
+     '1:02:60.000' => nil, '-1.000' => nil, '0' => 0,
+     '4.074' => 4.074, '1:20.638' => 80.638, '25:51.654' => 1551.654,
+     '60:00.000' => 3600, '24:01:02.345' => 86462.345,
+     ' 1:02:03 ' => 3723, '23:59:59.000' => 86399}.each do |raw, expected|
+      literal = raw.nil? ? 'NULL' : "'#{raw}'"
+      actual = query_single("SELECT parse_time(#{literal})")
+      if expected.nil?
+        assert_nil actual, "Missing/invalid #{raw.inspect} must not become a duration"
+      else
+        assert_in_delta expected, actual.to_f, 0.0001, raw.inspect
+      end
+    end
+  end
+
+  def test_recorded_long_pit_lap_is_preserved
+    # Source: 202601241340-race-hour-24-laps.csv, car 11, lap 102:
+    # LAP_TIME=12:18.929, PIT_TIME=0:10:52.239. Do not trim authentic delays.
+    rows = query(<<~SQL)
+      SELECT lap_time, pit_time FROM laps
+      WHERE series_code = 'imsa' AND year = '2026' AND event = 'Daytona'
+        AND session = 'race' AND car = '11' AND lap = 102
+    SQL
+    assert_equal 1, rows.size
+    assert_in_delta 738.929, rows.first['lap_time'].to_f, 0.0001
+    assert_in_delta 652.239, rows.first['pit_time'].to_f, 0.0001
   end
 
   def test_weather_temperatures_are_reasonable
@@ -187,31 +211,82 @@ class DatabaseTest < Minitest::Test
 
   def test_laps_reference_valid_events
     orphan_laps = query(<<~SQL)
-      SELECT DISTINCT l.series_code, l.year, l.event
-      FROM laps l
-      WHERE NOT EXISTS (
-        SELECT 1 FROM events e
-        WHERE e.series_code = l.series_code
-          AND e.year = l.year
-          AND e.track = l.event
-      )
-      LIMIT 10
+      SELECT DISTINCT l.series_code, l.year, l.event, l.event_id
+      FROM laps l LEFT JOIN events e ON e.event_id = l.event_id
+      WHERE e.event_id IS NULL OR e.event <> l.event
     SQL
-
-    # Note: Some support series laps may not have matching events
-    assert orphan_laps.length < 5, "Most laps should reference valid events: #{orphan_laps}"
+    assert_empty orphan_laps, "Every lap must reference its exact event: #{orphan_laps}"
   end
 
-  def test_events_have_weather_data
-    events_without_weather = query(<<~SQL)
-      SELECT COUNT(*) as cnt
-      FROM events e
-      WHERE e.start_date IS NOT NULL
-        AND e.avg_air_temp_f IS NULL
-    SQL
+  def test_event_ids_are_unique
+    assert_empty query("SELECT event_id FROM events GROUP BY event_id HAVING COUNT(*) > 1")
+  end
 
-    # Allow some events without weather
-    assert events_without_weather.first["cnt"] < 20, "Most events should have weather data"
+  def test_event_session_counts
+    assert_empty query(<<~SQL)
+      WITH counts AS (
+        SELECT event_id, COUNT(DISTINCT session_id) AS sessions,
+          COUNT(DISTINCT session_id) FILTER (WHERE session = 'race') AS races
+        FROM laps GROUP BY event_id
+      )
+      SELECT e.event_id FROM events e JOIN counts c USING (event_id)
+      WHERE e.session_count IS DISTINCT FROM c.sessions
+         OR e.race_count IS DISTINCT FROM c.races
+    SQL
+  end
+
+  def test_events_have_weather_data_when_observations_exist
+    # Coverage is source-dependent. Check every aggregate against the actual
+    # observations at the event-folder grain, including explicitly missing data.
+    assert_empty query(<<~SQL)
+      WITH expected AS (
+        SELECT series_code, year, event_folder, COUNT(*) AS readings,
+          COUNT(air_temp_f) AS usable, ROUND(AVG(air_temp_f), 1) AS air,
+          BOOL_OR(raining) AS rain
+        FROM event_weather GROUP BY series_code, year, event_folder
+      )
+      SELECT e.event_id FROM events e LEFT JOIN expected w
+        USING (series_code, year, event_folder)
+      WHERE e.avg_air_temp_f IS DISTINCT FROM w.air
+         OR e.weather_readings <> COALESCE(w.readings, 0)
+         OR e.air_temp_readings <> COALESCE(w.usable, 0)
+         OR e.had_rain IS DISTINCT FROM w.rain
+         OR e.dry IS DISTINCT FROM NOT w.rain
+         OR e.weather_status IS DISTINCT FROM
+           CASE WHEN w.readings IS NULL THEN 'no_observations'
+                WHEN w.usable = 0 THEN 'no_usable_air_temperature'
+                ELSE 'available' END
+    SQL
+    # Retain a broad ingestion smoke check as well as exact per-event joins.
+    assert_operator query_single("SELECT COUNT(*) FROM events WHERE weather_status = 'available' AND start_date IS NOT NULL"), :>, 50
+  end
+
+  def test_weather_source_rows_are_not_silently_discarded
+    # Independent CSV count catches numeric parsing failures even when all SQL
+    # aggregates agree with one another after accidentally dropping a file.
+    expected = Dir['data/*/*/*/*weather.csv'].select { |f| f.match?(%r{/\d{12}-[^/]+-weather\.csv$}) }.sum do |file|
+      CSV.read(file, headers: true, encoding: 'bom|utf-8').size
+    end
+    assert_operator expected, :>, 0
+    assert_equal expected, query_single('SELECT COUNT(*) FROM event_weather_observations')
+    assert_equal 0, query_single('SELECT COUNT(*) FROM event_weather_observations WHERE time_utc_seconds IS NULL')
+    assert_equal 0, query_single("SELECT COUNT(*) FROM event_weather WHERE pressure_unit IS NULL AND pressure_inhg IS NOT NULL")
+    assert_equal 0, query_single("SELECT COUNT(*) FROM event_weather WHERE wind_speed_unit IS NULL AND wind_speed_mph IS NOT NULL")
+  end
+
+  def test_decimal_comma_weather_is_imported
+    row = query(<<~SQL).first
+      SELECT air_temp_raw, humidity_percent, pressure_raw, wind_speed_raw
+      FROM event_weather_observations
+      WHERE filename = 'data/alms/2025/01-sepang/202412051300-private-20test-20session-201-weather.csv'
+        AND time_utc_seconds = 1733374848
+    SQL
+    refute_nil row
+    assert_in_delta 87.8, row['air_temp_raw'].to_f, 0.001
+    assert_in_delta 62.44, row['humidity_percent'].to_f, 0.001
+    assert_in_delta 1005, row['pressure_raw'].to_f, 0.001
+    assert_in_delta 1.3, row['wind_speed_raw'].to_f, 0.001
+    assert_in_delta 62.44, query_single("SELECT weather_number('62,44')").to_f, 0.001
   end
 
   # === Track Alias Tests ===

@@ -164,3 +164,16 @@ Examples:
 2025-01-18: Updated format_time macro to handle DOUBLE precision values from AVG()
 calculations without overflow. Added format_gap macro for consistent gap display.
 -->
+## Event identity and source completeness
+
+Use `laps.event_id = events.event_id` for event joins. IDs now use the natural
+`series-year-event_folder` key, not a venue name; consumers storing old event IDs
+must regenerate them. `event_folder` excludes the round-number prefix. This keeps
+separate Watkins Glen/Bahrain events distinct while matching their weather by
+folder. `events.race_count` is a count of distinct race sessions.
+
+Duration parsing preserves values above 24 hours and returns NULL for malformed
+or missing source values. Authentic long pit/red-flag laps stay in `laps`.
+`events.weather_status` reports `available`, `no_observations`, or
+`no_usable_air_temperature`; missing measurements are never filled to meet a
+coverage threshold. All-unknown rain stays NULL in `had_rain` and `dry`.

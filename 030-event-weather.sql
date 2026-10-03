@@ -1,72 +1,49 @@
-CREATE TEMP TABLE event_weather_raw AS
-    SELECT
-        -- Extract series from path: data/{series}/{year}/{event}/{timestamp}-{session}-weather.csv
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 1) as series_code,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 2) as year,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 3) as event,
-        regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 5) as session,
+-- Parse decimal dots and decimal commas without discarding whole CSV rows.
+CREATE OR REPLACE MACRO weather_number(value) AS (
+    TRY_CAST(REPLACE(TRIM(value), ',', '.') AS DOUBLE)
+);
 
-        -- Weather measurements
-        time_utc_seconds::BIGINT as time_utc_seconds,
-        -- Handle multiple date formats in weather files
-        COALESCE(
-            TRY_STRPTIME(time_utc_str, '%m/%d/%Y %I:%M:%S %p'),
-            TRY_STRPTIME(time_utc_str, '%d-%b-%y %H:%M:%S')
-        ) as time_utc,
-        -- Raw temperature values
-        -- Sanitize/validate (CHECK-only heuristic — never used to infer units):
-        -- units are already Fahrenheit on disk (import.rb converts per-series).
-        -- These bounds reject physically-impossible sensor readings for a running
-        -- session — e.g. a track surface stuck at the 32°F freezing-point default,
-        -- or sub-freezing air — which would otherwise drag session min/avg temps.
-        -- Plausible racing envelope: air 32–140°F, track 35–200°F.
-        CASE WHEN air_temp BETWEEN 32 AND 140 THEN air_temp::DECIMAL(6, 2) END as air_temp_raw,
-        CASE WHEN track_temp BETWEEN 35 AND 200 THEN track_temp::DECIMAL(6, 2) END as track_temp_raw,
-        humidity::DECIMAL(6, 2) as humidity_percent,
-        pressure::DECIMAL(6, 2) as pressure_inhg,
-        wind_speed::DECIMAL(6, 2) as wind_speed_mph,
-        wind_direction::INT as wind_direction_degrees,
-        -- Rain encoding varies: IMSA uses -1=dry, WEC uses 0=dry, ELMS uses -999=nodata
-        -- Positive values indicate rain (amount in mm or flag).
-        -- -999 is a NO-DATA SENTINEL and must become NULL, never false: a broken
-        -- or absent rain sensor is "unknown", not "dry". Collapsing it to false
-        -- silently asserts a dry track (Road America 2026 FP2 was genuinely very
-        -- wet -- LMP2 best 2:11.8 vs 1:54.2 in FP1, +17.7 s, every class equally
-        -- slower -- yet the feed reported RAIN=0 with humidity railed at 96%).
-        -- Downstream MUST treat NULL as unknown and fall back to pace/observation.
-        CASE WHEN TRY_CAST(rain AS DECIMAL) <= -999 THEN NULL
-             ELSE TRY_CAST(rain AS DECIMAL) > 0 END as raining,
-
-        -- Date
-        strptime(
-            regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d+)\-([^/]+)\-weather\.csv$', 4),
-            '%Y%m%d%H%M'
-        ) as date,
-
-        filename
-
-    FROM read_csv(
-        "data/*/*/*/*weather.csv",
-        union_by_name=true,
-        filename=true,
-        null_padding=true,
-        normalize_names=true,
-        ignore_errors=true,
-        types={
-            'TIME_UTC_SECONDS': 'BIGINT',
-            'TIME_UTC_STR': 'STRING',
-            'AIR_TEMP': 'DECIMAL(6, 2)',
-            'TRACK_TEMP': 'DECIMAL(6, 2)',
-            'HUMIDITY': 'DECIMAL(6, 2)',
-            'PRESSURE': 'DECIMAL(6, 2)',
-            'WIND_SPEED': 'DECIMAL(6, 2)',
-            'WIND_DIRECTION': 'INT',
-            'RAIN': 'INT'
-        }
-    )
-    -- Filter out files that don't match the expected timestamp pattern
-    WHERE regexp_extract(filename, '^data/([^/]+)/(\d{4})/\d\d\-([^/]+)/(\d{12})\-([^/]+)\-weather\.csv$', 4) != '';
-
+-- Persist the parsed source observations for coverage/provenance checks before
+-- duplicate timestamps are collapsed in event_weather. Unknown units stay raw.
+CREATE OR REPLACE TABLE event_weather_observations AS
+SELECT
+    regexp_extract(filename, '^data/([^/]+)/', 1) AS series_code,
+    regexp_extract(filename, '^data/[^/]+/(\d{4})/', 1) AS year,
+    regexp_extract(filename, '^data/[^/]+/\d{4}/\d\d-([^/]+)/', 1) AS event,
+    regexp_extract(filename, '/\d{12}-([^/]+)-weather\.csv$', 1) AS session,
+    TRY_CAST(time_utc_seconds AS BIGINT) AS time_utc_seconds,
+    to_timestamp(TRY_CAST(time_utc_seconds AS BIGINT))::TIMESTAMP AS time_utc,
+    CASE WHEN weather_number(air_temp) BETWEEN 32 AND 140
+         THEN weather_number(air_temp)::DECIMAL(6,2) END AS air_temp_raw,
+    CASE WHEN weather_number(track_temp) BETWEEN 35 AND 200
+         THEN weather_number(track_temp)::DECIMAL(6,2) END AS track_temp_raw,
+    CASE WHEN weather_number(humidity) BETWEEN 0 AND 100
+         THEN weather_number(humidity)::DECIMAL(6,2) END AS humidity_percent,
+    weather_number(pressure) AS pressure_raw,
+    pressure_unit,
+    CASE upper(trim(pressure_unit))
+      WHEN 'INHG' THEN weather_number(pressure)
+      WHEN 'MBAR' THEN weather_number(pressure) / 33.8638866667
+      WHEN 'HPA' THEN weather_number(pressure) / 33.8638866667
+    END::DECIMAL(6,2) AS pressure_inhg,
+    weather_number(wind_speed) AS wind_speed_raw,
+    wind_speed_unit,
+    CASE upper(trim(wind_speed_unit))
+      WHEN 'MPH' THEN weather_number(wind_speed)
+      WHEN 'KPH' THEN weather_number(wind_speed) / 1.609344
+      WHEN 'KM/H' THEN weather_number(wind_speed) / 1.609344
+      WHEN 'M/S' THEN weather_number(wind_speed) * 2.2369362921
+    END::DECIMAL(6,2) AS wind_speed_mph,
+    CASE WHEN weather_number(wind_direction) BETWEEN 0 AND 360
+         THEN weather_number(wind_direction)::INT END AS wind_direction_degrees,
+    CASE WHEN weather_number(rain) <= -999 THEN NULL
+         ELSE weather_number(rain) > 0 END AS raining,
+    strptime(regexp_extract(filename, '/(\d{12})-[^/]+-weather\.csv$', 1),
+             '%Y%m%d%H%M') AS date,
+    filename
+FROM read_csv('data/*/*/*/*weather.csv', union_by_name=true, filename=true,
+              null_padding=true, normalize_names=true, all_varchar=true)
+WHERE regexp_matches(filename, '/\d{12}-[^/]+-weather\.csv$');
 
 CREATE OR REPLACE TABLE event_weather AS WITH
 named_weather AS (
@@ -107,6 +84,7 @@ named_weather AS (
                     OVER (PARTITION BY filename)
             )
         )::DECIMAL(6, 2) as track_temp_f,
+        filename, pressure_raw, pressure_unit, wind_speed_raw, wind_speed_unit,
         humidity_percent, pressure_inhg,
         wind_speed_mph, wind_direction_degrees, raining,
         -- One logical session per (series, year, event-folder, session-type, start day).
@@ -114,7 +92,7 @@ named_weather AS (
         -- so they collapse into a single race timeline. relative_seconds (computed
         -- below over this partition) then measures elapsed time from race start.
         DENSE_RANK() OVER (ORDER BY series_code, year, event_folder, session_type, date) as session_id,
-    FROM event_weather_raw
+    FROM event_weather_observations
     ORDER BY session_id, time_utc_seconds
 ),
 weather_with_relative_time AS (

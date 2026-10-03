@@ -16,7 +16,7 @@ SELECT * FROM 'output/driver_elo.csv';
 
 -- Convenience view for current standings by class.
 -- Carries both the overall and within-tier conservative ratings, plus the
--- latest sigma so the dashboard can draw confidence bands.
+-- latest sigma for downstream confidence intervals.
 CREATE OR REPLACE VIEW driver_elo_current AS
 WITH ranked AS (
   SELECT
