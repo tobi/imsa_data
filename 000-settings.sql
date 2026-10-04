@@ -122,15 +122,17 @@ CREATE OR REPLACE MACRO license_rank(license) AS (
     END
 );
 
-CREATE OR REPLACE MACRO parse_time (t) AS (
-    EXTRACT(EPOCH FROM(
-        COALESCE(
-            TRY_STRPTIME(t,             '%-H:%M:%S.%g'),
-            TRY_STRPTIME('00:'  || t,   '%-H:%M:%S.%g'),
-            TRY_STRPTIME('00:00:'|| t,  '%-H:%M:%S.%g'),
-            TRY_STRPTIME('23:59:59',    '%-H:%M:%S')
-        )
-    )::TIME)::DECIMAL(10,3)
+-- Timing values are durations, not times of day: elapsed can exceed 24 hours.
+-- Missing/malformed source values stay NULL rather than becoming 23:59:59.
+CREATE OR REPLACE MACRO parse_time(t) AS (
+    CASE WHEN regexp_full_match(TRIM(t),
+        '([0-9]+:[0-5][0-9]:[0-5][0-9]|[0-9]+:[0-5][0-9]|[0-9]+)(\.[0-9]{1,3})?')
+    THEN TRY_CAST(
+        TRY_CAST(split_part(TRIM(t), ':', -1) AS DECIMAL(10,3))
+        + COALESCE(TRY_CAST(split_part(TRIM(t), ':', -2) AS BIGINT), 0) * 60
+        + COALESCE(TRY_CAST(split_part(TRIM(t), ':', -3) AS BIGINT), 0) * 3600
+        AS DECIMAL(10,3))
+    END
 );
 
 CREATE OR REPLACE MACRO format_time (t) AS (

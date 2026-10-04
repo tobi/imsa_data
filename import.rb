@@ -589,10 +589,10 @@ class EnduranceSeriesImporter
 
       new_row = row.dup
       if air_idx && row[air_idx] && !row[air_idx].to_s.strip.empty?
-        new_row[air_idx] = ((row[air_idx].to_f * 9.0 / 5.0) + 32).round(2).to_s
+        new_row[air_idx] = ((Float(row[air_idx].to_s.tr(',', '.')) * 9.0 / 5.0) + 32).round(2).to_s
       end
       if track_idx && row[track_idx] && !row[track_idx].to_s.strip.empty?
-        new_row[track_idx] = ((row[track_idx].to_f * 9.0 / 5.0) + 32).round(2).to_s
+        new_row[track_idx] = ((Float(row[track_idx].to_s.tr(',', '.')) * 9.0 / 5.0) + 32).round(2).to_s
       end
       new_row
     end

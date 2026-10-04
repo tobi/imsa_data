@@ -3,13 +3,8 @@ output/*.csv
 output/*.duckdb
 output/*.parquet
 output/hf
-node_modules
 duckdb*
-.observablehq/
 
-# Pages generated files
-pages/dist/
-pages/src/.observablehq/
 .duckdb-skills/
 
 # track-atlas is fetched fresh at build time (rake db:update_track_atlas);
